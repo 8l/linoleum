@@ -1,0 +1,107 @@
+(alpha.txt: This library provides an alpha blending extension for
+the PixelFX libary.
+
+The pixel passed through register b has the following format:
+AARRGGBBh:	AA - alpha, 00h = fully transparent
+			    FFh = fully opague
+		RR - red
+		GG - green
+		BB - blue
+
+For bugs, additions or remarks, mail me at:
+pp_kl_h@hotmail.com
+
+Authors website:
+http://home.hetnet.nl/~ptkleinhaneveld
+
+License LGPL
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or [at your option] any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+USA
+
+(C) 2003 by Peterpaul Klein Haneveld.
+)
+
+"libraries"
+	/gen/pixelfx;
+
+"programme"
+(----------------------------------------------------------------------------)
+"service FX Alpha Superimpose"
+	c = b;
+	c & ff ff ffh;
+	? c = [FX Transparent Color] -> service FX Null;
+(----------------------------------------------------------------------------)
+"service FX Alpha"
+	c = b;
+	c > 24;
+	b & ff ff ffh;
+	? c = 0 -> service FX Null;
+	? c = ffh -> service FX Raw;
+	? c = 7fh -> service FX Semi Transparent;
+	? c = 80h -> service FX Semi Transparent;
+	a-->; c-->;
+	a = [a];
+	(red)
+	e = b;
+	d = a;
+	e > 16;
+	d > 16;
+	e * c;
+	d & ffh;
+	!c;
+	c & ffh; (c = 255 - c;)
+	d * c;
+	d + e;
+	c<--;
+	d > 8;
+	d < 16;
+	b & ff ffh;
+	b | d;
+	(green)
+	c-->;
+	e = b;
+	d = a;
+	e > 8;
+	d > 8;
+	e & ffh;
+	d & ffh;
+	e * c;
+	!c;
+	c & ffh; (c = 255 - c;)
+	d * c;
+	d + e;
+	c<--;
+	d & ff 00h;
+	b & ff 00 ffh;
+	b | d;
+	(blue)
+	e = b;
+	d = a;
+	e & ffh;
+	d & ffh;
+	e * c;
+	!c;
+	c & ffh; (c = 255 - c;)
+	d * c;
+	d + e;
+	d > 8;
+	a<--;
+	b & ff ff 00h;
+	b | d;
+	(set color)
+	[a] = b;
+	end;
+(----------------------------------------------------------------------------)
+

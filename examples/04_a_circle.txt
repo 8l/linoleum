@@ -1,0 +1,353 @@
+
+      ( *** LINOLEUM Example 4: A Circle! *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON , "04_a_circle.TXT", WITH THE RIGHT
+	   MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Uses the "Plot" subroutine to draw a circle.
+	Note "Circle" is also a subroutine. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Plotting_Circles };
+	unit = 32;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	       PI	     = 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	(some frequently used colors)
+
+	RED	= FF0000h;
+	GREEN	= 00FF00h;
+	BLUE	= 0000FFh;
+	MAGENTA = FF00FFh;
+	YELLOW	= FFFF00h;
+	CYAN	= 00FFFFh;
+	BLACK	= 000000h;
+	WHITE	= FFFFFFh;
+
+"variables"
+
+	Circle Center X = 0f;
+	Circle Center Y = 0f;
+	Circle Radius	= 1f;
+	Circle Color	= BLACK;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+       (A more complex figure than the single DOT is the CIRCLE.
+	A circumference is mathematically defined as the place
+	where the equate X^2 + Y^2 = R^2 is true. To obtain such
+	a thing in an easy way, think to Pythagoras' theoreme
+	and use trigonometric functions sine and cosine to calculate
+	the coordinates of all the dots in the circle's shape.
+	This is exactly what the "Circle" subroutine does.)
+
+       (The subroutine is invoked by the following lines.)
+
+	[Circle Center X] ,= [Display Width];
+	[Circle Center X] ** 0.5f;
+	[Circle Center Y] ,= [Display Height];
+	[Circle Center Y] ** 0.5f;
+
+	[Circle Radius] = 50f;
+	[Circle Color] = CYAN;
+
+	=> Circle;			(call Circle subroutine)
+
+	(Then show the video display memory)
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	(We already know what's the cycle below for...)
+
+    "wait keystroke"
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> wait keystroke;
+
+	end;			(of MAIN PROGRAM)
+
+	(We already know what's the Plot subroutine)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+       (Here's the new one: Circle.
+	At first it may look like a mess!)
+
+"Circle"
+    ( Draws a circle, using the Plot subroutine. All regs destroyed. )
+	E = 1f; E // [Circle Radius];
+	C = [Circle Color];
+	D = 0f;
+    "Circle tracement loop"
+	A = D; ~~A;
+	B = D; ~B;
+	A ** [Circle Radius]; A ++ [Circle Center X];
+	B ** [Circle Radius]; B ++ [Circle Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	D ++ E;
+	?? D < TwoPI -> Circle tracement loop;
+	end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+       (To introduce a detailed explanation to how Circle works,
+	we have to learn floating-point calculations from the manual.
+	FPU calculations find a VERY CONCRETE role in this routine.
+	I will now explain every single line in detail.)
+
+(Detailed explanations about the Circle subroutine follow...)
+(First of all, there are these three lines...
+
+	E = 1f; E // [Circle Radius];
+	C = [Circle Color];
+	D = 0f;
+
+The first line calculates 1 divided by the radius of the circle,
+and gives the result to register E. It will be used later...
+The second line assigns register C to the color of the circle;
+since the circle will be traced by repeatly calling the Plot
+subroutine, we know Plot wants pixel color to be in register C.
+The third line assigns register D to zero IN FLOATING-POINT.
+Zero in floating-point format, remember, is NOT the same as zero
+in integer format. That's why there's the need of writing it as 0f.
+Register D will hold a value which, during the tracement loop, will
+increase upto two times Pi. In effects, the condition to exit the
+loop is for when register D exceeds the value of two times Pi.
+
+E = 1f; 		This assigns the E register to the result of
+E // [Circle Radius];	1 / <radius> performed in floating-point.
+			E will represent a certain quantity which,
+			during the tracement, will be added to an
+			angle, to make that angle proceed in the
+			range from 0 radians to two times PI.
+			Please note E is first assigned to 1f,
+			and NOT to JUST an integer value of 1.
+			1f means 1, but in floating-point format.
+			Even the division is of floating-point type,
+			that's why it's indicated as a double slash.
+
+C = [Circle Color];	First it stores D (the circle color) inside
+D = 0f; 		register C, where it will be preserved for
+			later use by the Plot subroutine.
+			Then it stores a floating-point zero value
+			inside register D. Register D is the angle,
+			which will be progressively increased inside
+			the tracement loop, and will need to start
+			from zero and end when D is two times PI,
+			and I guess you'll see why...
+
+At this point, label "Circle tracement loop" marks the beginning of
+a loop. At each iteration of the loop, a single DOT is plotted to
+the display, after its coordinates are calculated. Because angle D
+goes from 0 to 2PI, the whole circumference is traced when the loop
+will be finished.
+
+A = D; ~~A;		Assigns A to the value of D (current angle)
+			and then performs the COSINE of A. This will
+			subsequently be multipled by the radius to
+			obtain the X coordinate of the current dot,
+			BUT IN RESPECT TO the ORIGIN placed at 0;0
+			in an imaginary plane, and scaled in such a
+			way that the circle would have radius = 1.
+
+B = D; ~B;		Does almost the same thing with B, that will
+			hold the Y coordinate of current dot. Notice
+			this time it performs the SINE of B, after
+			having assigned B to current angle.
+
+A ** [Circle Radius];	Multiplies (in floating-point) the value
+			of register A by the radius of the circle.
+			Because the scale for A and B coordinates
+			was in the range -1 to +1, this way we'll be
+			scaling A and B to fit the range given by
+			-Circle Radius to +Circle Radius. Ok?
+
+A ++ [Circle Center X]; At the previus point, we had the correct X
+			coordinate for a circle whose center would
+			lay at coordinates 0;0 now we don't want it
+			exactly so... our circle's center must lay
+			where the caller said. That's why we use an
+			addition to TRANSLATE the figure where it
+			must be effectively traced.
+
+B ** [Circle Radius];	They are the same operations described for
+B ++ [Circle Center Y]; register A, this time performed on register
+			B, so that at the end of the calculations
+			the two registers will hold the correct
+			coordinates for the current point.
+			We obviously loaded those coordinates in
+			A and B because we know the Plot subroutine
+			wants them to be placed there.
+
+Now that we're ready to trace the dot, may we call Plot?
+Please reflect for a while: are we really ready?
+Well, A and B hold the coordinates, that's definitely true.
+But they are in FLOATING-POINT format!
+And "Plot" would not understand them this way.
+So what do we need? To convert A and B to integer format.
+
+A =, A; 		Converts A from floating-point to integer.
+B =, B; 		Converts B from floating-point to integer.
+
+And THEN we call Plot with => Plot;
+
+Once we traced this point, we'll have to move to the next one
+along the circumference. This just needs the D register to be
+increased by the value of E, previously calculated before entering
+the tracement loop. So let's add E to D ASSUMING they are both of
+floating-point type (so we use ++ instead of a single plus, to
+represent a floating-point addition):
+
+D ++ E; 		Adds value of register E to register D.
+			++ adds in floating point, while the
+			single + adds in integer.
+
+Now we need the program to go back to the calculations of A, B
+and to trace this new point. The whole process must repeat in a
+loop until a certain condition is met. The condition is: D must
+exceed or equal the value of the constant called "TwoPI".
+TwoPI holds the result of the sum of "PI plus PI", as you can
+see inside the "constants" period.
+
+We will need a "comparison directive", the following one:
+?? D < TwoPI -> Circle tracement loop;
+
+This may look difficult to read at first.
+In reality, it reproduces the syntax of english language,
+if you only read the signs as explained by the lines below:
+
+?? D	 <     TwoPI	    ->	    Circle tracement loop;
+IS D LESS THAN TwoPI? If yes, go to Circle tracement loop.
+
+That's fairly more comprehensible, isn't it?
+Please note there are TWO question marks.
+If there was ONE, the comparison would be of INTEGER type!
+Always remember INTEGER and FLOATING-POINT are two different
+ways to represent numbers inside the PC.
+Obviously, the result of such a condition is that the program
+repeats the loop while D is less than 2PI, and once D reachs
+the value of 2PI (or if it should become greater than 2PI),
+the loop won't happen anymore and the program's flow will
+proceed with the instruction placed after that last line.
+That instruction, being that the subroutine has nothing more
+to do, is an "end" tag, successfully returning to the main
+program. Well, it never uses "fail" because there are no
+reasons why the tracement of a circle should be considered
+as failed. Um... ok, in reality, there is one. However, since
+this example is presented to learn from, and since that's a
+very particular case, I didn't put additional code to check
+for it, so the example looks simpler... it's for when the
+circle radius equals zero. Because the radius is used in the
+operation 1 / [Circle Radius], if it's zero this would give
+a calculation error. So you should check for when the radius
+is zero, by placing something like:
+	?? [Circle Radius] = 0f -> Fail Circle;
+and placing a single "fail" tag corresponding to the line
+below declaration of "Fail Circle". )
+
+( Now if you aren't very practised with maths, you may be
+curious about the value being calculated for register E, before
+entering the tracement loop. It gives how many radians are to
+be added to the current angle in the loop: that angle is used
+for calculating the current dot's coordinates. There's the need
+to calculate, in effects, how many dots are needed to complete
+the circle's shape, so that the figure will be traced at maximum
+speed, without any waste of time, and making sure the figure
+isn't missing any dots along the circumference. )
+
+( The formula to calculate the step for the circle (value of E) is
+	step = 1 / r
+where r is the radius, deriving from the fact that the
+circumference is formed by a certain number of dots, which
+are needed to cover all pixels in the shape. This number is:
+
+	dots needed = 2*PI * r
+
+the fomula calculates the length of the circumference (2PI*r).
+The result gives the number of steps to be performed in order to
+fill the shape. This is also how many dots must be traced to
+approximate the circle on the effective display.
+If you now consider a 360-degree arc is 2*PI when expressed in
+radians, it is evident that the quantity to be added to the angle
+for which sine/cosine are calculated, is the following...
+
+			2*PI		(period of sine/cosine)
+	sine step = ------------
+		      2*PI * r		(dots in circumference)
+
+Which can be finally simplified to...
+
+	sine step = 1 / r
+
+...because "2 times PI" divided by "2 times PI" is 1.
+Well, that "sine step" is the value held by register E. )
+
+( Try to run the program: you'll see a cyan circle in the middle
+of the default video display... it takes very little time to
+complete, so that you'll just see it popping up immediately.
+
+That was the first sample application to show some complexity...
+Feel free to take some time to become familiar with all
+these new concepts, before taking the next example.
+
+But don't get discouraged by maths or because you're finding
+it too difficult. I know this is difficult, but I don't expect
+everyone to do the maths for calculating circles and other
+shapes. I've just tried to explain how that works.
+Definitely, if you need to make a circle without worrying
+about building your own "Circle" subroutine, just use this
+one, or search a similar function inside the LIBRARIES.
+The libraries are here for making things very simple.
+BUT STILL I WANT YOU TO KNOW you can code your own libraries,
+behaving as you want, not as I decided them to behave. )

@@ -1,0 +1,543 @@
+(** &lib math: library with mathematical routines.
+ *
+ * &rem For some of the routines the result is calculated with the corresponding taylor
+ * series. You can define the number of steps, which will be called the depth, to
+ * select the precision you'll need. This is done with the variable
+ * [math precision]. But note that the precision of the returned
+ * result depends not only on the depth, but also on the inputs. When using
+ * routines in this lib for mathematical programs, such as a calculator, i
+ * advise you to set [math precision] to a very high value, like:
+ *	   <code>[math precision] = 1 000 000;</code>
+ * For use in real-time applications, like games, experiment with the routines,
+ * search for the worst case and the precision you need.
+ *
+ * &copyright 2003 by Peterpaul Klein Haneveld
+ * &authors Peterpaul Klein Haneveld:pp_kl_h@hotmail.com
+ * &license LGPL:
+ * This lib is free software; you can redistribute it and/or<BR>
+ * modify it under the terms of the GNU Lesser General Public<BR>
+ * License as published by the Free Software Foundation; either<BR>
+ * version 2.1 of the License, or (at your option) any later version.<p>
+ *
+ * This lib is distributed in the hope that it will be useful,<BR>
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of<BR>
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU<BR>
+ * Lesser General Public License for more details.<p>
+ *
+ * You should have received a copy of the GNU Lesser General Public<BR>
+ * License along with this lib; if not, write to the Free Software<BR>
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *)
+
+"directors"
+	unit = 32;
+	program name = { math_test };
+	symbols map = off;
+
+"constants"
+	PI	  = 3.141592654f;
+	halfPI	     = pi div 2;
+	thirdPI      = pi div 3;
+
+"variables"
+	math precision		= 900;
+
+"programme"
+(----------------------------------------------------------------------------)
+	a = 1f;
+	=> inv sin;
+	=> rad to deg;
+	a ** 1000000f;
+	a =, a; (float -> int)
+	showregisters;
+	end;
+(----------------------------------------------------------------------------)
+
+(----------------------------------------------------------------------------)
+(Power functions)
+(----------------------------------------------------------------------------)
+(** &fun exp int: Raises an integer base number to the power of another integer
+ * exponent.
+ * &rem The algorithm used is of order 2log[n]. Generally -for exponents
+ * smaller than 16- This routine will be as fast as repeatedly multiplying with a,
+ * but This routine uses less multiplications, so it could be faster for smaller
+ * exponents also. The result is the exact result, except where it passes the
+ * bounds of an 32-bits integer.
+ * <p>
+ * Registers b and c are destroyed.
+ * &param 1 in reg a: base number, int, -infinite < a < +infinite
+ *	  2 in reg b: exponent, int, >= 0
+ *	  3 out reg a: result
+ *)
+
+"exp int"
+(IN:	   a = base number, int, -infinite < a < +infinite
+	   b = exponent, int, >= 0
+OUT:	   a = result
+	   b = destroyed
+	   c = destroyed)
+	   ? b <= 2 -> exp int exit;
+	   ? b + 1h -> exp int odd;		(check if odd exponent)
+	   b > 1;				(exponent / 2)
+	   => exp int;
+	   a * a;
+	   end;
+
+	   "exp int odd"
+	   a-->;
+	   ? b = 3 -> exp int odd end;
+	   b > 1;				(exponent / 2)
+	   => exp int;
+	   "exp int odd end"
+	   c<--;
+	   a * a;
+	   a * c;
+	   end;
+
+	   "exp int exit"
+	   ? b - 2h -> exp int exit next;
+	   a * a;
+	   end;
+	   "exp int exit next"
+	   ? b - 1h -> exp int exit zero;
+	   end;
+	   "exp int exit zero"
+	   a = 1;
+	   end;
+
+(----------------------------------------------------------------------------)
+(** &fun exp float: Raises an float base number to the power of an
+ * integer exponent.
+ * &rem The algorithm used is of order 2log[n]. Generally -for exponents
+ * smaller than 16- This routine will be as fast as repeatedly multiplying with a,
+ * but This routine uses less multiplications, so it could be faster for smaller
+ * exponents also. The result is precise, -up to 6 or 7 digits, because of it 
+ * being a 32-bit floating point number-.
+ * <p>
+ * Registers b and c are destroyed.
+ * &param 1 in reg a: base number, float, -infinite < a < +infinite
+ *	  2 in reg b: exponent, int, >= 0
+ *	  3 out reg a: result
+ *)
+
+"exp float"
+(IN:	   a = base number, float, -infinite < a < +infinite
+	   b = exponent, int, >= 0
+OUT:	   a = result
+	   b = destroyed
+	   c = destroyed)
+	   ? b <= 2 -> exp float exit;
+	   ? b + 1h -> exp float odd;		  (check if odd exponent)
+	   b > 1;				(exponent / 2)
+	   => exp float;
+	   a ** a;
+	   end;
+
+	   "exp float odd"
+	   a-->;
+	   ? b = 3 -> exp float odd end;
+	   b > 1;				(exponent / 2)
+	   => exp float;
+	   "exp float odd end"
+	   c<--;
+	   a ** a;
+	   a ** c;
+	   end;
+
+	   "exp float exit"
+	   ? b - 2h -> exp float exit next;
+	   a ** a;
+	   end;
+	   "exp float exit next"
+	   ? b - 1h -> exp float exit zero;
+	   end;
+	   "exp float exit zero"
+	   a = 1;
+	   end;
+
+(----------------------------------------------------------------------------)
+(** &fun exp float: Raises an float base number to the power of
+ * another float exponent.
+ * &rem It is calculated with Taylor series, and thus the precision of the
+ * result depends on your setting of @P3. Also This routine calls the
+ * @R"natural logarithm" fun, which converges rather slow to the result,
+ * esspecially for large inputs. -Read the remarks for the @R"natural logarithm"
+ * fun for more information-. Since the result of the @R"natural logarithm" is
+ * used in this taylor series, you better make sure the result is rather precise.
+ * &param 1 in reg a: base number, float, -infinite < a < +infinite
+ *	  2 in reg b: exponent, float, -infinite < x < +infinite
+ *	  3 in var [Math Precision]: depth of taylor series
+ *	  4 out reg a: result
+ *)
+
+"float exp float"(calculates a^x, where a, x are floats)
+(IN:	a = a,
+	b = x, exponent,  -infinite < x < +infinite
+	[math precision] = depth of taylor series
+OUT:	a = a^x)
+(RT:	a = x*ln[a]
+	b = result so far
+	c = component
+	d = depth, int)
+
+	c-->; d-->;
+	=> natural logarithm;
+	a ** b;
+	b = 1f;
+	b-->; c<--; (c = b;)
+	d = 1;
+	"float exp float loop"
+		d-->;
+		d ,= d; (int -> float)
+		c // d;
+		d<--;
+		c ** a;
+		b ++ c;
+		d +;
+		? d < [math precision] -> float exp float loop;
+	b-->; a<--; (a = b;)
+	d<--; c<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun natural exponent: Raises e, the natural number, to a power.
+ * &rem It uses taylor-series, so make sure @P2 is set correctly.
+ * It converges rather fast, for @P2 = 7, the precision is around 5 or 6 digits.
+ * &param 1 in reg a: exponent, float, -infinite < x < +infinite
+ *	  2 in var [Math Precision]: depth of taylor series
+ *	  3 out reg a: result: e^x
+ *)
+"natural exponent"
+(IN:	a = x
+	[math precision] = depth of taylor series
+OUT:	a = e^x)
+(RT:	a = x
+	b = result so far
+	c = component
+	d = depth, int)
+
+	b-->; c-->; d-->;
+	c = 1f;
+	b = 1f;
+	d = 1;
+	"natural exponent loop"
+		c ** a;
+		d-->;
+		d ,= d; (int -> float)
+		c // d;
+		d<--;
+		b ++ c;
+		d +;
+		? d < [math precision] -> natural exponent loop;
+	b-->; a<--; (a = b;)
+	d<--; c<--; b<--;
+	end;
+(----------------------------------------------------------------------------)
+
+(----------------------------------------------------------------------------)
+(Logarithmic functions)
+(----------------------------------------------------------------------------)
+(** &fun natural logarithm: Calculates the natural logarithm of
+ * a number: ln(x), for x > 0.
+ * &rem It converges rather slowly, especially when the input is a large number 
+ * -x > 20-. For example, when @P1 = 20f; and @P2 = 20, the precision of the
+ * result is only 3 digits.
+ * &param 1 in reg a: x
+ *	  2 in var [Math Precision]: depth of taylor series
+ *	  3 out reg a: ln(x)
+ *)
+
+"natural logarithm" (x > 0)
+(IN:	a = x, > 0
+	[math precision] = depth of taylor series
+OUT:	a = ln[x])
+(RT:	a = [{x-1}/{x+1}]^2;
+	b = 0.5*result so far
+	c = component
+	d = depth, int)
+
+	b-->; c-->; d-->;
+	a-->; c<--; (c = a;)
+	c -- 1f;
+	a-->;
+	a ++ 1f;
+	c // a;
+	a<--;
+	c-->; c-->;
+	b<--; a<--; (a = b = c;)
+	a ** a;
+	d = 1;
+	"logarithm 1 loop"
+		d +;
+		c ** a;
+		c-->; d-->;
+		d < 1; (d * 2;)
+		d -;
+		d ,= d; (int -> float)
+		c // d;
+		b ++ c;
+		d<--; c<--;
+		? d < [math precision] -> logarithm 1 loop;
+	b-->; a<--; (a = b;)
+	a ** 2f;
+	d<--; c<--; b<--;
+	end;
+(----------------------------------------------------------------------------)
+(This one's even slower than "logarithm 1", so don't use this one.)
+(IN:	a = x
+	[math precision] = depth of taylor series
+OUT:	a = ln[x])
+(RT:	a = [{x-1}/{x}]
+	b = result so far
+	c = component
+	d = depth, int)
+
+"logarithm 2" (x >= 0.5)
+	b-->; c-->; d-->;
+	a-->; d<--;
+	a -- 1f;
+	a // d;
+	a-->; a-->;
+	b<--; c<--; (b = c = a;)
+	d = 1;
+	"logarithm 2 loop"
+		d +;
+		c ** a;
+		c-->; d-->;
+		d ,= d; (int -> float)
+		c // d;
+		b ++ c;
+		d<--; c<--;
+		? d < [math precision] -> logarithm 2 loop;
+	b-->; a<--; (a = b;)
+	d<--; c<--; b<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun n log m: Calculates any logarithm.
+ * &rem Since it calls the "natural logarithm" fun twice, the precision is worse 
+ * than @R"natural logarithm". When you really need to use This routine, 
+ * experiment with it, and see what precision you'll need.
+ * &param 1 in reg a: n
+ *	  2 in reg b: m
+ *	  3 in var [Math Precision]: depth of taylor series
+ *	  4 out reg a: n log(m)
+ *)
+
+"n log m"
+(IN:	a = n
+	b = m
+	[math precision] = depth of taylor series
+OUT:	a = n log[m]
+	b = DESTROYED)
+	=> natural logarithm;
+	a-->;
+	b-->; a<--; (a = b;)
+	=> natural logarithm;
+	b<--;
+	a // b;
+	end;
+(----------------------------------------------------------------------------)
+
+(----------------------------------------------------------------------------)
+(Gonometric functions)
+(----------------------------------------------------------------------------)
+(** &fun degtorad: Converses an angle in degrees to the angle in radians.
+ * &param 1 in reg a: angle in degrees
+ *	  2 out reg a: angle in radians
+ *)
+"degtorad"
+(IN:	a = angle in degrees
+OUT:	a = angle in radians)
+
+	a ** PI;
+	a // 180f;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun radtodeg: Converses an angle in radians to the angle in degrees.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: angle in degrees
+ *)
+"radtodeg"
+(IN:	a = angle in radians
+OUT:	a = angle in degrees)
+
+	a ** 180f;
+	a // PI;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun sin: Calculates the sine.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: sin(a)
+ *)
+"sin"	   (sinus)
+(IN:	a = angle in radians
+OUT:	a = sin[angle])
+
+	~a;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun cos: Calculates the cosine.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: cos(a)
+ *)
+"cos"	   (cosinus)
+(IN:	a = angle in radians
+OUT:	a = cos[angle])
+
+	~~a;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun tan: Calculates the tangens.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: tan(a)
+ *)
+"tan"	   (tangens)
+(IN:	a = angle in radians
+OUT:	a = tan[angle])
+
+	b-->;
+	a-->; b<--; (b = a;)
+	~a;	    (sin[a])
+	~~b;	    (cos[a])
+	a // b;     (tan[a] = sin[a]/cos[a];)
+	b<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun cot: Calculates the cotangens.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: cot(a)
+ *)
+"cot"	   (cotangens)
+(IN:	a = angle in radians
+OUT:	a = cot[angle])
+
+	b-->;
+	a-->; b<--; (b = a;)
+	~~a;	    (cos[a])
+	~b;	    (sin[a])
+	a // b;     (cot[a] = cos[a]/sin[a];)
+	b<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun sec: Calculates the sec.
+ * &param 1 in reg a: angle in radians
+ *	  2 out reg a: sec(a)
+ *)
+"sec"
+(IN:	a = angle in radians
+OUT:	a = sec[angle])
+
+	b-->;
+	b = 1f;
+	~~a;	    (cos[a])
+	b // a;     (sec[a] = 1/cos[a];)
+	b-->; a<--; (a = b;)
+	b<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun inv sin: Calculates the inverse sine.
+ * &rem This routine uses taylor series to calculate the inverse sine. For 
+ * small values for x it converges rather fast, for large values, near to one, 
+ * it converges really slow. Experiment with this, to get the precision you need.
+ * &param 1 in reg a:input
+ *	  2 in var [Math Precision]: depth of taylor series
+ *	  3 out reg a: inv sin(a)
+ *)
+
+"inv sin"
+(IN:	a = x, |x| < 1
+	[math precision] = depth of taylor series
+OUT:	a = inv_sin[x])
+(RT:	a = x^2
+	b = result so far
+	c = component
+	d = depth, int
+	e = hlp)
+
+	b-->; c-->; d-->; e-->;
+	a-->; a-->; b<--; c<--; (c = b = a;)
+	a ** a; 		(a = x^2;)
+	d = 1;
+	"inv sin loop"
+		d-->;
+		d < 1;		(d * 2;)
+		d-->; e<--;	(e = d;)
+		e +;
+		e * d;
+		d -;
+		d * d;
+		e ,= e; 	(int -> float)
+		d ,= d; 	(int -> float)
+		d // e;
+		c ** d;
+		c ** a;
+		b ++ c;
+		d<--;
+		d +;
+		? d < [math precision] -> inv sin loop;
+	b-->; a<--; (a = b;)
+	e<--; d<--; c<--; b<--;
+	end;
+(----------------------------------------------------------------------------)
+(** &fun inv sec: Calculates the inverse sec.
+ * &rem This routine needs the taylor series to calculate the inverse sine.
+ * Read the remarks for @R"inv sin".
+ * &param 1 in reg a:input
+ *	  2 in var [Math Precision]: depth of taylor series
+ *	  3 out reg a: inv sec(a)
+ *)
+"inv sec"
+(IN:	a = x
+	[math precision] = depth of taylor series
+OUT:	a = inv_sec[x])
+
+	b-->;
+	a-->; b<--; (b = a;)
+	a = 1f;
+	a // b;
+	b<--;
+(	 -> inv cos;)
+(----------------------------------------------------------------------------)
+(** &fun inv cos: Calculates the inverse cosine.
+ * &rem This routine needs the taylor series to calculate the inverse sine.
+ * Read the remarks for @R"inv sin".
+ * &param 1 in reg a:input
+ *	  2 in var [Math Precision]: depth of taylor series
+ *	  3 out reg a: inv cos(a)
+ *)
+"inv cos"
+(IN:	a = x
+	[math precision] = depth of taylor series
+OUT:	a = inv_cos[x])
+
+	=> inv sin;
+	b-->;
+	a-->; b<--; (b = a;)
+	a = halfPI;
+	a -- b;
+	b<--;
+	end;
+(----------------------------------------------------------------------------)
+
+(----------------------------------------------------------------------------)
+(Factorial)
+(----------------------------------------------------------------------------)
+(** &fun factorial: Calculates the factorial, e.g. 7!
+ * &param 1 in reg a: base number, unsigned integer
+ *	  2 out reg a: a!
+ *)
+"factorial"
+(IN:	a = base number, integer
+OUT:	a = a!)
+	b-->;
+	a-->; b<--; (b = a;)
+	a = 1;
+	? b = 0 -> factorial end;
+	"factorial loop"
+		a * b;
+		b ^ factorial loop;
+	"factorial end"
+	b<--;
+	end;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+

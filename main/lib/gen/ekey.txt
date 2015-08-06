@@ -1,0 +1,459 @@
+(
+
+    LUCK table's Enhanced KEYstrokes management library
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		864 bytes *
+    | Allocates:       8844 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      This library allows intercepting enhanced keystrokes using typematic,
+    just like the BIOS commonly does. The typematic, the interface that allows
+    a keystroke to repeat at a certain rate while the key is being held down,
+    is inherited from the system kernel for what concerns normal keystrokes
+    [so that you don't need to setup a local keymap, as a consequence]. But,
+    for enhanced keys, which are cursor arrows, insert, delete, home, end,
+    page up, page down, function keys, the run-time module's console interface
+    [used when you issue, for example, a GET CONSOLE INPUT command] cannot
+    return standard codes. So enhanced keys are managed by the LUCK table, for
+    which I recommend seeing the L.in.oleum programmer's manual and technical
+    reference guide. As a consequence of this fact enhanced keystrokes are not
+    affected by the typematic, because the LUCK table only signals when keys
+    are held down or not, via the use of elementary boolean flags. And here
+    comes this library, which is capable to emulate typematic's behaviour for
+    enhanced keys. This is pratically similar to what the system's keyboard
+    driver does when it reads a key's status change from the keyboard port.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      This version of ekey is not fully compatible with pre-1.13.9b programs.
+      Since version 1.13.9b of the L.in.oleum compiler package, with which
+    this version of ekey was first included, this library allows multiple
+    sessions to be allocated by programs and libraries. A session's purpose
+    is in practice to track the keys' status flags so that their behaviour is
+    independent from which keys were acknowledged and served by all the other
+    sessions. In theory, if this library managed all the physical keys, and
+    was associated with a detailed and customizable keyboard map, it could be
+    an effective keyboard driver, and also allow multiple input foci to be set
+    at programs' choice. As it is, multiple foci can be held functional but
+    only for the keystrokes mentioned in the table of those 39 key servers you
+    can find in this library's workspace period. The reason why it doesn't
+    serve true character keys is to keep itself from interfering with existing
+    keyboard drivers, already connected to the [console command] interface.
+      Now, every single PIECE OF CODE that needs to setup some ekey servers
+    for its duties, need to setup a possibly different session: what calling
+    programs have to do to mount a session is detailed below...
+
+    1. choose a session ID that's STRICTLY GREATER THAN 1, and set variable
+       [ekey session id] to that value; a session ID is an integer value that
+       must be greater than 1, because 1 is the default session, and zero is
+       for marking void session instances in the "ekey session memory" vector;
+       your session ID might be something that's specific to your piece of
+       code, and possibly quite random to avoid accidentally picking the ID of
+       another piece of code in your program or in some of its libraries, that
+       would otherwise jam the corresponding sessions; in short, session IDs
+       have to be unique. An example: iGUI sets session ID to 1901 + a 4-digit
+       progressive number, so, two session IDs it uses are 19010001 for the
+       text fields' cursor management, and 19010002 for keyboard-driven menus
+       management. Normally ekey sessions are setup and used in control loops.
+
+    2. once [ekey session id] has been chosen, call "negotiate ekey session":
+       the subroutine will return successfully if a session was available for
+       your code to use. This happens either because the session ID was used
+       before, and presumably by previous iterations of a same control loop,
+       or because no sessions were ever created so far with that ID, in which
+       case a new and clean session instance has been allocated for that ID.
+       Of course, in case there were no existing instances of that ID, -AND-
+       there were no free instances to allocate, the negotiation would fail.
+       This library, as it is, mantains 25 session slots, the first of which
+       is kept apart for the default session, where sessions return to once
+       all user sessions are closed. Those sessions, within the same execution
+       flow, can alternate themselves for upto 50 levels of nidification, that
+       is, when sessions are exchanged before closing the session in which a
+       key's server code caused -another- session to be negotiated. So, please
+       be careful especially to avoid creating more than 24 sessions, or after
+       that, further negotiations would fail due to a lack of instances.
+       If negotiation fails, go to step 6.
+
+    3. if the negotiation succeeded, you can proceed to load your servers: set
+       the value of [key xxx server] to the pointer to a corresponding service
+       subroutine that will be automatically called whenever key "xxx" is
+       pressed, and eventually repeately called when the typematic comes in to
+       action [but don't worry: it will only repeat once per iteration of your
+       control loop]. You can load all the 39 servers if you want. To discard
+       a previous allocation of a server inside the SAME SESSION, set back the
+       server's value to NULL, to a bare zero.
+
+    4. once the servers are loaded to reflect the session's duties, they need
+       the hook routine, "serve enhanced keystrokes", to be called once. That
+       routine will check the actual states of LUCK table flags, compare them
+       against the "memories" of their state in the sessions' instance data,
+       and call the corresponding servers.
+
+    5. the session ends after the call to "serve enhanced keystrokes", which
+       never really reports any failures: at this point, your control loop
+       must quit the session, causing this library to give back control to the
+       previous session, or to the default session if no previous sessions had
+       been calling your own control loop [nidification level zero]. To quit
+       the session, call "quit ekey session", which never reports of failures.
+
+    6. go on with the rest of your control loop...
+
+      Let's recap, with iGUI's pulldown menus' keyboard controls as an example
+    of this library's "synopsis"... iGUI does it as follows:
+
+	[ekey session id] = 19010002;
+	=> negotiate ekey session;
+      ? failed -> skip session 19010002;
+	[key f10    server] = service F10 Menu Activation;
+	[key down   server] = service KDriven Menu Next;
+	[key up     server] = service KDriven Menu Prev;
+	[key return server] = service KDriven Menu Action;
+	=> serve enhanced keystrokes;
+	=> quit ekey session;
+      "skip session 19010002"
+
+      ...which also provides a reason to "why this thing mantains sessions",
+    because the above code has to concur with the other piece of code from
+    "check text field", in the same iGUI library, when a file selector gets
+    open by a menu option, because file selectors have a text field at the
+    bottom of their files' lists for the user to manually type a file name,
+    and in that text field, left/right arrows, home and end keys are supposed
+    to be still functional, while pressing up/down is STILL supposed to switch
+    to other menu options, and F10 is STILL supposed to close the menu at all.
+
+      Please also note that:
+	[key return server] = service KDriven Menu Action;
+    ...refers to a subroutine that voids the console input buffer, because the
+    "return", or "enter", key generates a REAL keystroke that's then placed in
+    the console input's circular buffer as managed by the IsoKernel. If that
+    subroutine didn't void the said buffer, when the iGUI's client program is
+    authorized again to read from the keyboard, in which case the iGUI sets
+    [client owns text cursor] to YES, the client would find a keyboard buffer
+    "dirtied" with the keystrokes normally generated by the IsoKernel upon
+    interpreting the fact that the enter key had been pressed. Of course, if
+    your ekey session does NOT use any of the following keys:
+	backspace
+	tab
+	return
+	escape
+	spacebar
+    ...then your server routines don't really need to void the console input.
+    Also, note the best way to get a single keystroke out of the console input
+    buffer is as follows:
+      "Wait Char"
+	[Console Command] = GET CONSOLE INPUT;
+	isocall;
+      ? failed -> Wait Char;
+      [Console Command] = CLEAR CONSOLE BUFFER;
+      isocall;
+    ...despite the existence of the CLEAR CONSOLE BUFFER command, 'cause there
+    may be a problem, in the -particular- case of these enhanced keys servers,
+    concerning the synchronization of messages the operating system dispatches
+    to the run-time module. In the specific Windows case, if a message WM_CHAR
+    was received AFTER message WM_KEYDOWN or WM_SYSKEYDOWN, the console buffer
+    would be updated AFTER the LUCK table status flags, and so after the call
+    to the ekey server subroutine for that key. In the end you wouldn't really
+    discard the keystroke in the buffer by doing a CLEAR CONSOLE BUFFER in the
+    moment the key server subroutine takes its actions, because that keystroke
+    would NOT YET be in the buffer. The above method consists in waiting for
+    the keystroke to be added to the input buffer, because you *know* "return"
+    will generate one [and in particular, generates ASCII code 13], and that's
+    why the above method always works. If the keystroke is already in the
+    buffer, it doesn't wait and reads it immediately; if it's not yet in the
+    buffer, it waits for it and then pops it out. Personally, to be sincere I
+    didn't notice the kind of behaviour where WM_CHAR comes before WM_KEYDOWN,
+    but since I'm not sure how the operating system manages to queue that kind
+    of messages, and to be safer upon compiling the programs for other systems
+    I'd prefere you to use the above method, whenever associating ekey servers
+    to "true character" keystrokes.
+      As for why does it clear the buffer at all after receiving the first
+    keystroke, it's to take in account the possibility where the typematic
+    repeat rate and delay from the operating system allows keys to repeat
+    faster than this library's settings at a given time. In such a case, other
+    than the first keystroke, the buffer could also contain some repeatings.
+
+    --------------------------------------------------------------------------
+    NOTES
+    --------------------------------------------------------------------------
+      The [timer command] interface is used to determine when the hook routine
+    must perform another call to a repeating keystroke. The time between the
+    first keystroke and the first repeat is given by "typematic delay", and
+    espressed in milliseconds. The time between each single repeat is given by
+    "typematic speed", also espressed in milliseconds.
+      Your program could eventually provide its own interface so that the user
+    could customize those time slices... although the library's default values
+    [delay=300, speed=75] should be already quite comfortable.
+
+    - The hook routine destroys registers A, B, C and D.
+    - None of these routines actually destroy register E.
+    - A server's routine will return to the line below the one that called the
+      hook routine with => serve enhanced keystrokes. The call to the checking
+      routine made from the hook routine is in fact discarded with a $ + 1, to
+      avoid more than one server to be executed within the same iteration.
+    - The server for a given key might be assigned to NULL if your program
+      will not use the corresponding key. By default, and in clean session
+      instances, none of the enhanced keystrokes are serviced.
+
+)
+
+"constants"
+
+	enhanced keys		= 39;
+	ekey session slots	= 25;
+	ekey sessions stacksize = 50;
+
+"variables"
+
+    (current session ID: default session is 1, this must be loaded with
+     something -STRICTLY GREATER- than 1 upon negotiating a new session)
+
+	ekey session id 	= 1;
+
+    (tuning parameters for all sessions, that calling programs may change)
+
+	typematic delay 	= 300;
+	typematic speed 	= 75;
+
+"workspace"
+
+    (server routines, given by pointer, by default they're all zeroed)
+
+(01)	key f1 server		= 1;
+(02)	key f2 server		= 1;
+(03)	key f3 server		= 1;
+(04)	key f4 server		= 1;
+(05)	key f5 server		= 1;
+(06)	key f6 server		= 1;
+(07)	key f7 server		= 1;
+(08)	key f8 server		= 1;
+(09)	key f9 server		= 1;
+(10)	key f10 server		= 1;
+(11)	key f11 server		= 1;
+(12)	key f12 server		= 1;
+(13)	key f13 server		= 1;
+(14)	key f14 server		= 1;
+(15)	key f15 server		= 1;
+(16)	key f16 server		= 1;
+(17)	key f17 server		= 1;
+(18)	key f18 server		= 1;
+(19)	key f19 server		= 1;
+(20)	key f20 server		= 1;
+(21)	key f21 server		= 1;
+(22)	key f22 server		= 1;
+(23)	key f23 server		= 1;
+(24)	key f24 server		= 1;
+(25)	key backspace server	= 1;
+(26)	key tab server		= 1;
+(27)	key return server	= 1;
+(28)	key escape server	= 1;
+(29)	key spacebar server	= 1;
+(30)	key insert server	= 1;
+(31)	key delete server	= 1;
+(32)	key home server 	= 1;
+(33)	key end server		= 1;
+(34)	key page up server	= 1;
+(35)	key page down server	= 1;
+(36)	key up server		= 1;
+(37)	key down server 	= 1;
+(38)	key left server 	= 1;
+(39)	key right server	= 1;
+
+    (session-specific "private" workspace areas)
+
+(40-79) ekey memory		= enhanced keys;
+(80)	typematic timer 	= 1;
+(81)	repeat msec		= 1;
+(82)	key to repeat		= 1;
+(83)	registered session id	= 1;
+
+    (work variables for all sessions)
+
+	key status		= 1;
+	key server		= 1;
+	key memory		= 1;
+
+    (sessions' storage buffers, to keep sessions' data)
+
+	ekey sessions stack top = 1;
+	ekey former session id	= ekey sessions stacksize;
+	ekey session memory	= 83 mtp ekey session slots;
+
+"programme"
+
+    ("public" routine, to be called when programs wish to have an ekey session
+     IN:  [ekey session id] = requested id of the session to create/reprise
+     OUT: nothing, but returns successfully if the said session is ready
+     NOTE [ekey session id] must be GREATER than 1 upon calling this routine)
+
+"negotiate ekey session"
+	[ekey former session id] = 1;
+	D = [ekey sessions stack top];
+	D = [D relating ekey former session id];
+	=> search ekey session slot;
+      ? failed -> nes failure;
+	D = FALSE; => backup ekey session;
+      ? [ekey sessions stack top] >= ekey sessions stacksize minus 1 -> nes failure;
+	D = [ekey session id];
+	=> search ekey session slot;
+      ? failed -> nes failure;
+	D = TRUE; => backup ekey session;
+	[ekey sessions stack top] +;
+	D = [ekey sessions stack top];
+	[D relating ekey former session id] = [ekey session id];
+	end;
+    "nes failure"
+	fail;
+
+    ("public" routine, to be called upon exiting an ekey session
+     IN:  nothing, refers to [ekey session id] supposed to hold the actual id
+     OUT: nothing, updates [ekey session id] with the id of previous session)
+
+"quit ekey session"
+	D = [ekey session id];
+	=> search ekey session slot;
+      ? failed -> qes no actual session to backup;
+	D = FALSE; => backup ekey session;
+    "qes no actual session to backup"
+      ? [ekey sessions stack top] <= ZERO -> qes no former session backup found;
+	[ekey sessions stack top] -;
+	D = [ekey sessions stack top];
+	D = [D relating ekey former session id];
+	=> search ekey session slot;
+      ? failed -> qes no former session backup found;
+	D = TRUE; => backup ekey session;
+    "qes no former session backup found"
+	D = [ekey sessions stack top];
+	[ekey session id] = [D relating ekey former session id];
+	end;
+
+    ("public" hook routine, to be called from the program's idle loops
+     IN:  nothing
+     OUT: nothing)
+
+"serve enhanced keystrokes"
+	[key memory] = ekey memory;
+	C = enhanced keys;
+	B = key f1 server;
+	D = pragma key f1;
+    "sek next check"
+	[key server] = [B];
+	[key status] = [D];
+	=> check ekey;
+	[key memory] +; B +; D +;
+	C ^ sek next check;
+	? [typematic timer] = OFF -> sek no repeat;
+	=> get full msecs;
+	? [Milliseconds] < [repeat msec] -> sek no repeat;
+	? [key to repeat] = NULL -> sek not serviced;
+	[repeat msec] = [Milliseconds];
+	[repeat msec] + [typematic speed];
+	-> [key to repeat];
+    "sek not serviced"
+	[repeat msec] = [Milliseconds];
+	[repeat msec] + [typematic speed];
+    "sek no repeat"
+	end;
+
+    (library's "private" subroutine that searchs existing sessions
+     by their ID, or void slots to host new sessions for unused IDs
+     IN:  D = ID of session to looks for, or to find a new slot for
+     OUT: A = offset of slot in sessions' memory vector)
+
+"search ekey session slot"
+	A = 0;
+	B = minus 1;
+	C = ekey session slots;
+    "sess search session slot"
+      ? [A plus 82 relating ekey session memory]  = D -> sess found session ptr;
+      ? [A plus 82 relating ekey session memory] != 0 -> sess busy slot;
+	B = A;
+    "sess busy slot"
+	A + 83;
+	C ^ sess search session slot;
+      ? B = minus 1 -> sess no existing slots and no free slots;
+	[B plus 82 relating ekey session memory] = D;
+	A = B;
+    "sess found session ptr"
+	end;
+    "sess no existing slots and no free slots"
+	fail;
+
+    (library's "private" subroutine that backups/restores sessions
+     IN:  A = offset of slot to use, within sessions' memory vector
+     IN:  D = boolean: TRUE for restore, FALSE for backup
+     OUT: nothing)
+
+"backup ekey session"
+	A + ekey session memory;
+	B = key f1 server;
+	C = 82;
+      ? D = FALSE -> perform ekey session backup;
+	D = A;
+	A = B;
+	B = D;
+    "perform ekey session backup"
+       [A] = [B];
+	A +;
+	B +;
+	C ^ perform ekey session backup;
+	end;
+
+    (library's "private" subroutine that gets high performance timer msecs
+     IN:  nothing
+     OUT: [Milliseconds] = actual timer value in msecs.)
+
+"get full msecs"
+	[Timer Command] = READ COUNTS;
+	isocall;
+	[Counts] / [Counts Per Millisecond];
+	[Milliseconds] = [Counts];
+	end;
+
+    (library's "private" subroutine that checks a single key
+     IN:  several variables set by "serve enhanced keys" hook routine
+     OUT: nothing in particular, animates the ekeys' status vector)
+
+"check ekey"
+	? [key status] = ON -> ekey on; (else) -> ekey off;
+    "ekey on"
+	A = [key memory];
+	? [A] = ON -> ekey end;
+	[A] = ON;
+	[typematic timer] = ON;
+	[key to repeat] = [key server];
+	=> get full msecs;
+	[repeat msec] = [Milliseconds];
+	[repeat msec] + [typematic delay];
+	? [key server] = NULL -> ekey end;
+	$ + 1; -> [key server];
+    "ekey off"
+	A = [key memory];
+	? [A] = OFF -> ekey end;
+	[A] = OFF;
+	[typematic timer] = OFF;
+    "ekey end"
+	end;

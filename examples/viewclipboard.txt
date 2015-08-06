@@ -1,0 +1,270 @@
+(
+
+	-------------------------------------
+	Simple clipboard viewer in L.in.oleum
+	-------------------------------------
+
+	The system clipboard is where fragments of data are transferred from an
+	application to another one via the cut, copy and paste commands, often
+	referred by as the following keyboard shortcuts:
+
+		CUT   - SHIFT + Delete, CTRL + X
+		COPY  - CTRL  + Insert, CTRL + C
+		PASTE - SHIFT + Insert, CTRL + V
+
+	...in L.in.oleum's abstract environment, the clipboard is only acknowledged
+	if it contains PLAIN TEXT, and run-time module applies, where needed, simple
+	translations for the text's format so that an end-of-line is marked ALWAYS
+	by a CR + LF sequence, or ASCII codes 13 + 10, and the text string being the
+	actual clip is ALWAYS terminated by a null code. Furthermore, while reading
+	and writing from/to the system clipboard, the said string is converted back
+	and forth, to and from "fourbyte" format, for applications' commodity, which
+	means that text clips are managed at 1 unit per char., not 1 byte per char.
+	Finally, if the operating system supports multiple clips, then only the very
+	first clip that contains plain text is acknowledged and managed by the RTM,
+	and vice-versa, if the operating system does NOT support a clipboard, then
+	the clipboard's functionality might be either emulated or ignored. If it's
+	not emulated, for instance by setting up a temporary file for holding clips,
+	then any isocalls referring to [clip command] might fail.
+	Should a L.in.oleum application need to clip something that is NOT text, the
+	recommendation is to encode the binary data forming the clip so that they'll
+	translate into plain text. A well-known method is, for example, the "base64":
+	because of the many non-standard formats for kinds of clip often supported by
+	the underlying operating system, there really isn't a way to deal with the
+	rest of the operating system apart from plain text.
+
+	Most of this text is purely comments: this source is presented to learn from.
+	Please compile with L.in.oleum compiler version 1.13.9b or a later version,
+	specially because clipboard support was introduced with version 1.13.9b, and
+	so this program will NOT compile on previous versions of the compiler.
+
+	Written by Alessandro Ghignola.
+
+)
+
+"libraries"
+
+	igui/defstyle;	(this is the default skinning style of the iGUI)
+	igui/vcons;	(this is a virtual console using the iGUI library)
+	igui/IGS;	(iGUI skin exchange, just for the sake of...)
+
+
+
+"directors"
+
+	unit = 32;
+	program name = { Simple_clipboard_viewer };
+
+
+
+"constants"
+
+	initial width		 =   640; (these are for the iGUI to know)
+	initial height		 =   360; (see the icon editor to know what they mean)
+	minimum width		 =   288;
+	minimum height		 =   100;
+	maximum width		 =  1024;
+	maximum height		 =   768;
+	max menu options	 =   100;
+	max onscreen options	 =   100;
+	max levels in show	 =     4;
+	max files in selector	 =   100;
+	max files in show	 =    10;
+	max options in question  =     2;
+	max fields in question	 =     1;
+
+size of my console output buffer = 10240; (will be 10 Ku. for console output)
+
+
+
+"variables"
+
+	smallcap = { clipboarding }; (will be used when window is iconized)
+
+	mymenu = { menu }; (menu layout datascript, begins with menu tooltip string)
+	01000000h; option type normal;	      { Read_from_clipboard   }; update me;
+	02000000h; option type normal;	      { Write_to_clipboard... }; write my clip;
+	03000000h; option type normal;	      { Quit_program...       }; quit program;
+	04000000h; option type disabled;      { --------------------- }; null;
+	05000000h; option type submenu;       { <Skin		      }; null;
+	05010000h; option type file selector; {   <Import	      }; import skin;
+	05020000h; option type file selector; {   <Export	      }; export skin;
+	endofmenu; (for further info on menus see "examples/icon_editor/iconed.txt")
+
+	writing = { Write_what? }; (this is a question box's datascript)
+		  { F/This:_	}; towrite; 100; 24;
+		  { yes,_do	}; service write my clip;
+		  { no,_dont	}; null;
+		  null; (question box ends here: again, icon editor explains better)
+
+	(	00=beginning of the string
+			    |
+			    |	       30=null terminator placed here by compiler
+			    |				  |
+			    |	       20=number to write |
+			    |			|	  |
+			    0000000000111111111122222222223
+			    0123456789012345678901234567890 )
+	clipsize string = { units_in_clipboard:_xxxxxxxxxx }; (replaces the window's title)
+
+
+
+"workspace"
+
+	my console output buffer = size of my console output buffer plus 1; (plus 1 unit for VCons' null terminator, see VCons commentary for details)
+	my clip buffer = 1; (will be dynamically allocated on-the-fly, and this is only a pointer)
+	towrite = 100; (used as a text field buffer in the dialog to write a clip)
+
+
+
+"programme"
+
+      (first thing to do with the iGUI - and also very important)
+	=> initialize integrated gui;
+
+      (importing the user's preferred skin, if this user chosen any)
+	=> import preferred skin;
+
+      (uhm, just setting up the small caption, it's nothing vital to do)
+	[small caption] = smallcap;
+
+      (just installing the abovely declared menu layout)
+	[menu to install] = mymenu;
+	=> install menu;
+
+      (telling the iGUI which will be our actual window management subroutines)
+	[work area manager] = service my work area manager; (indicates sort of "WndPaint")
+	[control loop] = service my control loop; (indicates sort of "WndProc")
+
+      (console setup: see VCons commentary)
+	[conout] = my console output buffer; (the pointer to the console text buffer)
+	[cosize] = size of my console output buffer; (the size of that buffer, not incl. the final null terminator)
+	[consfx] = service fx antialiasing lit;
+
+      (get the existing clip from the clipboard, and show it)
+	=> update me;
+
+      (ok, all is ready, initialization is over: pass control to the GUI)
+	=> enter integrated gui;
+
+      (and when the GUI returns, it means the user decided to quit, so that's it)
+	end; (of main program, stops execution and quits the whole application)
+
+
+
+"update me"
+      (getting text size for buffer allocation: this returns its value in [clip size],
+       with zero meaning the clipboard is empty, otherwise returns how many characters
+       form the actual clip, also counting the final null terminator; this means the
+       return value found in [clip size] represents the size, in units, of the buffer
+       that would be requested to store the actual string when reading it. Now, failure
+       here most probably means the clipboard is simply empty...)
+	[clip command] = get clip size;
+	isocall;
+	? failed -> failed accessing clipboard;
+      (well, let's report the size of the clip on the window's caption, so to speak...
+       the subroutine "convert binary to ascii" is declared in "vcons.txt", and needs
+       three parameters, for which you may see the comments given where that routine
+       is declared; once the value returned as [clip size] is converted to ASCII, and
+       appended to the string declared as "clipsize string", the said string as a whole
+       is sent to the window's caption, where it's visualized. Note that [clip size]
+       could theoretically need upto 10 characters to be converted, because the clip's
+       limit is given by the range of a 32-bit memory unit, which is about 4 billions)
+	[target string] = clipsize string plus 20;
+	[string binary] = [clip size];
+	[string length] = 10;
+	=> convert binary to ascii;
+	[window title] = clipsize string;
+	=> update title bar;
+      (happy-go-lucky, but legal, way to discard any previous extra memory units: the
+       workspace cannot be really set below the initial value of [RAMtop], so asking
+       the isokernel to resize it to zero units means in practice requesting the
+       isokernel to resize the workspace to the minimum possible value, which is in
+       fact the initial value of [RAMtop]. This isocall might never fail, but if it
+       does, it's nothing dangerous, because if this fails, it means the workspace is
+       left to the same size as before)
+	[ramtop] = 0;
+	isocall;
+	? failed -> this is weird;
+      (allocating the destination buffer, this is a simple dynamic allocation via a
+       change in the actual workspace size: of course there are better ways to manage
+       dynamic allocation of memory, suck as the "lock.txt" library, but because this
+       program only needs 1 extra block of memory, the following is sufficient)
+	[my clip buffer] = [ramtop];
+	[ramtop] + [clip size];
+	isocall;
+	? failed -> lack of memory;
+      (reading the clipboard's clip: in theory, we'd need to also setup [clip size] to
+       signal the run-time module how many characters we could read inside our buffer,
+       and therefore make the run-time module respect that limit even if the clip was
+       longer than our buffer, but in this case we're using a dynamically allocated
+       buffer that's been made, with the above code, exactly as large as needed, plus
+       the [clip size] variable was ALREADY initialized upon executing "get clip size",
+       and so, in the end, we simply leave [clip size] as it is)
+	[clip command] = read clip;
+	[clip string] = [my clip buffer];
+	isocall;
+	? failed -> failed accessing clipboard;
+      (voiding the console: this is simple, it's just...
+       1. placing an initial null value to void the actual string "my console output buffer";
+       2. setting [coutcp] to 0 to bring back the console's "cursor" to its home position,
+       so that routines like "cout" will start writing in the buffer from that position;
+       3. refreshing the console on the screen by calling "show console", to clear it up;
+       note: "show console" can't fail, it's an internal subroutine of the program, not an
+       isocall, and "show console" is designed in such a way that it simply never fails)
+	[my console output buffer] = 0; (1)
+	[coutcp] = 0;			(2)
+	=> show console;		(3)
+      (ok, now that the console is clean, sure that no previous writings remained there,
+       it's just a matter of writing some text over the console itself, and that's done
+       using the "cout" routine declared in "vcons.txt", which needs "szcout" as the only
+       parameter, "szcout" being loaded with the pointer to the string to output: to the
+       "cout" subroutine appy the same notes as for "show console": it never fails)
+	[szcout] = [my clip buffer];
+	=> cout;
+      (there's nothing left to do when execution arrives here,
+       so all failure conditions bring this routine to do nothing...)
+    "lack of memory" (or) "failed accessing clipboard" (or) "this is weird"
+	end;
+
+
+
+"write my clip"
+      (first, prompting the user with a question box, asking about what's to write)
+	[question datascript] = writing;
+	=> question;
+	end;
+      (second, effectively writing: there is an "end" tag above, and if you can't see how
+       the program's execution flow is getting here, it's because both "write my clip"
+       and "service write my clip" are subroutines called by the iGUI when the user does
+       something. In the case of "write my clip", the user chooses the "write to clipboard"
+       option of the pull down menu, and if you see the "menu layout" datascript you will
+       certainly notice that that option is connected to "write my clip". In the case of
+       the following routine, "service write my clip", it's called from within the question
+       box's datascript itself, to answer the user pressing the "ok, do" button)
+    "service write my clip"
+	[clip command] = write clip;
+	[clip string] = towrite;
+	isocall;
+	end;
+
+
+
+"quit program"
+      (telling the iGUI to return from "enter integrated gui", and cause the program to quit)
+	[quit now] = yes;
+	end;
+
+
+
+"service my work area manager"
+      (what to paint in the iGUI client window: only the console, in this program)
+	=> show console;
+	end;
+
+
+
+"service my control loop"
+      (what to control in the iGUI client window: again, we only have a console to check for)
+	=> control console;
+	end;

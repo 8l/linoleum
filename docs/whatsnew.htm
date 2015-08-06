@@ -1,0 +1,401 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        What's New?<br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        P-S notes
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        WHAT's NEW?
+</center>
+<hr size = 1 width = "100%" color = "white">
+The recap of all changes in respect to the release immediately
+preceeding this actual release, an extract of the compiler's source
+code commentary, which I always used as a changes log. One first
+warning might be given here on top: <u>for the sake of providing
+a smaller ZIP file to download</u>, no examples except the
+"linoinstaller" are provided in their compiled versions. This
+means that you have to recompile them to see them work, but really,
+it was useless to have compiled versions of them when all you have
+to do is pointing at the example file's source TXT file, clicking
+the right mouse button and choosing "compile as Linoleum source".
+<hr size = 1 width = "100%" color = "white">
+
+<pre>
+        Updates introduced in v1.13.11
+        ------------------------------
+      * fixed linker bug: last 8 bytes of RTM code were dirty due to a mistake
+        in the loop that copies the RTM variant to the application file, while
+        searching for the initialization paragraph. Yes, again that part. This
+        time it was a question of the following piece:
+          ...
+          if (bytesread > 8) {
+                ptell = tell (hRT_mod) - 8;
+          ...
+        which, to avoid surpassing the end of the RTM variant, since hRT_mod's
+        file handle position was unconditionally updated after a read of WSCL
+        bytes (WSCL=2048) should have instead been the following:
+          ...
+          if (bytesread > 8) {
+                ptell += bytesread - 8;
+          ...
+        which is what there is now. Previously, the 8 "dirty" bytes at the end
+        of the RTM in the application's EXE file, were taken from the variant
+        that followed the selected variant (depending on modular extensions).
+        Well, at the end of Windows' RTMs there were only resources' alignment
+        padding bytes - so this wasn't giving any real troubles - but it was a
+        mistake anyway, and it was likely to cause troubles when compiling for
+        other systems.
+      * implemented raw machine language fragments in code: it is now possible
+        to stream hexadecimal opcodes and machine language in general, within
+        the object file of the application. But it has to be noted that such a
+        possibility is NOT meant for use when the program is *INDEED* intended
+        to be cross-platform: machine language is machine-specific, and often
+        also system-specific, because in many cases certain operating systems
+        will limit applications' access to extremely low-level resources. I'm
+        warning you here, and I'll be warning in the manual. I'll be warning
+        everywhere. It's now up to you choosing if you want your applications
+        to be portable to other -random- platforms (past, present and future),
+        or you prefere to play with machine language even when it's not needed
+        at all. There are fairly better languages for dealing with ML, such as
+        pure native assembly. I've updated the manual to explain how to place
+        machine language fragments in the "programme" period. In the fragments
+        you can also insert numbers and addresses associated to symbols, like
+        the address of a variable, the value of a constant, a simple number,
+        and all those can be cast into the code sizing them in the form of a
+        single byte, of a word, of a doubleword or of a quadword. -Assuming-
+        that you knew how the specific system environment deals with nFlat, in
+        this way you could access variables and other buffers of your program
+        from within machine language fragments. For short, remember that the
+        origin pointer in the i386 instructions set translation is EDI, that
+        all addresses pertaining to variables and workspace areas are given in
+        units (and not in bytes) starting from the origin, and that the origin
+        pointer itself (in EDI) is a flat address, not nFlat. It is your own
+        responsibility, in machine language fragments, to consider multiplying
+        addresses by the number of bytes forming a unit.
+      * introduced "big endian activation" bitmask in CPU packs' header: this
+        is backward-compatible with the existing i386.bin pack, but will allow
+        this same compiler to compile stuff for big-endian processors, which
+        is what I intended from the beginning anyway... only I forgot to mark
+        where big-endian might be needed, because I was originarily intending
+        to build slightly different compilers for different processors, but
+        then, with the modularization of the CPU pack and of the SYS pack, I
+        though it could be quite useful to possibly compile the same program
+        with the same compiler, targeting another CPU and/or another system.
+        Affected entities are:
+        - immediate values (operands) in code;
+        - workspace displacements (pointer operands) in code;
+        - relative addresses (jumps' destination) in code;
+        - static data ("variables" period contents linked to the application);
+        - contents of the compiler initialization paragraph filled in the RTM.
+        Each group can be enabled for big-endian encoding, setting its bit in
+        the BEA bitmask, which is the byte at offset +6 of the pack's header.
+        I suppose for a big-endian processor such as the PowerPC, the CPU pack
+        designer might want to set all the 5 bits, but for the sake of a bit
+        more flexibility, I'm leaving the possibility to have only certain
+        things and even certain ISMOs only to be converted.
+        In ML fragments, the flags act where the programmer wants to stream a
+        relative address and the corresponding bit is set: then the address is
+        streamed in big-endian. If the programmer wants to stream an immediate
+        value or a workspace displacement (they are undistinguisheable there),
+        and the flag to activate big-endian for immediate values is set, then
+        the immediate value/workspace displacement is streamed in big-endian.
+      * further, but minor, optimizations to compiler code, mostly in the form
+        of the two "poptables" for quick conditional checks in ParseOperand's
+        character loops. uhm.
+      * added dynaheap library from Peterpaul (ppkh folder) and pointed out
+        possible workspace alternative organizations in a new manual chapter;
+        the other new chapter is about ML fragments, and also includes a very
+        long and *damn* detailed explanation about building CPU packs.
+      * fixed a glitch in iGUI's "Now Fold/Now Unfold" subroutines, it was a
+        very unlikely occurrence, but annoying in the Icon Editor's behaviour;
+        ah, yep, the Icon Editor will now search for PROGRAM.EXE for when it
+        needs loading up the default icon on startup, avoiding the error msg.
+        because it thought to have been renamed to iconed.exe...
+      * added examples/lm folder with interesting toys to play with, specially
+        have a look at the clockme example, a very nice optimization tool for
+        both specific LM and universal L.in.oleum code you'd like to speed up,
+        measuring quite precisely how many CPU cycles a series of instructions
+        will take to execute. Have fun!
+
+        Updates introduced in v1.13.10
+        ------------------------------
+      * it's mostly a patch to 1.13.9, correcting the following problems:
+        - error in syntax error check causing compiler to ignore syntax errors
+          in instruction operands, as well as FPU constants declared in the
+          "programme" period. Those checks, there in "ParseOperand", were not
+          supposed to emit syntax errors in pass 1, where errors could have
+          been caused by the fact that the relevant operand's declaration had
+          not yet been parsed, so they were looking for (passnumber == 2) as
+          the condition to output the error, but recent removal of passes 2-3
+          for "programme" periods caused ParseOperand to ignore such errors in
+          those periods, because "programme" was no longer parsed in pass 2;
+          this version replaces the checks with (passnumber == 4).
+        - error in iGUI interfering with keyboard buffer for ENTER keystrokes,
+          in particular it was intercepting the said key even when not needed.
+      * however, the RTM's display "retrace" command was also widely improved:
+        - support for DirectDraw 7 specification and methods; the RTM uses DD7
+          to build a client memory surface hosting the app's video workspace,
+          then determines if the hardware is capable of blitting that surface
+          to video memory with a hardware-driven mechanism, supposedly faster
+          than a software loop. If the video hardware is not capable of that,
+          the BltFast method is actually -often- slower than the FPU-assisted
+          blitting routines copying data at 64 bit per iteration, therefore in
+          that case the RTM will not use BltFast, in favour of FPU blitting.
+        - generic support for DirectDraw primary surface in cooperative mode,
+          which allows the RTM to use the software blitters also for windowed
+          display mode, doubling the DRAM-VRAM transfer speed in respect to a
+          call to SetDIBitsToDevice. That last function, due to its clipping
+          capabilities, is however used when the display window is not on the
+          foreground, otherwise the said software blitters directly dealing
+          with DRAM-VRAM transfers would overwrite any overlapping elements.
+        - corrected possible troubles given by the fact that I didn't notice
+          warnings about some DDraw functions that must be called from the
+          same thread that owns the display window. The RTM and the IsoKernel
+          parser are in different threads. This didn't apparently cause any
+          troubles so far, but I fixed it around. The IsoKernel now properly
+          sends messages to the main RTM thread for it to perform requested
+          actions. This is actually done only for
+            [DisplayCommand] = SETCOOPERATIVEMODE/SETEXCLUSIVEMODE.
+        - compelled physical display region in cooperative mode to respect
+          the presence and positioning of the task bar: the task bar is in
+          facts a top-most window like the one where L.in.oleum code runs,
+          so in the case where, say, you had a very small program display,
+          or a folded iGUI window, and dragged that over the task bar, then
+          clicked the task bar, the task bar would have entirely covered
+          the program's display, making it "unrecoverable" and unable to
+          regain focus (because you can't ALT-Tab to it), the only way to
+          close it being from the task manager, or moving the task bar.
+        - associated programs' icons to the corresponding display windows'
+          class: well, at least, a small version of the icon now appears
+          in the tasks list, just for the sake of it...
+        - added support for mouse wheel movements' tracking, either in delta
+          and coordinate modes: the mouse wheel is treaten as the 3rd pointer
+          axis, and read as [Pointer Z Coordinate] and [Pointer Delta Z]: but
+          to be functional it needs at least Windows98. There's no native
+          support for the mouse wheel in Windows95, and its existing drivers
+          require too much encumbering code to work, but the mouse wheel isn't
+          so vital and the 95 is still slowly disappearing... I didn't care.
+          iGUI scrollers, as a consequence, can now be also wheel-controlled.
+        - further optimized overall code for taking less than before: this
+          is not leading to smaller RTM variants, however; in fact, they're
+          even bigger than before (18 Kb for no modular extensions), but it's
+          due to the above improvements: in reality, I chopped 2 Kb from
+          how much they would have taken if left unoptimized.
+
+        Updates introduced in v1.13.9
+        -----------------------------
+      * prepare to one more pleasant revolution after what happened in 1.13.6b
+        because there's a lot of fresh meat this time...
+      * introduced multiple "system packs", with the addition of the folders
+        "cpu" and "sys" to support different instructions set and different
+        RTMs depending on the target platform, with the same compiler. Anyway
+        this compiler will have to be rewritten in L.in.oleum itself, so I've
+        not been improving it very much so far, I'm just keeping it up to
+        date and functional, for now. Hopefully, I and Peterpaul, who is by
+        now working at the Linux port of the run-time module, could reach the
+        goals together: if we do, release 1.14 will be "another world", where
+        L.in.oleum will get to be what it promised to be since the beginning:
+        a truly cross-platform language. In the meantime, well, a few more
+        optimizations were in fact done with this compiler: the instructions
+        set has been reorganized again to even better reflect the frequency
+        of most common operations, and the compiler now caches subsequent
+        occurrences of one same instruction pattern, rather than reading it
+        from the instructions set file in the "cpu" folder. Such reads were
+        normally cached by the OS, but even simulating the read takes time,
+        so this is meant to be a, very little, but effective optimization...
+        which in the end I timed as 0.5 seconds over a 6-second compilation
+        time of a very short iGUI application (the clipboard viewer), meaning
+        the optimization was a single drop in the sea. The compiler needs to
+        be rewritten, once in L.in.oleum it will run much faster. Also, and
+        much more significant as an optimization, the whole code (in the form
+        of all the "programme" periods in the main code and in libraries)
+        have been skipped, not parsed, entirely in passes 2 and 3: with a bit
+        of tweaks here and there, in effects reparsing code instructions in
+        those passes was completely useless:
+        - on pass 1, parsing "programme" periods fixes code labels addresses
+          and gives the correct code size, which are both needed later, but
+          which DID NOT change on passes 2 and 3;
+        - on pass 4, the same is needed because heh... the code has to be
+          saved to the binary object file in pass 4, for later linking.
+        This optimization alone reduced compilation time by a good 40%, and
+        I must admit I should have found it before, and before cared more
+        for this working compiler instead of waiting future L.in.oleum ports.
+        Well, enjoy this faster compiler for now: you'll notice this fact...
+      * implemented system clipboard interface via the following variables:
+        [clip command] = get clip size | read clip | write clip;
+        [clip string] = szptr. to text string being src. clip or dest. buffer;
+        [returned size of an existing clip] = [clip size] (on exit);
+        [clip size] (on entry) = size of the buffer for a read clip operation;
+        ...where commands "read clip" and "write clip" perform unit-to-byte
+        and viceversa string translation, from 8-byte ASCII to 1-unit-per-char
+        for what concerns "read clip", or from 1-unit-per-char to 8-byte ASCII
+        for "write clip". The returned clip size is always including the null
+        terminator at the end of the string. The RTM's additional code is very
+        optimized to take as little bytes as possible, nonetheless the former
+        half kilobyte of code was already full, causing the first variant of
+        the RTM to expand by 512 bytes, so those that previously were 16
+        unavoidable kilobytes, are now 16.5, and you wouldn't believe how
+        annoyed I am by this fact, after all the struggling to keep the first
+        variant as small as possible, but I tried to further optimize, and in
+        part succeeded in freeing 300 bytes of code before next boundary -and
+        this helps with the other variants- however that half kilobyte in the
+        first variant has to stay there, no way to get it back to 16Kb. Well,
+        patience, we can live with that...
+      * fixed embarassing error in "keyhyphen", formerly "keyhypen" (missing
+        the second "h"): I *believed* it was "hypen", wasn't really a typo...
+        credits for realizing the thing go to anywherebb.com member Explorer.
+        Unfortunately, this will cause any occurrences of that constant from
+        a former application or library, to need a correction. But if I may
+        say, I suspect nobody ever used that so far. Myself, I didn't.
+      * added the following advanced instructions to the instructions set:
+          '/%   SPL.n  INTEGER UNSIGNED SPLIT
+          /%    SPL.i  INTEGER SIGNED SPLIT
+          %%    REM.f  FLOATING-POINT PARTIAL REMAINDER
+          ^/    ATN.f  FLOATING-POINT PARTIAL ARC TANGENT
+          /-/   NOP    NO OPERATION (ALSO ACKNOWLEDGED AS THE "nop" TAG)
+          ----&gt; PSH.a  PUSH ALL REGISTERS
+          &lt;---- POP.a  POP ALL REGISTERS
+          &lt;&gt;    XCH    EXCHANGE VALUES OF R/M WITH R/M
+        ... which is heh, in practice, all I missed a lot and all I forgotten
+        before, until today. The additions, however, have been carefully
+        limited to consider the constantly present goal of total portability,
+        of course, so if I added all those, it means I reflected enough and
+        concluded that they could be emulated with sufficiently complex
+        instruction patterns on RISC processors. By the way, the SPL patterns
+        were so long that I needed to realign all the patterns to 48-byte
+        boundaries, unfortunately bringing the i386 CPU pack to 292 Kbytes in
+        place of its former ~180 Kbytes. That was unavoidable, I tried hard
+        to optimize those patterns but... nope. Oh, well, it means nothing to
+        the length of a compiled executable file, eh? It only influences the
+        size of the current CPU pack for i386+ processors.
+      * added "leave" instruction pattern: most probably the last pattern to
+        get in the instructions set; allows to return from a subroutine while
+        the failure/success state of that subroutine doesn't need to be
+        reported: subroutines ending with a "leave" instruction, however,
+        would not behave properly if checked with "? ok/failed -&gt; label;"
+        comparison directives: fact is, often it isn't really needed to have
+        the state of the subroutine, because the routine is not supposed to
+        return it, for instance because it's always successful; on one other
+        hand, avoiding to load X (EBP here) with the proper state code saves
+        5 code bytes (here) and mostly, an instruction, which is subroutines
+        supposed to be very fast, might become a sensible waste of time.
+      * added instructions counter to compiler: as intelligently suggested by
+        Cryoburner, it counts any -uncommented semicolons-, mantaining two
+        separate counters, one for the main source file and the other for all
+        the libraries; in the end, the counters are shown along with their
+        sum, which gives a much more accurate measurement of the code's
+        complexity than the simple count of source code lines, because it does
+        not consider blank lines and/or comments.
+      * organized the "main" folder in further subdirectories, and granted
+        access from a source file to a library or to a stockfile compound that
+        lays in a subdirectory; more specifically, the default libraries' root
+        directory will be, from now on, the "main/lib" folder. "main" actually
+        contains, therefore, only three folders and the compiler executable,
+        which makes the package look rather clean, or so I hope. The whole has
+        been warmly suggested by Peterpaul, noticing that the main folder was
+        becoming a mess with the addition of several libraries from different
+        authors, and also requesting subsets of libraries to work properly.
+        Now, fundamentally the compiler, if no path indicators are used within
+        library or stockfile parts, works ALMOST the same as before:
+        - first it looks in the program's main source file directory;
+        - if no such library or stockfile part is found there, looks in the
+          "main/lib" folder, which is the new root of the default libraries.
+        BUT, given that default libraries have been ALSO grouped into sub-
+        directories of "main/lib", simply writing "random" in the libraries'
+        period wouldn't exactly work, UNLESS you manually moved or copied
+        "random.txt" to the "main/lib" folder. What I mean is that "random" is
+        now placed in the "main/lib/gen" folder, where "gen" is supposed to
+        host all default generic libraries coming with the L.in.oleum package.
+        So, for "random" to be included you now have to refer to "gen/random"
+        in your program's libraries period, given that the compiler on itself
+        assumes the root of all default libraries to be "main/lib", or even
+        more precisely, it assumes the directory that hosts "compiler.exe" to
+        contain the "lib" directory, and considers that the libraries' root.
+        One last note: while path indicators are normally relative to the
+        directory which contains the library, there is a way to make them
+        behave as absolute paths, whose tree begins with the libraries' root
+        ("main/lib" or the program's main source code directory), regardless
+        to the path to the library that's actually being compiled.
+        The said way is PREPENDING a slash to the path. For example, iGUI does
+        need several default libraries now placed in the "main/lib/gen" folder
+        but iGUI itself is placed in "main/lib/igui". So, it refers to "EKey",
+        one of the default libraries found in "main/lib/gen", as:
+                 /gen/EKey;    (enhanced keystrokes server)
+        that is, SLASH, then the absolute path, a path that will be considered
+        to start from "main/lib". Again, part of Peterpaul's suggestions.
+      * added several libraries to default libraries in "main/lib" folder: this
+        includes the *excellent* PNG image loader written by Peterpaul Klein
+        Haneveld, the same hero who's being attempting to port the environment
+        to Linux, along with its requested ZLIB port from the same author, and
+        Vladimir_K's pretty famous "lock" library, for dynamic allocation of
+        the heap space. Myself, I've been (guess what?) retouching the iGUI to
+        implement cut-copy-paste-from-clipboard functionality in text fields,
+        although no mouse selection is possible yet. Also I've been setting up
+        basic keyboard-based reactions in question boxes, whereas ENTER picks
+        the default option of a box, and ESCAPE cancels the box doing nothing,
+        and keyboard-driven menu options' exploration (F10 brings up menu).
+        Ah, and reskinned the iGUI: the default skin is now called "Toffee",
+        and was designed basing on the new look for a program's icon, also
+        been restyled and IMO looking very good now. While doing that, I've
+        discovered an harmless, but annoying, glitch in the IGS library that
+        allows skin import-export: the "export skin" subroutine, when used to
+        replace an existing .IGS packet file, was NOT truncating the file to
+        zero bytes before writing to it, causing an IGS packet file to remain
+        stuck to a certain size if the updated packet was shorter than the
+        former packet. Apologies to all the skin makers...
+</pre>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

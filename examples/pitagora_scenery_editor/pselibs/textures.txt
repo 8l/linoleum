@@ -1,0 +1,414 @@
+(
+
+	WARNING: this library is incomplete.
+	------------------------------------
+
+	Texture data block:			/25 units
+		texture offset			| 1 unit
+		texture width			| 1 unit
+		texture height			| 1 unit
+		texture style			| 1 unit
+		texture style parameters:	|/6 units
+			repeat count		|| 1 unit
+			background color	|| 1 unit
+			foreground color	|| 1 unit
+			style parameters	|\ 3 units
+		texture filters block:		|/15 units
+			filter 1 type		|| 1 unit
+			filter 1 repeat count	|| 1 unit
+			filter 1 parameter 1	|| 1 unit
+			filter 1 parameter 2	|| 1 unit
+			filter 1 parameter 3	|| 1 unit
+			filter 2 type		|| 1 unit
+			filter 2 repeat count	|| 1 unit
+			filter 2 parameter 1	|| 1 unit
+			filter 2 parameter 2	|| 1 unit
+			filter 2 parameter 3	|| 1 unit
+			filter 3 type		|| 1 unit
+			filter 3 repeat count	|| 1 unit
+			filter 3 parameter 1	|| 1 unit
+			filter 3 parameter 2	|| 1 unit
+			filter 3 parameter 3	\\ 1 unit
+
+)
+
+"libraries"
+	/gen/Rect;
+
+"constants"
+	STYLE DUMMY			= 0;	(texture style)
+	STYLE PLAIN			= 1;
+	STYLE CHECKER			= 2;
+	STYLE GRID			= 3;
+	STYLE STARFIELD 		= 4;
+	STYLE CLUSTERS			= 5;
+	STYLE WRINKLES			= 6;
+	STYLE BUMPS			= 7;
+
+	FILTER DUMMY			= 0;	(filter type)
+	FILTER RANDOM			= 1;
+	FILTER SMOOTH			= 2;
+	FILTER RESIZE			= 3;
+	FILTER ROTATE			= 4;
+	FILTER RAW GRADIENT		= 5;
+	FILTER LIGHT GRADIENT		= 6;
+	FILTER DIM GRADIENT		= 7;
+	FILTER BLEND GRADIENT		= 8;
+
+"variables"
+	Pointer to textures bank	= NULL;
+	Pointer to texture data block	= NULL;
+
+	BT Origin			= UNDEFINED;
+	BT Filters count		= UNDEFINED;
+
+ vector BT Offset			= UNDEFINED;
+	BT Width			= UNDEFINED;
+	BT Height			= UNDEFINED;
+	BT Style			= UNDEFINED;
+	BT Repeat count 		= UNDEFINED;
+	BT Background			= UNDEFINED;
+	BT Foreground			= UNDEFINED;
+	BT Style parameter 1		= UNDEFINED;
+	BT Style parameter 2		= UNDEFINED;
+	BT Style parameter 3		= UNDEFINED;
+
+ vector Style makers routing table =
+					service BT Plain;
+					service BT Checker;
+					service BT Grid;
+					service BT Starfield;
+					service BT Clusters;
+					service BT Wrinkles;
+					service BT Bumps;
+
+ vector BT Filter type			= UNDEFINED;
+	BT Filter repeat count		= UNDEFINED;
+	BT Filter parameter 1		= UNDEFINED;
+	BT Filter parameter 2		= UNDEFINED;
+	BT Filter parameter 3		= UNDEFINED;
+
+ vector Filters routing table =
+					service BT Random;
+					service BT Smooth;
+					service BT Resize;
+					service BT Rotate;
+					service BT Raw gradient;
+					service BT Light gradient;
+					service BT Dim gradient;
+					service BT Blend gradient;
+
+ vector BT Left 			= UNDEFINED;
+	BT Top				= UNDEFINED;
+	BT Right			= UNDEFINED;
+	BT Bottom			= UNDEFINED;
+
+ vector BT Gradients R1 = 0f; BT Gradients G1 = 0f; BT Gradients B1 = 0f;
+	BT Gradients R2 = 0f; BT Gradients G2 = 0f; BT Gradients B2 = 0f;
+	BT Gradients R3 = 0f; BT Gradients G3 = 0f; BT Gradients B3 = 0f;
+
+"programme"
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"Build Texture"
+	A = [Pointer to texture data block];
+	B = vector BT Offset;
+	C = 10;
+    "BT Copy texture informations"
+	[B] = [A];
+	A+; B+;
+    C ^ BT Copy texture informations;
+	[BT Origin] = [vector BT Offset];
+	[BT Origin] + [Pointer to textures bank];
+	A = [BT Style]; ? A = 0 -> BT End;
+	A-; A + vector Style makers routing table;
+	=> [A];
+
+	A = [Pointer to texture data block]; A + 10;
+	[BT Filters count] = 3;
+    "BT Next filter"
+	A -->;
+	B = vector BT Filter type;
+	C = 5;
+    "BT Copy filter informations"
+	[B] = [A];
+	A+; B+;
+    C ^ BT Copy filter informations;
+	    "BT Repeat filter"
+		A = [vector BT Filter type]; ? A = 0 -> BT Go to next filter;
+		? [BT Filter repeat count] <= 0 -> BT Go to next filter;
+		A-; A + vector Filters routing table;
+		=> [A];
+		[BT Filter repeat count]-;
+		-> BT Repeat filter;
+    "BT Go to next filter"
+	<-- A;
+	A + 5;
+    [BT Filters count] ^ BT Next filter;
+
+"BT End"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+( Entry parameters:
+      - Foreground color: the color used to fill the whole texture. )
+
+"service BT Plain"
+	A = [BT Width]; A * [BT Height];
+	B = [BT Origin]; C = [BT Foreground];
+    "BT Plain fill"
+	[B] = C; B+;
+    A ^ BT Plain fill;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+( Entry parameters:
+      - Foreground color: the color used to fill even tiles;
+      - Background color: the color used to fill odd tiles;
+      - StyleParameter 1: the fraction of the whole texture's width
+			  to determine half of the tiles' width, eg.
+			  value 0.1f will give 5 tiles, horizontally;
+      - StyleParameter 2: the fraction of the whole texture's width
+			  to determine half of the tiles' height, eg.
+			  value 0.1f will give 5 tiles, vertically. )
+
+"service BT Checker"
+	[BT Width]-->;
+	[BT Height]-->;
+	A = [BT Origin];
+	B ,= [BT Width]; B ** [BT Style parameter 1];
+	C ,= [BT Height]; C ** [BT Style parameter 2];
+	E = 0f;
+    "BT Checker line"
+	?? E < C -> BT Checker line step;
+	E = C; E++--;
+	[BT Background]-->;
+	[BT Foreground]-->;
+	<--[BT Background];
+	<--[BT Foreground];
+    "BT Checker line step"
+	D = 0f;
+	[BT Width]-->;
+	[BT Background]-->;
+	[BT Foreground]-->;
+	    "BT Checker pixel"
+		?? D < B -> BT Checker pixel step;
+		D = B; D++--;
+		[BT Background]-->;
+		[BT Foreground]-->;
+		<--[BT Background];
+		<--[BT Foreground];
+	    "BT Checker pixel step"
+		[A] = [BT Foreground];
+		D ++ 1f;
+		A+;
+	    [BT Width] ^ BT Checker pixel;
+	<--[BT Foreground];
+	<--[BT Background];
+	<--[BT Width];
+	E ++ 1f;
+    [BT Height] ^ BT Checker line;
+	<--[BT Height];
+	<--[BT Width];
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+( Entry parameters:
+      - Foreground color: the color used to draw the lines;
+      - Background color: the color used to fill the tiles;
+      - StyleParameter 1: the fraction of the whole texture's width
+			  to determine half of the tiles' width, eg.
+			  value 0.1f will give 5 tiles, horizontally;
+      - StyleParameter 2: the fraction of the whole texture's width
+			  to determine half of the tiles' height, eg.
+			  value 0.1f will give 5 tiles, vertically;
+      - StyleParameter 3: the width of the lines, in pixels. )
+
+"service BT Grid"
+	[BT Width]-->;
+	[BT Height]-->;
+	A = [BT Origin];
+	B ,= [BT Width]; B ** [BT Style parameter 1];
+	C ,= [BT Height]; C ** [BT Style parameter 2];
+	E = 0f;
+    "BT Grid line"
+	[BT Background]-->;
+	[BT Foreground]-->;
+	D = E;
+	D ++ [BT Style parameter 3];
+	?? D < C -> BT Grid line noline;
+	[BT Background] = [BT Foreground];
+	?? E < C -> BT Grid line noline;
+	E = C; E++--;
+    "BT Grid line noline"
+	D = 0f;
+	[BT Width]-->;
+	    "BT Grid pixel"
+		E-->;
+		E = D;
+		E ++ [BT Style parameter 3];
+		?? E < B -> BT Grid pixel noline;
+		[A] = [BT Foreground];
+		?? D < B -> BT Grid pixel line;
+		D = B; D++--;
+		-> BT Grid pixel line;
+	    "BT Grid pixel noline"
+		[A] = [BT Background];
+	    "BT Grid pixel line"
+		D ++ 1f;
+		<--E;
+		A+;
+	    [BT Width] ^ BT Grid pixel;
+	<--[BT Width];
+	<--[BT Foreground];
+	<--[BT Background];
+	E ++ 1f;
+    [BT Height] ^ BT Grid line;
+	<--[BT Height];
+	<--[BT Width];
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+( Entry parameters:
+      - Foreground color: base color used to draw the dots (accumulating);
+      - Background color: color used to fill the background;
+      - Repeat count: the number of dots to draw, integer... )
+
+"service BT Starfield"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Clusters"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Wrinkles"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Bumps"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Random"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Smooth"
+	A = [BT Width]; A * [BT Height]; A - [BT Width];
+	B = [BT Origin]; C = [BT Origin]; C + [BT Width];
+    "BT Smooth filter"
+	D = [B]; D & FCFCFCh; D > 2;
+	E = [B plus 1]; E & FCFCFCh; E > 2; D + E;
+	E = [C]; E & FCFCFCh; E > 2; D + E;
+	E = [C plus 1]; E & FCFCFCh; E > 2; D + E;
+	[B] = D; B+; C+;
+    A ^ BT Smooth filter;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Resize"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Rotate"
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Raw gradient"
+	=> internal Setup Gradient Parameters;
+	[Rectangle Effect] = service FX Raw;
+	=> Rectangle;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Light gradient"
+	=> internal Setup Gradient Parameters;
+	[Rectangle Effect] = service FX Alpha Light;
+	=> Rectangle;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Dim gradient"
+	=> internal Setup Gradient Parameters;
+	[Rectangle Effect] = service FX Alpha Dim;
+	=> Rectangle;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"service BT Blend gradient"
+	=> internal Setup Gradient Parameters;
+	[Rectangle Effect] = service FX Semi Transparent;
+	=> Rectangle;
+	end;
+
+((((((((((((((((((((((((((((((((((((( * )))))))))))))))))))))))))))))))))))))
+
+"internal Setup Gradient Parameters"
+	[vector BT Left] = 0; [BT Top] = 0;
+	[BT Right] = [BT Width]; [BT Right]-;
+	[BT Bottom] = [BT Height]; [BT Bottom]-;
+	A = [BT Filter parameter 1];
+	A & FF0000h; A > 16; [vector BT Gradients R1] ,= A;
+	A = [BT Filter parameter 1];
+	A & FF00h; A > 8; [BT Gradients G1] ,= A;
+	A = [BT Filter parameter 1];
+	A & FFh; [BT Gradients B1] ,= A;
+	A = [BT Filter parameter 2];
+	A & FF0000h; A > 16; [BT Gradients R2] ,= A;
+	A = [BT Filter parameter 2];
+	A & FF00h; A > 8; [BT Gradients G2] ,= A;
+	A = [BT Filter parameter 2];
+	A & FFh; [BT Gradients B2] ,= A;
+	A = [BT Filter parameter 3];
+	A & FF0000h; A > 16; [BT Gradients R3] ,= A;
+	A = [BT Filter parameter 3];
+	A & FF00h; A > 8; [BT Gradients G3] ,= A;
+	A = [BT Filter parameter 3];
+	A & FFh; [BT Gradients B3] ,= A;
+	[vector BT Gradients R1] // 256f;
+	[BT Gradients G1] // 256f;
+	[BT Gradients B1] // 256f;
+	[BT Gradients R2] // 256f;
+	[BT Gradients G2] // 256f;
+	[BT Gradients B2] // 256f;
+	[BT Gradients R3] // 256f;
+	[BT Gradients G3] // 256f;
+	[BT Gradients B3] // 256f;
+	[Rectangle Target Layer] = [BT Origin];
+	[Rectangle Display Alignment] = [BT Width];
+	[Rectangle Bounds] = vector BT Left;
+	[Rectangle Gradients] = vector BT Gradients R1;
+	end;
+
+"internal Plot CDE light to B in texture"
+	A = [B]; A & FF0000h; A > 16; A ,= A; A ++ C; A =, A;
+	? A >= 0 -> BT Random Red Low; A = 0; "BT Random Red Low"
+	? A <= 255 -> BT Random Red High; A = 255; "BT Random Red High"
+	A < 16; [B] & 00FFFFh; [B] | A;
+	A = [B]; A & FF00h; A > 8; A ,= A; A ++ D; A =, A;
+	? A >= 0 -> BT Random Green Low; A = 0; "BT Random Green Low"
+	? A <= 255 -> BT Random Green High; A = 255; "BT Random Green High"
+	A < 8; [B] & FF00FFh; [B] | A;
+	A = [B]; A & FFh; A ,= A; A ++ E; A =, A;
+	? A >= 0 -> BT Random Blue Low; A = 0; "BT Random Blue Low"
+	? A <= 255 -> BT Random Blue High; A = 255; "BT Random Blue High"
+	[B] & FFFF00h; [B] | A;
+	end;
+

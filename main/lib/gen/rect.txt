@@ -1,0 +1,191 @@
+(
+
+    Rectangles filler routine.
+    --------------------------------------------------------------------------
+    | Weighs:	       1012 bytes *
+    | Allocates:	 60 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	Rectangle
+	    [Rectangle Target Layer] - input
+		pointer to the display layer where to trace the figure;
+		NOTE it's not [Display Origin] - it's a hidden layer.
+	    [Rectangle Display Alignment] - input
+		number of pixels in a single scan-line inside the
+		target layer. To draw a rectangle onto a normal display
+		layer, it should be simply set to [Display Width].
+		Different values may be needed for banking purposes,
+		such as when you're to draw on textures and suchs.
+	    [Rectangle Bounds] - input
+		Pointer to a structure made of four values,
+		being the coordinates for left, top, right, bottom
+		borders of the figure [in exactly that order].
+			Sample Bounds = 10; 20; 79; 89;
+		would identify an area from 10;20 to 79;89
+		be aware the bounds themselves are included
+		in the area. This area behaves exactly like a
+		region - see related library file, Region.TXT.
+	    [Rectangle Gradients] - input
+		Pointer to a structure containing nine values
+		of floating-point type, all of them ranging from
+		zero to one, giving the plain color or the color
+		shade with which the figure must be filled.
+		Each three gradients identify a color, given
+		that each single gradient is the amount of a
+		primary color - primaries are Red, Green and Blue.
+		The first 3 gradients are for the starting color of
+		the figure's top-left corner. The second 3 are for
+		top-right corner, last 3 are for bottom-left corner.
+			Sample Gradients =	1f; 1f; 1f; top-left
+						1f; 0f; 0f; top-right
+						0f; 0f; 1f; bottom-left
+		In the example, the gradients are setup to make
+		a rectangle which is WHITE in the upper-left
+		corner [1f; 1f; 1f;], RED in the upper-right corner
+		[1f; 0f; 0f;] and finally BLUE in the lower-left
+		corner [0f; 0f; 1f;]. Between each corner will be
+		progressive shades of the corners' colors.
+		The bottom-right corner is a sum of the top-right
+		and bottom-left gradients, and in the example it
+		would be a sum of RED and BLUE, giving MAGENTA.
+	    [Rectangle Effect] - input
+		Pointer to a subroutine to trace each single pixel
+		from the figure. Those routines are services
+		provided in the PixelFX library.
+		By default it points to the "service FX Raw"
+		subroutine, which just plots the pixels as they are.
+		See PixelFX to find out the other possible effects.
+
+)
+
+"libraries"
+	pixelfx;
+
+"variables"
+(entry parameters for Rectangle)
+	Rectangle Target Layer = 0;
+	Rectangle Display Alignment = 256;
+	Rectangle Bounds = 0; (Left, Top, Right, Bottom)
+	Rectangle Gradients = 0; (Top-Left r,g,b, Top-Right r,g,b, Bottom-Left r,g,b)
+	Rectangle Effect = service FX Raw;
+
+"workspace"
+(service variables for Rectangle)
+	RECT H Start Red = 1;
+	RECT H Start Green = 1;
+	RECT H Start Blue = 1;
+	RECT H Delta Red = 1;
+	RECT H Delta Green = 1;
+	RECT H Delta Blue = 1;
+	RECT V Start Red = 1;
+	RECT V Start Green = 1;
+	RECT V Start Blue = 1;
+	RECT V Delta Red = 1;
+	RECT V Delta Green = 1;
+	RECT V Delta Blue = 1;
+	RECT Pixels = 1;
+	RECT Scanlines = 1;
+	RECT Display Pointer = 1;
+
+"programme"
+"Rectangle"
+
+	? [Rectangle Target Layer] = 0 -> Failed tracing rectangle;
+	? [Rectangle Bounds] = 0 -> Failed tracing rectangle;
+
+	A = [Rectangle Bounds];
+	[RECT Pixels] = [A plus 2];
+	[RECT Pixels] - [A plus 0];
+	[RECT Pixels]+;
+	[RECT Scanlines] = [A plus 3];
+	[RECT Scanlines] - [A plus 1];
+	[RECT Scanlines]+;
+
+	B = [Rectangle Gradients];
+	[RECT Pixels] ,= [RECT Pixels];
+	[RECT Scanlines] ,= [RECT Scanlines];
+	[RECT V Delta Red] = [B plus 6];
+	[RECT V Delta Red] -- [B plus 0];
+	[RECT V Delta Red] // [RECT Scanlines];
+	[RECT V Delta Green] = [B plus 7];
+	[RECT V Delta Green] -- [B plus 1];
+	[RECT V Delta Green] // [RECT Scanlines];
+	[RECT V Delta Blue] = [B plus 8];
+	[RECT V Delta Blue] -- [B plus 2];
+	[RECT V Delta Blue] // [RECT Scanlines];
+	[RECT H Delta Red] = [B plus 3];
+	[RECT H Delta Red] -- [B plus 0];
+	[RECT H Delta Red] // [RECT Pixels];
+	[RECT H Delta Green] = [B plus 4];
+	[RECT H Delta Green] -- [B plus 1];
+	[RECT H Delta Green] // [RECT Pixels];
+	[RECT H Delta Blue] = [B plus 5];
+	[RECT H Delta Blue] -- [B plus 2];
+	[RECT H Delta Blue] // [RECT Pixels];
+	[RECT Pixels] =, [RECT Pixels];
+	[RECT Scanlines] =, [RECT Scanlines];
+
+	[RECT Display Pointer] = [A plus 1];
+	[RECT Display Pointer] * [Rectangle Display Alignment];
+	[RECT Display Pointer] + [A plus 0];
+	[RECT Display Pointer] + [Rectangle Target Layer];
+
+	[RECT V Start Red] = [B plus 0];
+	[RECT V Start Green] = [B plus 1];
+	[RECT V Start Blue] = [B plus 2];
+
+   "RECT Next Scanline"
+	[RECT H Start Red] = [RECT V Start Red];
+	[RECT H Start Green] = [RECT V Start Green];
+	[RECT H Start Blue] = [RECT V Start Blue];
+	[RECT Display Pointer]-->;
+	[RECT Pixels]-->;
+	    "RECT Next Pixel"
+		B = [RECT H Start Red]; B ** 255f; B =, B;
+		? B > 0 -> RECT Low Red; B = 0; "RECT Low Red"
+		? B < 256 -> RECT High Red; B = 255; "RECT High Red"
+		C = [RECT H Start Green]; C ** 255f; C =, C;
+		? C > 0 -> RECT Low Green; C = 0; "RECT Low Green"
+		? C < 256 -> RECT High Green; C = 255; "RECT High Green"
+		D = [RECT H Start Blue]; D ** 255f; D =, D;
+		? D > 0 -> RECT Low Blue; D = 0; "RECT Low Blue"
+		? D < 256 -> RECT High Blue; D = 255; "RECT High Blue"
+		B < 16; C < 8;
+		B | C; B | D;
+		A = [RECT Display Pointer];
+		=> [Rectangle Effect];
+		[RECT Display Pointer]+;
+		[RECT H Start Red] ++ [RECT H Delta Red];
+		[RECT H Start Green] ++ [RECT H Delta Green];
+		[RECT H Start Blue] ++ [RECT H Delta Blue];
+		[RECT Pixels] ^ RECT Next Pixel;
+	<-- [RECT Pixels];
+	<-- [RECT Display Pointer];
+	[RECT Display Pointer] + [Rectangle Display Alignment];
+	[RECT V Start Red] ++ [RECT V Delta Red];
+	[RECT V Start Green] ++ [RECT V Delta Green];
+	[RECT V Start Blue] ++ [RECT V Delta Blue];
+	[RECT Scanlines] ^ RECT Next Scanline;
+	end;
+
+    "Failed tracing rectangle"
+	fail;

@@ -1,0 +1,184 @@
+(
+
+  =================================================================
+  TARGET PLATFORM:
+  Intel Pentium processors, and later or compatibles
+  =================================================================
+  _________________________________________________________________
+ |								   |
+ | PLATFORM-SPECIFIC SOURCE CODE * DECLARATION OF NON-PORTABILITY: |
+ |								   |
+ |	This program contains native machine language fragments,   |
+ |	designed EXCLUSIVELY for the abovely mentioned platform,   |
+ |	and SOLELY for that platform! Attempting to use portions   |
+ |	provided within this program in applications intended to   |
+ |	be fully cross-platform will UNRECOVERABLY COMPELL those   |
+ |	applications to be executable only on the said platform.   |
+ |								   |
+ |	Should you need porting your application to systems other  |
+ |	than the indicated TARGET PLATFORMS of this program, then  |
+ |	you MUST CHANGE THIS PROGRAM to reflect the corresponding  |
+ |	operations for all pieces of pure machine language code.   |
+ |								   |
+ |  Also, projects built by including this program SHOULD INHERIT  |
+ |  THIS WARNING MESSAGE. Please do, this is very very important!  |
+ |  This declaration might be placed at the top of a source file.  |
+ |_________________________________________________________________|
+
+ Written by Alessandro Ghignola as part of L.in.oleum's examples.
+ This commented source code is presented to learn from.
+ Feel free to use this code the way you want: copy, paste, edit it.
+ Please compile with L.in.oleum compiler version 1.13.11b or later,
+ because machine language fragments were introduced with 1.13.11b.
+
+ Well, this is a quite precise mean to understand how many clocks
+ a certain piece of code takes to execute. Within "timemycode", you
+ might place the instructions for which you'd like to measure the
+ execution time in CPU cycles. It is not guarantee to have maximum
+ precision, but at least here, it quite nears the precision of +/-1
+ clock cycle. The sample instructions I've placed there execute in
+ 214 clock cycles on my AMD Duron 950: it's the arctan of 1/2, and
+ please note it's supposed to be a rather slow instruction. Since
+ different processors may have different number of pipelines, you
+ might calibrate this program to your processor by adding/removing
+ "nop" instructions after the piece of code to time, until for a
+ simple assignment like "a=1" you get an execution time of 1 clock.
+
+ And yes, I know, this is a wonderful code optimization tool, but
+ remember it's not portable. Use it, don't include it. Don't be too
+ often tempted to get down to the bare metal, because bare metal
+ does change, while the rest of the L.in.oleum environment doesn't.
+
+)
+
+"libraries"
+
+	gen/stdfont;
+	utils/586utils;
+
+"directors"
+
+	unit = 32;
+	symbols map = off;
+
+	display width  = w;
+	display height = h;
+
+	program name = { ClockMe };
+
+"constants"
+
+    (primary display size)
+	w = 256;
+	h = 48;
+
+"variables"
+
+    (main program)
+	timestring = { Clocks:_?????????? };
+
+"workspace"
+
+    (main program)
+	screen = w mtp h; (frame buffer)
+
+    (subroutine "convert binary to ascii")
+	string binary = 1;
+	target string = 1;
+	xicout = 11;
+
+"programme"
+
+    (select the frame buffer)
+	[display origin] = screen;
+
+    (preload some variables concerning the stdfont.txt library)
+	[text display origin] = screen;
+	[text display width] = [display width];
+	[text display height] = [display height];
+
+    (query for tsc presence)
+	=> getcpuid;
+
+    (calibrate the tsc timer routines)
+	=> tsc recal;
+
+    (elapse the clocks taken by the code in "timemycode")
+	=> timemycode;
+
+    (make ASCII string out of the integer number of clocks taken)
+	[target string] = timestring plus 8;
+	[string binary] = [tsctime];
+	=> convert binary to ascii;
+
+    (see how many pixels it takes to display timestring, for centering the message)
+	a = 0;
+	b = [std font width];
+	c = timestring;
+      "count chars"
+      ? [c] = zero -> cc stop;
+	a + b;
+	c +;
+	-> count chars;
+      "cc stop"
+
+    (write timestring into the exact middle of the display)
+	[string] = timestring;
+	[text x] = [display width];
+	[text x] - a;
+	[text x] >> 1;
+	[text y] = [display height];
+	[text y] - [std font body];
+	[text y] >> 1;
+	=> stdwrite;
+
+    (show it up)
+	[display command] = retrace;
+	isocall;
+
+    (wait 2.5 seconds)
+	[processcommand] = sleep;
+	[sleeptimeout] = 2500;
+	isocall;
+
+    (quit)
+	end;
+
+
+
+    "convert binary to ascii"
+      (converts value held by [string binary], which is supposed to be an unsigned
+       integer value, to ascii, and stores the resulting text within [target string])
+	a = zero;
+	b = [string binary];
+    "cb2a forward"
+	c = b; c '% 10; c + 48; [a plus xicout] = c;
+	a+; b '/ 10; ? b > zero -> cb2a forward;
+	b = [target string];
+    "cb2a reverse"
+	[b] = [a plus xicout minus 1];
+	b+; a ^ cb2a reverse;
+	[b] = null;
+	leave;
+
+
+
+    "timemycode"
+	=> tsc start;
+
+      (---------------------------code to time below-------------------------)
+	a = 1f; (x = 1.00, as floating-point value)
+	b = 2f; (y = 2.00, as floating-point value)
+	a ^/ b; (a = take arctan of x divided by y)
+      (---------------------------end of code to time------------------------)
+
+      (break all pipelines and elapse - add/remove nops here for best results)
+	nop;
+	nop;
+	nop;
+	nop;
+	nop;
+	nop;
+	nop;
+	=> tsc stop;
+	leave;

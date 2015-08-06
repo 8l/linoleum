@@ -1,0 +1,164 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        Tags<br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        TAGS<br><br>
+        TAGS are not signs, they are sequences of letters<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt>plus</dt>
+                <dd>is mainly used in linear expressions,
+                to add up effective addresses (pointers) and their relative displacements.
+                If "plus" is used with a single immediate value, it will mean
+                that value is positive, even if in this case it's not needed.
+                "plus" has a synonym: "relating", which is typically used when
+                accessing a vector's elements via predefined text constants that
+                give the relative displacement of that vector, for in such cases
+                the relative displacement is intended to indicate a "property" of
+                the vector, for example: [TOP MARGIN relating vector My Rectangle],
+                which would be the same if written as [vector My Rectangle plus
+                TOP MARGIN], but "relating" highlights the relation between the
+                two symbols, "TOP MARGIN" being a constant, and "vector My Rectangle"
+                being the effective address of a vector.</dd>
+        <br><br>
+        <dt>minus</dt>
+                <dd>marks a negative immediate value,
+                like for example "minus 1" which is the opposite of 1.
+                If minus is not specified, such values are assumed positive.
+                "minus", like "plus", can also be used in linear expressions.</dd>
+        <br><br>
+        <dt>multiplied</dt>
+                <dd>Only to be used in linear expressions, with constant symbols
+                or with immediate values. Multiplies one value by another.
+                Short form is "mtp".</dd>
+        <br><br>
+        <dt>divided</dt>
+                <dd>Only to be used in linear expressions, with constant symbols
+                or with immediate values. Divides one value by another.
+                Short form is "div".</dd>
+        <br><br>
+        <dt>pragma</dt>
+                <dd>This is a special prefix: placed at the very beginning of any
+                linear expressions, including expressions using indirect addressing
+                mode via a general-purpose register loaded with a pointer, it tells
+                the compiler to disregard any WARNING messages concerning the use,
+                in the expression following "pragma", of variables' effective addresses
+                (which are not declared as vectors, matrixs or strings) or code labels'
+                physical addresses (which are not declared as services), and even
+                computation of memory area sizes via subtraction of pointers.
+                Well, "pragma" pratically suppresses all the said warnings: its target,
+                however, is limited to all the operands of a single linear expression;
+                if you have more than one instructions causing such a warning, and you
+                reckon what the warning says but you know you're doing the right thing,
+                you have to use "pragma" before every single expression causing such a
+                warning. Also remember that "pragma" is strictly a one-shot prefix <u>that
+                affects the whole expression</u>, it must be placed at the beginning of
+                the expression, and if the expression addresses via brackets, even
+                <u>outside</u> the opening bracket itself. Last note: "pragma" has been
+                introduced with version 1.13.6b of the L.in.oleum environment; if you
+                compile a program whose source code specifies pragmas with a former
+                version, the "pragma" tags will be causing errors, because prior
+                to version 1.13.6b of the compiler, "pragma" was not acknowledged.</dd>
+        <br><br>
+        <dt>end</dt>
+                <dd>This tag marks the end of a subroutine, and will return to
+                the caller routine: it is not necessary to use it only once,
+                because it can be also used to break execution of subroutines
+                at any time within their code; now, being the main program itself
+                launched as a subroutine (owned in this case by the run-time module),
+                also the main program should end with this tag. An alternative tag
+                to end the main program is "show registers": placed besides the
+                main program's "end" tag, will cause the run-time module to
+                drop a note on the screen upon program termination, showing
+                the contents of all registers for testing/debugging purposes.</dd>
+        <br><br>
+        <dt>fail</dt>
+                <dd>This is like the "end" tag, but while "end" returns a special
+                code (held in hidden X register) to signal that a subroutine
+                has completed successfully, "fail" returns another code which
+                signals the subroutine has failed: by using two different
+                "comparison directives" the main program's able to redirect
+                its flow to the correct code label which manages successful
+                and unsuccessful returns from subroutines.</dd>
+        <br><br>
+        <dt>leave</dt>
+                <dd>Available only since version 1.13.9b of the L.in.oleum compiler,
+                returns from a subroutine WITHOUT signalling the subroutine's state
+                to the caller, that is, does not report wether the subroutine
+                succeeded or failed. It's often 1 CPU cycle faster, and at least
+                with the i386 CPU pack, takes 5 bytes less than "end" or "fail" in
+                the program's code.</dd>
+        <br><br>
+        <dt>show registers</dt>
+                <dd>It is always supposed to replace the "end" tag for the
+                main program (not for subroutines), and causes the run-time module
+                to drop a note on the screen reporting the actual values of
+                every register (not including environment registers $, O and X).
+                Useful for debugging purposes, it may be applied from inside
+                subroutines by issuing a FAIL PROCESS command (throught the
+                [Process Command] unit). For more informations about this debug
+                technique, see notes about [Process Command] inside the
+                <a href="ikrnl_qr.htm">IsoKernel</a> quick reference. "fail", in
+                facts, is a synonym for "show registers", and translates to the
+                same instruction.</dd>
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

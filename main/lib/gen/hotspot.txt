@@ -1,0 +1,177 @@
+(
+
+    Hot Spots Controller
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		352 bytes *
+    | Allocates:	 24 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      "Hot spots" are used in mouse-driven user interfaces where pressing and
+    hovering certain areas of the display is supposed to result in actions.
+    Typically, pushbuttons are managed that way; however, this library doesn't
+    fully manage a pushbutton on its own: it just provides a routine to check
+    for events concerning buttons and the effects of the mouse being hovering
+    them and/or the user pushing them. The visualization of those buttons, in
+    your own style, is left to you for maximum flexibility.
+      Also, if you need to, you may attempt to change this library and fit it
+    to your own needs, such as checking for circular and/or irregular regions.
+    Future versions of this library may in fact take care of such needs, but
+    at the moment the only supported shape is that of a simple rectangle.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      For each hot spot, setup a vector of FIVE units, the first FOUR of which
+    have to contain the edges of the rectangular region of the hotspot, while
+    the last unit will be initially zeroed by your program, and altered by the
+    "Check Hot Spot" subroutine when that hot spot is checked. The edges are,
+    as always, given in the order: left, top, right, bottom.
+      Once you have the above vector setup properly, you have to load all the
+    variables:
+	[When Hovering] 	  = pointer to your own service subroutine;
+	[While Hovering]	  = pointer to your own service subroutine;
+	[When No Longer Hovering] = pointer to your own service subroutine;
+	[When Pushing]		  = pointer to your own service subroutine;
+	[When No Longer Pushing]  = pointer to your own service subroutine;
+    ...where every subroutine manages the corresponding situation. The iGUI,
+    for instance, points [When Hovering] to a subroutine that highlights the
+    area of the hotspot, by tracing an "alpha lit" gradiented rectangle upon
+    the hotspot's rectangular region. Then uses [While Hovering] to control
+    details of the balloon help's behavior, given that if [While Hovering]
+    gets called, it means the user is keeping the pointer upon the hotspot.
+    Then it uses [When Ho Longer Hovering] to retrace the button corresponding
+    to a given hotspot in its normal state, therefore un-highlighting it, and
+    finally [When No Longer Pushing] to trigger the button's action. This is
+    true for all the iGUI window control buttons except the resize button, as
+    that's supposed to take action as soon as it's pushed, so [When Pushing]
+    is used in that case to trigger the loop that resizes the window while the
+    pointer "drags" the button around.
+      Now, if you don't need a reaction from your program to one or more of
+    the detected "events" mentioned above, you may just set the corresponding
+    variables to NULL, meaning an integer zero, which causes "Check Hot Spot"
+    to skip the corresponding calls.
+      The syntax for calling "Check Hot Spot", at that point is pretty simple:
+
+      [Hot Spot Data] = pointer to your hotspot vector of 5 units;
+      => Check Hot Spot;
+
+      It is important to note that this library relies on his "Check Hot Spot"
+    routine to be called from inside a control loop that waits user input: it
+    assumes the client did read the pointing device informations throught a
+    [Pointer Command] = READ POINTER; somewhere at every iteration of the said
+    control loop. It barely checks coordinates and pointer buttons' state, but
+    those variables are supposed to be updated by the caller. Now, if you're
+    calling this from within an iGUI control loop pointed by [Control Loop] in
+    your iGUI client application, then the iGUI did already perform the update
+    and you don't need performing that isocall, but if you're working aside of
+    the iGUI, you have to perform it, or Check Hot Spot will not work.
+
+    --------------------------------------------------------------------------
+    HOTSPOTS BEHAVIOR
+    --------------------------------------------------------------------------
+      A single call to "When Hovering" service subroutine is made when the
+    pointing device's cursor enters the hot spot area.
+      Continuous calls to "While Hovering" service subroutine are made while
+    the pointing device's cursor lays inside the hot spot area.
+      A single call to "When Pushing" service subroutine is made when the
+    pointing device's first button is pressed inside the hot spot area.
+      A single call to "When No Longer Pushing" service subroutine is made
+    when the pointing device's first button is released WHILE the cursor lays
+    inside the hot spot's area.
+      A single call to "When No Longer Hovering" service subroutine is made
+    when the pointing device's cursor leaves the hot spot area. In this case
+    even the first button is no longer considered to be held down in the area,
+    so that:
+      - if the cursor subsequently re-enters the area while first button is
+	being held down, both "When Hovering" and "When Pushing" subroutines
+	are called again;
+      - if the first button is released outside the area, the "When No Longer
+	Pushing" subroutine is NOT called because the cursor's target is no
+	longer in the area pertaining to that hot spot.
+
+)
+
+"constants"
+
+	IHS Set Push	= 00000001h;
+	IHS Clear Push	= FFFFFFFEh;
+	IHS Set Hover	= 00000002h;
+	IHS Clear Hover = FFFFFFFDh;
+	IHS Clear Both	= FFFFFFFCh;
+
+"workspace"
+
+	Hot Spot Data		= 1;
+
+	While Hovering		= 1;
+	When Hovering		= 1;
+	When No Longer Hovering = 1;
+	When Pushing		= 1;
+	When No Longer Pushing	= 1;
+
+"programme"
+
+"Check Hot Spot"
+	A = [Hot Spot Data];
+      ? A = NULL -> IHS Quit Subroutine;
+	B = [A plus 4];
+      ? [Pointer X Coordinate] < [A plus 0] -> IHS Out Of Region;
+      ? [Pointer X Coordinate] > [A plus 2] -> IHS Out Of Region;
+      ? [Pointer Y Coordinate] < [A plus 1] -> IHS Out Of Region;
+      ? [Pointer Y Coordinate] > [A plus 3] -> IHS Out Of Region;
+	[A plus 4] | IHS Set Hover;
+      ? [While Hovering] = NULL -> IHS Skip Keeps Hovering Call;
+	A -->;
+	B -->;
+	=> [While Hovering];
+	<-- B;
+	<-- A;
+      "IHS Skip Keeps Hovering Call"
+      ? [When Hovering] = NULL -> IHS Skip Hovering Call;
+      ? B + IHS Set Hover -> IHS Skip Hovering Call;
+	A -->;
+	B -->;
+	=> [When Hovering];
+	<-- B;
+	<-- A;
+      "IHS Skip Hovering Call"
+      ? [Pointer Status] - PD LEFT BUTTON DOWN -> IHS Not Pushing;
+	[A plus 4] | IHS Set Push;
+      ? [When Pushing] = NULL -> IHS Quit Subroutine;
+      ? B + IHS Set Push -> IHS Quit Subroutine;
+	-> [When Pushing];
+      "IHS Not Pushing"
+	[A plus 4] & IHS Clear Push;
+      ? [When No Longer Pushing] = NULL -> IHS Quit Subroutine;
+      ? B - IHS Set Push -> IHS Quit Subroutine;
+	-> [When No Longer Pushing];
+      "IHS Out Of Region"
+	[A plus 4] & IHS Clear Both;
+      ? [When No Longer Hovering] = NULL -> IHS Quit Subroutine;
+      ? B - IHS Set Hover -> IHS Quit Subroutine;
+	-> [When No Longer Hovering];
+      "IHS Quit Subroutine"
+	end;

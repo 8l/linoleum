@@ -1,0 +1,626 @@
+(
+
+    PIXELS FILLING SERVICE ROUTINES
+    --------------------------------------------------------------------------
+    | Weighs:	       1364 bytes *
+    | Allocates:	  8 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	Version 2.1 [multiscalar / "leave" replaces "end"]
+	Last Changed: December 9th, 2003
+
+	***	According to this package's libraries conventions,
+		functions do not preserve registers, but will preserve
+		any entry parameters passed throught related variables.
+
+	This is a SERVICES library, containing only service subroutines
+	to be used for in-line routing and routing tables.
+	These subroutines are not intended to be called on their own.
+	Most libraries need one of these routines' name as the source
+	operand when loading entry variables such as "xxx effect".
+
+	What's new in version 2:
+
+      - All the service routines have a "Superimpose" variant, which
+	means all the effects can be used in conjuction to a check on
+	the pixel's transparency in relation to [FX Transparent Color].
+
+      - The most complex routines have been extremely optimized for best
+	performance over multiscalar processors having 2 or 3 pipelines,
+	and to weigh as little as possible within the application's code.
+	Here follow speed indexs from a benchmarking application using
+	the routines to trace random lines over a 512x384 pixels display,
+	executed on an AMD Duron 950MHz equipped with 133MHz DRAM chips:
+	the values might reflect the differences in speed when routines
+	get to be used in a realistic application, so they consider the
+	several cache delays that may occur while accessing pixels whose
+	pointers are far from each other and thus, out of a single cache
+	block. Now, you may find the times pretty near to each other,
+	despite the many operations that, for instance, operation "Glow"
+	seems to be making. The reason is that most of the time in a
+	typical loop to trace lines [made of many sparse pixels] is taken
+	on modern processors by cache delays to access the buffer memory,
+	that is, by a single instruction like [A] = B in the raw service:
+	if, as it happens for "Glow", there are more reads from pixels
+	surrounding the target pixel, the additional reads are not so
+	influent on the final execution time because most of them, made
+	after the processor already cached that part of the frame buffer,
+	will not cause another effective exchange of data between the CPU
+	and the DRAM. In effects, that very first access in the form
+	[A]=B is what's taking 86% of time on my laptop when using raw
+	tracement, and is of course not possible to optimize that, apart
+	from using a processor with more data cache on board, or faster
+	RAM chips. Another thing that may seem strange, but is normal, is
+	that sometimes longer routines take less: see below for the case
+	of "FX Alpha Light" versus "FX Semi Transparent". This is because
+	of instructions' pairability on multiple integer pipelines.
+
+	routine used			       index
+	--------------------------------------------
+	"service FX Raw"			4130
+	"service FX Superimpose"		4323
+	"service FX Negate"			4616
+	"service FX Semi Transparent"		5314
+	"service FX Alpha Light"		5076
+	"service FX Alpha Dim"			5197
+	"service FX Filter"			4355
+	"service FX Filter Alpha Light" 	6441
+	"service FX Filter Alpha Dim"		6509
+	"service FX Glow"			7116
+	"service FX Smooth"			6882
+	"service FX DoubleStrike Smooth"       10116
+	Superimpose overhead [all routines]	+200
+
+	Of course you could make your own benchmark: the indications for
+	getting more precise timing are to use the [Counts] variable and
+	the "Read Counts" command of the timer interface, to setup "very
+	high priority" as the thread priority to have less interferences
+	from the rest of the operating system and concurrent applications,
+	and to make several thousand measures plotting in each run several
+	thousand pixels, and finally making out an average of times.
+
+	Description of included effects:
+
+	Note: since version 2, ALL EFFECTS have a "Superimpose" variant,
+	      where [FX Transparent Color] is checked against the pixel
+	      color on entry, and if found to match, the pixel is not
+	      outputted to the target layer, allowing to exclude pixels
+	      coloured with the same RRGGBB pattern that has been loaded
+	      in variable [FX Transparent Color].
+	      The names of the subroutines' variants that checks for
+	      transparency are all followed by the word "Superimpose".
+
+	Note: the typical range for all functions except where differently
+	      specified, is within [0;0 to W-1;H-1]. If your frame buffer
+	      is, for example, 512x384 pixels, the range translates to the
+	      restriction that the X;Y coordinates of the pixel register A
+	      points to, must lay between 0;0 and 511;383 in target frame.
+
+	    service FX Null
+		Does nothing, and doesn't affect the display memory in
+		any ways. It doesn't fill at all, for use in every cases
+		where you want to keep graphical elements from appearing.
+
+	    service FX Raw
+		Plain filler.
+		Just plots the pixel's color to the target layer.
+
+	    service FX Negate
+		Color-independent filler.
+		Complements all bits in target layer's affected pixels.
+	      - Note that this includes the most significant 8 bits of
+		the unit that holds the pixel's RRGGBB pattern, which
+		could possibly have been used to store masking or alpha
+		channel informations, managed by the code of the calling
+		application: in such a case the "negate" filler could
+		therefore interfere with those informations. For example
+		the iGUI uses those bits to hold masking flags for its
+		elements' drop shadows, specifically to avoid retracing
+		the shadows unless they've been previously cleared.
+		The Pitagora engine uses those bits to mask multiple
+		layers of semi-transparent polygons, for another instance.
+
+	    service FX Superimpose
+		Transparent filler.
+		Plots the pixel's color to the target layer,
+		unless that color equals [FX Transparent Color].
+
+	    service FX Semi Transparent
+		Alpha-blend filler.
+		The color of resulting pixel is an equal mixage
+		of the underlying pixel's color, background color,
+		and the effective pixel's color, foreground color.
+		The formulas are:
+			R final = [R background + R foreground] / 2
+			G final = [G background + G foreground] / 2
+			B final = [B background + B foreground] / 2
+
+	    service FX Alpha Light
+		Alpha-light filler.
+		The color of resulting pixel is the sum of all
+		primary colors from the underlying color and all
+		primary colors from the effective pixel's color.
+		The formulas are:
+			R final = R background + R foreground
+			G final = G background + G foreground
+			B final = B background + B foreground
+		A typical use for this effect is setting up glowing
+		halos around graphic elements. Alpha-light halos
+		should be traced after the element itself.
+
+	    service FX Alpha Dim
+		Alpha-dim filler.
+		The color of resulting pixel is the difference of all
+		primary colors from the underlying color and all
+		primary colors from the effective pixel's color.
+		The formulas are:
+			R final = R background - R foreground
+			G final = G background - G foreground
+			B final = B background - B foreground
+		A typical use for this effect is setting up shadows
+		around graphic elements, providing those shadows
+		are traced before the graphic element itself, so that
+		the element will eventually cover its shadow.
+
+	    service FX Filter
+		Color filter using [FX Filter Color].
+		The color of resulting pixel is an equal mixage
+		of the filter color and the effective pixel's color.
+		The formulas are:
+			R final = [R filter + R pixel] / 2
+			G final = [G filter + G pixel] / 2
+			B final = [B filter + B pixel] / 2
+
+	    service FX Filter Alpha Light
+		Apply both color filtering and alpha light.
+
+	    service FX Filter Alpha Dim
+		Apply both color filtering and alpha dim.
+
+	    service FX Glow
+		Spreads halved color components to the four
+		adjacent pixels, relatively to the pixel
+		pointed by A. Considers display scanlines
+		alignment always equal to [Display Width].
+		Pixel A must lay within [1;1 to W-2;H-2].
+
+	    service FX Smooth
+		Collapses a quarter of the colour components from
+		three pixels nearby, relatively to the pixel
+		pointed by A, and mixes them with 1/4 of the colour
+		specified by register B. As happens for "FX Glow",
+		alignment always equals [Display Width].
+		Pixel A must lay within [1;1 to W-2;H-2].
+
+	    service FX DoubleStrike Smooth
+		Applies smooth to all four adjacent pixels, plus
+		the pixel pointed by A. Often produces cute 3D-like
+		reliefs, but it's also pretty slow and even more
+		limited than the above two services, because its
+		target must lay within [2;2 to W-3;H-3].
+
+	Developers wishing to provide effects choice from this library
+	must consider the following behaviour as common to all of the
+	services provided in this library:
+
+	- A is the only register that is PRESERVED by ALL THE ROUTINES.
+	  Any other registers must be considered DESTROYED.
+
+	- A is the pointer to the memory unit, intended to be part of
+	  a frame buffer [also known as a "display layer"], where the
+	  pixel will be plotted. A is typically calculated as Y*W+X+p,
+	  with X and Y as the pixel coordinates, p as the pointer to the
+	  frame buffer's memory area, and W as the width, or alignment,
+	  of the target frame buffer. For visible frames - frames that
+	  have to be showen on the screen - W might always equal to the
+	  actual value of [Display Width]. In fact, a few of the effects
+	  presented here will refer to [Display Width] to find out the
+	  amount of memory units to read/write a pixel from/to when the
+	  pixel has to be on the PREVIOUS or on the NEXT line.
+	  In this sense, the routines tied to [Display Width] are:
+		service FX Glow
+		service FX Smooth
+		service FX Doublestrike Smooth
+	  ...and their corresponding "Superimpose" variants.
+	  It is, however, possible to "tweak" those routines and force
+	  them to behave correctly on off-screen frame buffers that may
+	  be smaller than the actual display, such as when printing out
+	  a page buffer, or when drawing upon TEXTURES to be applied to,
+	  for example, three-dimensional projections of a 2-D surface.
+	  To do so, you could temporarily save [Display Width] to stack
+	  and then change it to reflect the width of the off-screen
+	  frame buffer, whatever it is. If you don't, in the meantime,
+	  perform an "isocall", the run-time module will not care for
+	  the fact that you loaded a different value in [Display Width],
+	  and will not resize the display. Of course, after you're done
+	  drawing on the off-screen frame buffer, you might restore the
+	  saved value of [Display Width] by popping it from the stack.
+	  Also, because they access pixels SURRONDING the destination
+	  pixel, when using the above function register A must point to
+	  a pixel within the following ranges [in coordinates]:
+		service FX Glow 		1;1 to W-2;H-2
+		service FX Smooth		1;1 to W-2;H-2
+		service FX Doublestrike Smooth	2;2 to W-3;H-3
+	  ...which, in a nutshell, means that the frame buffer might
+	  allow for a certain "tolerance" in every direction before the
+	  pointer given in register A gets OUTSIDE the frame buffer's
+	  memory. This tolerance is of 1 pixel in every direction for
+	  the first two routines, and 2 pixels for the last routine.
+
+	- B is the register holding the base color of the pixel to plot.
+	  B is not preserved after a call to one of those routines, so,
+	  no matter if you're filling with a plain color pattern where
+	  all the pixels have the same color, you must reload B before
+	  tracing each of the pixels. As I said above, all registers but
+	  register A may not be preserved by these routines. Now, there
+	  are routines like the simple "service FX Raw" which will never
+	  destroy any registers' contents, but if your application is
+	  supposed to let the code choose the effect to apply, you have
+	  to consider the other, quite frequent, possibilities where all
+	  registers except A will have changed after the call to plot a
+	  single pixel.
+
+	- [FX Transparent Color], when a "Superimpose" variant of an
+	  effect, or when the bare "service FX Superimpose" effect is
+	  being used, must be loaded with the RRGGBB pattern of the
+	  color to be considered transparent. Transparent pixels will
+	  then not be plotted, thus they will not affect the background.
+
+	- [FX Filter Color] is used by:
+		service FX Filter
+		service FX Filter Alpha Light
+		service FX Filter Alpha Dim
+	  ...and their corresponding "Superimpose" variants.
+	  This variable holds a color filter, an RRGGBB pattern that
+	  will be mixed with the pixel color loaded in register B, so
+	  that the resulting color will be formed by exactly 50% of
+	  the filter color and 50% of the pixel color. Only a few of
+	  the most basic effects, the ones listed above, support this
+	  kind of filtering.
+
+)
+
+"workspace"
+
+	FX Transparent Color = 1;
+	FX Filter Color      = 1;
+
+"programme"
+
+"service FX Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Raw"
+	[A] = B;
+"service FX Null"
+	leave;
+
+"service FX Negate Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Negate"
+	![A];
+	leave;
+
+"service FX Semi Transparent Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Semi Transparent"
+	B & FEFEFEh;
+	C = [A];
+	B > 1;
+	C & FEFEFEh;
+	C > 1;
+	C + B;
+	[A] = C;
+	leave;
+
+"service FX Alpha Light Superimpose"
+"service FX Alpha Lit Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Alpha Light"
+"service FX Alpha Lit"
+	C = [A];
+	A -->;
+	D = C;
+	E = C;
+	C & 0000FFh;
+	D & 00FF00h;
+	E & FF0000h;
+	A = B; A & 0000FFh; C + A;
+	A = B; A & 00FF00h; D + A;
+	B & FF0000h; <-- A; E + B;
+    "FX AL Check"
+	? C < 100h -> FX AL Blue High Ok;
+	C = FFh;
+    "FX AL Blue High Ok"
+	? D < 10000h -> FX AL Green High Ok;
+	D = FF00h;
+    "FX AL Green High Ok"
+	C | D;
+	? E < 1000000h -> FX AL Red High Ok;
+	E = FF0000h;
+    "FX AL Red High Ok"
+	C | E;
+	[A] = C;
+	leave;
+
+"service FX Alpha Dim Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Alpha Dim"
+	C = [A];
+	A -->;
+	D = C;
+	E = C;
+	C & 0000FFh;
+	D & 00FF00h;
+	E & FF0000h;
+	A = B; A & 0000FFh; C - A;
+	A = B; A & 00FF00h; D - A;
+	B & FF0000h; <-- A; E - B;
+    "FX AD Check"
+	? C >= 0 -> FX AD Blue High Ok;
+	C = 0;
+    "FX AD Blue High Ok"
+	? D >= 0 -> FX AD Green High Ok;
+	D = 0;
+    "FX AD Green High Ok"
+	C | D;
+	? E >= 0 -> FX AD Red High Ok;
+	E = 0;
+    "FX AD Red High Ok"
+	C | E;
+	[A] = C;
+	leave;
+
+"service FX Filter Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Filter"
+	B & FEFEFEh;
+	C = [FX Filter Color];
+	B > 1;
+	C & FEFEFEh;
+	C > 1;
+	C + B;
+	[A] = C;
+	leave;
+
+"service FX Filter Alpha Lit Superimpose"
+"service FX Filter Alpha Light Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Filter Alpha Lit"
+"service FX Filter Alpha Light"
+	A -->;
+	C = B;
+	B = [FX Filter Color];
+	D = C;
+	E = C;
+	C & 0000FFh;
+	D & 00FF00h;
+	E & FF0000h;
+	A = B; A & 0000FFh; C + A;
+	A = B; A & 00FF00h; D + A;
+	B & FF0000h; <-- A; E + B;
+	-> FX AL Check;
+
+"service FX Filter Alpha Dim Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Filter Alpha Dim"
+	A -->;
+	C = B;
+	B = [FX Filter Color];
+	D = C;
+	E = C;
+	C & 0000FFh;
+	D & 00FF00h;
+	E & FF0000h;
+	A = B; A & 0000FFh; C - A;
+	A = B; A & 00FF00h; D - A;
+	B & FF0000h; <-- A; E - B;
+	-> FX AD Check;
+
+"service FX Glow Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Glow"
+	[A] = B;
+	B & FEFEFEh;
+	C = [A minus 1];
+	D = [A plus 1];
+	B > 1;
+	C & FEFEFEh;
+	C > 1;
+	D & FEFEFEh;
+	C + B;
+	E = [Display Width];
+	D > 1;
+	[A minus 1] = C;
+	D + B;
+	[A plus 1] = D;
+	A + E;
+	C = [A];
+	A - E;
+	C & FEFEFEh;
+	A - E;
+	D = [A];
+	C > 1;
+	D & FEFEFEh;
+	D > 1;
+	C + B;
+	E < 1;
+	D + B;
+	[A] = D;
+	A + E;
+	[A] = C;
+	A - [Display Width];
+	leave;
+
+"service FX Smooth Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Smooth"
+	B & FCFCFCh;
+	E = [Display Width];
+	B > 2;
+	A - E;
+	C = [A];
+	D = [A minus 1];
+	C & FCFCFCh;
+	D & FCFCFCh;
+	C > 2;
+	D > 2;
+	C + D;
+	D = [A plus 1];
+	B + C;
+	D & FCFCFCh;
+	D > 2;
+	A + E;
+	B + D;
+	[A] = B;
+	leave;
+
+"service FX DoubleStrike Smooth Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX DoubleStrike Smooth"
+	B -->;
+	A +;   => service FX Smooth;	    B = $:0;
+	A - 2; => service FX Smooth; E +;   B = $:0;
+	A + E; => service FX Smooth; E < 1; B = $:0;
+	A - E; => service FX Smooth;	    B = $:0;
+	A + E; => service FX Smooth;
+	$ + 1;
+	leave;
+
+"service FX Antialiasing Lit Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Antialiasing Lit"
+	C = [Display Width];
+	C < 1;
+	C -->;
+	B -->;
+	=> service FX Alpha Lit;
+	<-- B;
+	B & F0F0F0h;
+	A -;
+	B > 4;
+	B -->;
+	=> service FX Alpha Lit;
+	A + 2;
+	B = $:0;
+	=> service FX Alpha Lit;
+	A -;
+	B = $:0;
+	A - [Display Width];
+	=> service FX Alpha Lit;
+	C = $:1;
+	B = $:0;
+	A + C;
+	$ + 2;
+	=> service FX Alpha Lit;
+	A - [Display Width];
+	leave;
+
+"service FX Antialiasing Dim Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Antialiasing Dim"
+	C = [Display Width];
+	C < 1;
+	C -->;
+	B -->;
+	=> service FX Alpha Dim;
+	<-- B;
+	B & F0F0F0h;
+	A -;
+	B > 4;
+	B -->;
+	=> service FX Alpha Dim;
+	A + 2;
+	B = $:0;
+	=> service FX Alpha Dim;
+	A -;
+	B = $:0;
+	A - [Display Width];
+	=> service FX Alpha Dim;
+	C = $:1;
+	B = $:0;
+	A + C;
+	$ + 2;
+	=> service FX Alpha Dim;
+	A - [Display Width];
+	leave;
+
+"service FX Doublestrike Antialiasing Lit Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Doublestrike Antialiasing Lit"
+	C = [Display Width];
+	B & FCFCFCh;
+	C < 1;
+	B > 2;
+	C -->;
+	B -->;
+	=> service FX Antialiasing Lit;
+	<-- B;
+	B & FEFEFEh;
+	A -;
+	B > 1;
+	B -->;
+	=> service FX Antialiasing Lit;
+	A + 2;
+	B = $:0;
+	=> service FX Antialiasing Lit;
+	A -;
+	B = $:0;
+	A - [Display Width];
+	=> service FX Antialiasing Lit;
+	C = $:1;
+	B = $:0;
+	A + C;
+	$ + 2;
+	=> service FX Antialiasing Lit;
+	A - [Display Width];
+	leave;
+
+"service FX Doublestrike Antialiasing Dim Superimpose"
+	? B = [FX Transparent Color] -> service FX Null;
+"service FX Doublestrike Antialiasing Dim"
+	C = [Display Width];
+	B & FCFCFCh;
+	C < 1;
+	B > 2;
+	C -->;
+	B -->;
+	=> service FX Antialiasing Dim;
+	<-- B;
+	B & FEFEFEh;
+	A -;
+	B > 1;
+	B -->;
+	=> service FX Antialiasing Dim;
+	A + 2;
+	B = $:0;
+	=> service FX Antialiasing Dim;
+	A -;
+	B = $:0;
+	A - [Display Width];
+	=> service FX Antialiasing Dim;
+	C = $:1;
+	B = $:0;
+	A + C;
+	$ + 2;
+	=> service FX Antialiasing Dim;
+	A - [Display Width];
+	leave;

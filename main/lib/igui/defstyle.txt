@@ -1,0 +1,227 @@
+(
+
+    iGUI default style for v.1.13.9b, a.k.a the "Toffee" skin
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:  around 12000 bytes *  [depends on strings and gfx parts]
+    | Allocates:	  0 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      If you don't want to have to redefine all the symbols mentioned here,
+    and you don't need customizing the iGUI's look, you might include this
+    library IN PLACE of "iGUI"; this library itself includes iGUI for you and
+    defines most of the symbols concerning the look of GUI elements, such as
+    color schemes, gradients, effects and suchs.
+      The "role" of all elements declared here is explained in detail in the
+    source code of the Icon Editor. The Icon Editor does not use this library,
+    and shows how to re-declare these elements for possible in-depth
+    customization of the GUI's look and feel.
+      This library may be part of a program-specific, and exportable, skin, if
+    it's copied to the program's source code directory and changed to fit a
+    new style: modifies here, however, might be limited to changing the actual
+    values of the section marked as the "GUI SKIN BLOCK", and never ADDING,
+    REMOVING, MISPLACING values from that section. For a skin to be correctly
+    exported, there must be no changes in the memory layout of the skin block.
+      While changing those values, you also have to avoid touching markers
+    declared as "0 *** 0", which means a vector of size zero. The markers are
+    used by the IGS library where import/export routines are built, to compute
+    the size of each section of the skin block, and they are vital, as well as
+    hexadecimal-encoded signatures.
+      Apart from changing those values, other reasonable changes to values of
+    the skin block might be done to better fit elements to a possible new set
+    of graphics parts [buttons, tiled backgrounds, etc].
+      The remaining symbols to define on the main program's side, are a few
+    constants listed below; they are all assigned to INTEGER VALUES; *values
+    marked with an asterisk will contribute to determine the size of several
+    memory areas allocated by iGUI, and as a consequence, sensibly influence
+    the amount of memory the final application needs:
+
+	INITIAL WIDTH		 in pixels, how wide the window is at startup
+	INITIAL HEIGHT		 in pixels, how tall the window is at startup
+	MINIMUM WIDTH		 in pixels, width's lower limit
+	MINIMUM HEIGHT		 in pixels, height's lower limit
+	MAXIMUM WIDTH		*in pixels, widht's higher limit
+	MAXIMUM HEIGHT		*in pixels, height's higher limit
+	MAX MENU OPTIONS	*max. n. of options in a menu, incl. submenus
+	MAX ONSCREEN OPTIONS	*max. n. of options visualized simultaneously
+	MAX LEVELS IN SHOW	*reflects nesting level of last submenu: 1..4
+	MAX FILES IN SELECTOR	*including file system links and directories
+	MAX FILES IN SHOW	 will determine the height of a file selector
+	MAX OPTIONS IN QUESTION *max. n. of pushbuttons/answers in a question
+	MAX FIELDS IN QUESTION	*those declared with either F/... or S/...
+
+      Additions needed to recompile an iGUI program past version 1.13.9b:
+
+    --- BEFORE SIGNATURE 'EFEX':
+
+ vector Balloon Border Colors  = 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f;
+	Balloon Border	       = 1;
+
+    --- BEFORE SIGNATURE 'SKIN':
+
+	Question Border Effect = service FX Doublestrike Antialiasing Dim;
+	Balloon Border Effect  = service FX Doublestrike Antialiasing Dim;
+
+      Note: service FX Antialiasing... effects were added with version 1.13.9b
+      of the PixelFX library, and although supported by the corresponding IGS
+      library, elements treaten with those effects will not display when skins
+      are imported in applications compiled with former versions.
+
+)
+
+"libraries"
+
+	iGUI;
+
+"directors"
+
+	display width			= INITIAL WIDTH;
+	display height			= INITIAL HEIGHT;
+
+"constants"
+
+    (GUI setup constants)
+
+	MENU MARKER			= 42;  (asterisk)
+	MENU DEMARKER			= 32;  (blank space)
+
+"variables"
+
+    (GUI setup variables / RESIDENT STRINGS)
+
+	Application Description 	= { NO_NAME };
+	Exit Button Description 	= { End_session };
+	Slep Button Description 	= { Go_dormant };
+	Fold Button Description 	= { Fold/unfold };
+	Maxi Button Description 	= { Full-Size };
+	Full Button Description 	= { Full-Screen };
+	Size Button Description 	= { Adjust_size };
+	Root	Directory Description	= { System_root };
+	Startup Directory Description	= { Initial_directory };
+	Parent	Directory Description	= { Up_one_level... };
+
+    (GUI setup variables / RESIDENT DATASCRIPTS)
+
+	On Question Overscan = { DISPLAY_TOO_SMALL \cr\lf TO_SHOW_QUESTION! };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Maximize };		  Q Maximize;
+		{ Cancel };		  NULL;
+		NULL;
+
+    (GUI setup variables / FULLSCREEN DIMENSIONS)
+
+	Fullscreen Width		= MAXIMUM WIDTH;
+	Fullscreen Height		= MAXIMUM HEIGHT;
+
+( ------------------------------ GUI SKIN BLOCK ---------------------------- )
+	SX Blockstart			= 0 *** 0;
+	SX Blockstart signature 	= 49554769h; ( = 'iGUI' )
+	Arrow Region Width		= 12;
+	Arrow Region Height		= 17;
+	Arrow Shadow Region Width	= 18;
+	Arrow Shadow Region Height	= 23;
+	Arrow Hot Spot X		= minus 1;
+	Arrow Hot Spot Y		= minus 1;
+	Horizontal Arrow Shadow Drift	= minus 2;
+	Vertical Arrow Shadow Drift	= minus 2;
+	Arrow Altitude Over Background	= 1000000;
+	Balloon Relative X Position	= minus 6;
+	Balloon Relative Y Position	= 18;
+	Balloon Wraparound Margin	= 300;
+	Balloon Text Padding		= 1;
+	Write Caption Over Menu Button	= YES;
+	Menu Padding			= 3;	 (low values sometimes glitch)
+	Menu Spacing			= 3;	 (low values sometimes glitch)
+	Menu Borders			= 1;
+	Menu Cell Padding		= 1;	 (if < -1, options overlap...)
+	Menu Cell Spacing		= 1;
+	File Selector Width		= 178;
+	File Selector Scrollbar Width	= 22;
+	Text Field Cursor Width 	= 1;
+	Text Field Cursor Shift 	= 0;
+	Text Field LeftSide Tolerance	= 16;
+	Text Field RightSide Tolerance	= 16;
+	Question Border 		= 1;
+	Question Text Padding		= 12;
+	Question Opt Padding		= 3;
+	Question Opt Spacing		= 5;
+	Question Field Padding		= 2;
+	Title Bar Text Color		= FFFFFFh;
+	Arrow Shape Transparent Color	= FF00FFh;
+	Arrow Shadow Transparent Color	= 000000h;
+	Balloon Text Color		= FFFFFFh;
+	Menu Text Color 		= FFFFFFh;
+	Directory Name Color		= 15C0C5h;
+	Menu Disabled Text Color	= 5078B0h;
+	Text Field Text Color		= FF80FFh;
+	Question Text Color		= B8C8FFh;
+	Question Opt Color		= FFFF00h;
+ vector Title Bar Active Colors 	= 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f;
+ vector Title Bar Inactive Colors	= 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Balloon Background Shaders	= 0.8f; 0.9f; 1.0f; 0.8f; 0.9f; 1.0f; 0.9f; 1.0f; 1.0f;
+ vector Active Button Colors		= 0.0f; 0.0f; 0.5f; 0.0f; 0.0f; 0.5f; 0.0f; 0.0f; 0.5f;
+ vector Pushed Button Colors		= .25f; .25f; .25f; .25f; .25f; .25f; 0.0f; 0.0f; 0.0f;
+ vector Inactive Button Colors		= 0.0f; 0.0f; 0.0f; .67f; .67f; .67f; 0.0f; 0.0f; 0.0f;
+ vector Menu Background Colors		= .33f; .33f; .33f; .33f; .33f; .33f; 0.0f; 0.0f; 0.0f;
+ vector Menu Borders Colors		= 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Selected Option Colors		= 0.0f; 0.0f; 0.0f; 0.4f; 0.5f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Pushed Option Colors		= 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f;
+ vector Text Cursor Colors		= 0.0f; 0.4f; 0.6f; 0.0f; 0.4f; 0.6f; 0.0f; 0.7f; 1.0f;
+ vector Question Body Colors		= 1.0f; 1.0f; 1.0f; 0.0f; 0.0f; 0.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Border Colors		= .25f; .25f; .25f; 0.5f; 0.5f; 0.5f; .75f; .75f; .75f;
+ vector Question Field Edge Colors	= 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Field Body Colors	= 1.0f; 1.0f; 1.0f; .75f; .75f; 1.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Option Edge Colors	= 0.3f; 0.3f; 0.3f; 0.6f; 0.6f; 0.6f; 1.0f; 1.0f; 1.0f;
+ vector Question Default Option Body	= 1.0f; 1.0f; 1.0f; 0.9f; .95f; 1.0f; 0.7f; .75f; 0.9f;
+ vector Question Generic Option Body	= 1.0f; 1.0f; 1.0f; .95f; .95f; .95f; .85f; .85f; .85f;
+ vector Balloon Border Colors		= 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f;
+	Balloon Border			= 1;
+	SX Effects signature		= 58454645h; ( = 'EFEX' )
+	SX Effects start		= 0 *** 0;
+	Title Bar Text Effect		= service FX Antialiasing Dim;
+	Arrow Shape Effect		= service FX Alpha Lit Superimpose;
+	Arrow Shadow Effect		= service FX Alpha Dim;
+	Active Button Effect		= service FX Alpha Lit;
+	Pushed Button Effect		= service FX Alpha Dim;
+	Inactive Button Effect		= service FX Alpha Dim;
+	Balloon Background Effect	= service FX Raw;
+	Balloon Text Effect		= service FX Antialiasing Dim;
+	Menu Text Effect		= service FX Antialiasing Dim;
+	Selected Option Effect		= service FX Alpha Dim;
+	Pushed Option Effect		= service FX Alpha Light;
+	Text Field Text Effect		= service FX Antialiasing Dim;
+	Text Cursor Effect		= service FX Alpha Dim;
+	Question Body Effect		= service FX Raw;
+	Question Text Effect		= service FX Antialiasing Dim;
+	Question Field Edge Effect	= service FX Doublestrike Antialiasing Dim;
+	Question Field Body Effect	= service FX Raw;
+	Question Opt Edge Effect	= service FX Doublestrike Antialiasing Dim;
+	Question Opt Body Effect	= service FX Raw;
+	Question Opt Text Effect	= service FX Antialiasing Dim;
+	Question Border Effect		= service FX Doublestrike Antialiasing Dim;
+	Balloon Border Effect		= service FX Doublestrike Antialiasing Dim;
+	SX Blockend signature		= 4E494B53h; ( = 'SKIN' )
+	SX Blockend			= 0 *** 0;
+( ---------------------------- END GUI SKIN BLOCK -------------------------- )

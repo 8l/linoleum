@@ -1,0 +1,1525 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        ML fragments<br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        MACHINE LANGUAGE FRAGMENTS<br><br>
+        No, nevermind reading... only if you hate yourself :p<br>
+        (or if you plan developing a CPU pack)<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        So, as it is, the L.in.oleum environment is fully cross-platform,
+        and what you're using as CPU instructions, system calls, hardware
+        resources, are all <i>abstractions</i> of the underlying system's
+        corresponding elements. However, there may be several tasks you'd
+        really like to perform in a L.in.oleum application but that you
+        couldn't do without the possibility to use some system-specific
+        machine language. For those who didn't know, machine language is
+        the numerical representation of a program. You must know that when
+        you write a L.in.oleum instruction such as:
+
+        <blockquote>
+        A = 1;
+        </blockquote>
+
+        the compiler translates this (assuming the CPU pack in use is the
+        "i386.bin") to a few bytes of code. In this case, the bytes are 5
+        and what they are set to depends on the fact that within i386.bin
+        there is a "compatibility pattern" that was assembled, using some
+        i386 assembler, from the following instruction:
+
+        <blockquote>
+        mov eax, 1
+        </blockquote>
+
+        Well, so this is the equivalent, in native assembly for i386 and
+        later processors, of the instruction seen in L.in.oleum as A = 1,
+        and this is called the "assembly code". Assembly was originarily
+        created to simplify writing and debugging of programs written in
+        machine language. To finally understand what's machine language,
+        you have to consider that the processor always thinks with numbers,
+        never with letters of any alphabet. "As is", the processor wouldn't
+        even be able to understand what "mov" means, for instance. Well,
+        "mov" is said to be a "mnemonic": for us humans, it's easier to
+        remember what a sequence of letters means, than what a number means.
+        In fact, "mov" is obviously an abbreviation of "move", and then by
+        convention (at least working with Intel assembly) the first operand
+        to the "mov" instruction is considered to be the destination of the
+        operation, while the second operand is the source. That's why the
+        above means "move value 1 into register eax". When an "assembler",
+        a program that purely translates mnemonics to machine language,
+        encounters "mov eax, 1", what it produces are 5 bytes of code:
+
+        <blockquote>
+        B8 01 00 00 00
+        </blockquote>
+
+        And that's where I wanted to arrive: that's the machine language
+        equivalent of "A=1" using the i386 instructions set. To produce
+        machine language on your own, you have to do what the compiler
+        does. So I'd better get into the details of this process, and
+        here we go: the L.in.oleum compiler is a very simple compiler that
+        takes "pieces" of the program from a file called the CPU pack, and
+        puts them together one after the other. Each piece corresponds to
+        an instruction, so the sequence of those pieces exactly reflects
+        the sequence of the instructions written in the program's source
+        code. However, if I wrote "A=2" the complier would have had to
+        produce the following:
+
+        <blockquote>
+        B8 02 00 00 00
+        </blockquote>
+
+        ...where you clearly see that the second byte of code is now 02,
+        no longer 01. So, those pieces that the compiler puts together
+        cannot really always be the same for every instruction: at least
+        some parts of them must change to host the values that correspond
+        to the operands of the instruction. You know that "A=1" has two
+        operands: the first is A and the second is the integer value 1.
+        But the registers made available to a L.in.oleum application are
+        very few: you know, they are complessively 5 registers. So it isn't
+        really necessary to consider how an assembler would insert a mean
+        to indicate register "eax" within the code; it's often easier to
+        just build upto 25 pieces of every instruction considering the
+        combinations, with 2 operands being registers, of 5x5 registers.
+        Given all this, what the compiler considers the constant part of
+        the "piece" to use, is that byte set to B8 (in hexadecimal). That
+        byte, once the CPU meets it, means "move some 32-bit integer value
+        into register eax". What's to move has to be given after the
+        instruction, of course. And in our case, what's to move is value 1.
+
+        <br><br>
+
+        To give further details, I have to explain what a "compatibility
+        pattern" is, and introduce some things called "ISMO", that are
+        found within compatibility patterns. So first of all, a compatibility
+        pattern is a piece of the CPU pack file, and it's made of the machine
+        language bytes that form a single variant of a L.in.oleum instruction.
+        A CPU pack, like i386.bin, is formed by a short header, followed by
+        all the compatilibility patterns linked together, one after the other
+        and in a precise sequence. The compiler knows two things about a CPU
+        pack: the patterns' alignment and the position of a given pattern in
+        the pack's sequence. Now, considering the case of "A=1", and of the
+        i386 pack, the patterns' alignment is 48 bytes, and the pattern that
+        corresponds to instruction "A=&lt;somenumber&gt;" is the very first
+        pattern of the sequence. With these informations, the compiler knows
+        the position where to read the pattern from within the CPU pack, so
+        when the compiler meets the instruction A=1, it goes to read 48 bytes
+        from file cpu/i386.bin at position:
+
+        <blockquote>
+        Pa x Pn + Hs
+        </blockquote>
+
+        ...where Pa is the patterns' alignment in bytes, being 48, Pn is the
+        number of the pattern within the sequence, being zero, and Hs is the
+        size (also in bytes) of the header preceeding all the patterns in the
+        CPU pack. More specifically, Hs is a constant, and it's always 8. So,
+        you can see the above formula for the case of A=1 as:
+
+        <blockquote>
+        48 x 0 + 8 = 8
+        </blockquote>
+
+        ...but what does the compiler find once it's read those 48 bytes,
+        starting from byte number 8 of the file "cpu/i386.bin"?<br>
+        It finds this:
+
+        <pre>
+        B849322E342B2B87DB87DB87DB87DB9087DB87DB87DB87DB
+        87DB87DB87DB87DB87DB87DB87DB87DB87DB87DB87DB87DB
+        </pre>
+
+        so the compiler always reads 48 bytes to get a pattern, but of course
+        the pattern may be shorter than that. To be sincere, given that most
+        of the L.in.oleum instructions are designed to translate to atomic
+        instructions (made of a single CPU operation) on most processors, it
+        is very likely that the true pattern is shorter than that. In fact,
+        we know it must be no longer than 5 bytes. The first five bytes of
+        the above are, in particular:
+
+        <blockquote>
+        B8 49 32 2E 34
+        </blockquote>
+
+        in which you can acknowledge the initial B8 code, the piece we need
+        for that instruction. Now, ignore for a minute the other 4 bytes and
+        look at what follows those 5 bytes:
+
+        <blockquote>
+        2B 2B
+        </blockquote>
+
+        Two bytes set to 2B. If you convert 2B to decimal (2*16+11=32+11=43)
+        and you look up an ASCII table to see what 43 means, you'll find it
+        corresponds to the plus sign (+). Those two bytes would look like ++,
+        and that's the <i>termination code</i> of the pattern. Looking into
+        the first 2 bytes of the CPU pack's header, the compiler knows that
+        that code terminates the pattern, and that what follows must be
+        ignored, i.e. not saved into the application's binary code as part of
+        that instruction. But the compiler doesn't only scan the pattern in
+        search for that termination code. Meanwhile, it searches for ISMOs.
+        An ISMO is an <i>Instruction Set Mobile Operand code</i>, and it's
+        pratically the <i>placeholder</i> of a value that must represent one
+        of the original instructions' operands. Well, the four bytes following
+        B8 in that pattern, are exactly the entity called ISMO. By converting
+        them to ASCII the way I did for the termination code, I can see they
+        mean something like "I2.4". So, "I2.4" is an ISMO. It's hardcoded into
+        the CPU pack, because when I wrote the assembly version of that pattern
+        I wrote it as:
+
+        <blockquote>
+        mov eax, '4.2I'
+        </blockquote>
+
+        and I took care of inverting the ISMO's bytes in this case, because
+        i386 processors use small-endian representation of values larger than
+        a single byte: they store such values with the bytes in reverse order,
+        contrarily to what big-endian processors which store them in the given
+        order. Now, the ISMO is supposed to be stored in a CPU pack always in
+        big-endian, and it's supposed to be ALWAYS 4 bytes long, no matter how
+        many bytes will the operand take once the ISMO gets replaced with that.
+        Those four bytes have a precise meaning: the first byte is an uppercase
+        "i", and it means that what the ISMO represents is an immediate operand,
+        a pure number; the second byte is the number of the operand to take the
+        value from, and in this case it's "2" because value 1 in "A=1" is the
+        second operand, the first one being "A"; the last byte, "4", is also
+        a number, and specifies how many bytes the operand must take into that
+        pattern, at that point. Well, eax is a 32-bit register so it's obvious
+        that if you want to load an immediate value into it, you have to
+        specify 4 bytes for that value. And the third byte? Well, in this case
+        it's a dot, and it must be a dot to help the compiler distinguish an
+        ISMO from the rest of the pattern's machine language bytes. In effects
+        the compiler does many cross-checks to verify what parts of a pattern
+        are ISMOs and what parts are not; for this reason it's unlikely that a
+        piece of random machine language for a certain processor could exactly
+        reproduce a valid ISMO by accident. What helps finding ISMOs is the
+        fact that there's only a very few combinations of a group of 4 bytes
+        that represent a valid ISMO. In the end I'll be giving a table listing
+        the possible combinations, but now let's complete the explanation.
+
+        <br><br>
+
+        So the compiler knows that it must replace those 4 bytes following B8
+        with the value of the first operand, also expressed in 4 bytes. Yeah,
+        in this case what it does is simply "filling in the space" the value
+        of the second operand of "A=1". Remembering to reverse the bytes for
+        the small-endian question, it obtains:
+
+        <blockquote>
+        B8 01 00 00 00
+        </blockquote>
+
+        which finally is the correct machine language for A=1.
+        So far so good, but it isn't always so easy to fill ISMOs. The case
+        where they get a bit more complicated is for the destinations of
+        jumps. Because Intel code is <i>relocable</i> (it can be moved into
+        memory without changing the code itself to adjust any addresses it
+        may contain), when you give a destination address for a jump you
+        have to consider expressing the address relatively to the position
+        of the "jump" instruction. More specifically, for those processors
+        it's relative to the address of the instruction following the "jump"
+        instruction. Take for example, what happens writing:
+
+        <blockquote>
+        &nbsp;&nbsp;&nbsp;? B = C -> MyLabel;<br>
+        &nbsp;&nbsp;&nbsp;A = 1;<br>
+        "MyLabel"<br>
+        &nbsp;&nbsp;&nbsp;(...further code here...)
+        </blockquote>
+
+        To find the equivalent assembly code of that, I have to consider that
+        register B is mapped to register ebx, and C to register ecx. What
+        L.in.oleum calls the "comparison directive" is instead a couple of
+        atomic instructions, namely a "comparison" and a "conditioned jump".
+        Assuming knowledge of i386 assembly as a fact (why! I can't ALSO be
+        presenting a complete i386 assembly tutorial in this manual, sorry,
+        find one yourself), the equivalent of that is:
+
+        <blockquote>
+        &nbsp;&nbsp;&nbsp;cmp ebx, ecx ; CoMPare ebx against ecx<br>
+        &nbsp;&nbsp;&nbsp;je MyLabel ; Jump if Equal, to MyLabel<br>
+        &nbsp;&nbsp;&nbsp;mov eax, 1 ; MOVe 1 into eax<br>
+        MyLabel:<br>
+        &nbsp;&nbsp;&nbsp;; further code here
+        </blockquote>
+
+        And trying to assemble that with the proper assembler (a 32-bit
+        386 assembler) results in the following machine language:
+
+        <pre>
+        3B D9                   cmp ebx, ecx
+        74 05                   je MyLabel
+        B8 01 00 00 00          mov eax, 1
+      MyLabel:
+        ...further code here...
+        </pre>
+
+        They're taking complessively 9 bytes. What I was going to point out
+        was the second couple of them: 74 05. The opcode 74 is a short jump
+        that activates on condition, and the condition for opcode 74 is that
+        the zero flag of the CPU's flag register must be set. The zero flag
+        is set when the result of the latest performed integer operation is
+        zero; cmp, in fact, becomes a subtraction of ecx from ebx. Of course
+        when they both contain the same value, the result of that subtraction
+        is zero, and therefore the zero flag gets set, and keeps being set
+        after the comparison instruction has finished executing, where the
+        CPU meets "je". So, when "je" finds the condition is true, it jumps
+        to "MyLabel", which became... 05? Yes, it became 05. The jumps made
+        with "je" can be of various ranges (byte, word, doubleword) but in
+        that case the assembler knows "MyLabel" is shortly following, at
+        exactly 5 bytes of distance after the "je" instruction. That's why
+        it places the "offset" of the jump's destination as a single byte,
+        set to 5. It takes a single byte to store the destination offset if
+        the offset is within the range of a signed byte value, from -128 to
+        +127, always basing on the position of the instruction following the
+        jump. Now, should you need to reproduce this in a L.in.oleum program
+        (why? it's a good question, but let's say for a few reasons, mostly
+        for code optimization) you can do this by writing:
+
+        <pre>
+        {
+            3B D9                   (cmp ebx, ecx)
+            74 &lt;+1 bMyLabel&gt;        (je MyLabel)
+            B8 01 00 00 00          (mov eax, 1)
+        }
+    "MyLabel"
+        (...further code here...)
+        </pre>
+
+        Hurm! What's &lt;+1 bMyLabel&gt;? Well, first of all, notice how
+        a machine language fragment is marked within L.in.oleum's
+        "programme" periods (the only periods where LM fragments are
+        allowed at all): it's marked between braces. That's fine, 'cos
+        you don't declare any strings in "programme" periods. Between
+        the braces, the syntax is different from the rest of the program:
+        there's no more instructions, but bytes of code, so there's never
+        the need for semicolons to terminate instructions. And the only
+        characters allowed to build those bytes are the characters of the
+        hexadecimal alphabet: 0 to 9 and A to F. Of course there can be
+        comments, though, as you can see from the above example, and there's
+        one last construct, marked between &lt;...&gt; signs, that tells the
+        compiler to insert the value of a certain symbol at that point of
+        the code. By "value", I mean the value the compiler associates to
+        that alphanumerical symbol: if it's a variable, it will give the
+        n-flat pointer to that variable, if it's a constant it will be the
+        true constant's value, if it's a code label... heh, if it's a code
+        label, which was that case, it gives the physical address of that
+        label within the code area of the application. Code labels'
+        physical addresses begin at zero, where the very first instruction
+        of the very first library is, and are progressively counted in bytes,
+        not in units. What counts them is called "program counter", often pc
+        for short: in the source code of my compiler, the pc is "bcodesize",
+        animated and used in passes 1 and 4. Lemme show a replay of the
+        above example considering possible values for the pc:
+
+        <pre>
+       (pc=100)
+        {
+            3B D9                   (cmp ebx, ecx)
+            74                      (je...)
+           (pc=103)
+            &lt;+1 bMyLabel&gt;        (...MyLabel)
+           (pc=104)
+            B8 01 00 00 00          (mov eax, 1)
+        }
+       (pc=109)
+    "MyLabel"
+        (...further code here...)
+        </pre>
+
+        This serves to show that the pc, after streaming that byte 74,
+        giving the opcode of "je short", assumes value 103 in the point
+        where we need to stream the address of "MyLabel". That address,
+        since we're using the "short range" version of je, needs to
+        take no more than a single byte, and that's what the lowercase b
+        is for. "bMyLabel" tells the compiler to use the address of MyLabel
+        but to limit the part of the address that gets into the code to
+        the very first byte of it. The other strange fact is that the
+        symbol name is also preceeded by a "+1". If it wasn't for that,
+        the compiler would use the address of MyLabel as it is. In that
+        example the address "as is" means a number: precisely 109. But
+        the jump's destination address, working with i386 ML, must be
+        relative to the current value of pc. The +1 specification tells
+        the compiler to use a relative address made out as:
+
+        <blockquote>
+        MyLabel - pc + 1
+        </blockquote>
+
+        More generally, a plus or a minus sign, followed by a single digit,
+        and the whole prepended to the name of a code label, makes out the
+        relative address of that label plus or minus the number of bytes
+        given by that digit. The said digit is hexadecimal, allowing for
+        a range of +/-15 bytes: it's to adjust the relative address
+        considering many possibilities for the processor to mark them: 386's
+        mark them, as I said, basing on the address of the instruction that
+        follows the jump, and so the +1 accounts for the byte we're streaming.
+        Below the jump, I've effectively marked address 104 which, adding the
+        5 bytes taken by "mov eax,1", makes 109, which is what we wanted.
+        If we were using a medium-range jump (given by 0F 84 &lt;wMyLabel&gt;)
+        we'd have to use +2 to adjust the offset. If we had a processor that
+        targets relative jumps basing on the address of the same instruction
+        that performs the jump, and the instruction opcode still took 1 byte,
+        that's were we'd have to use -1 as an adjustment. Building your ML
+        this way, there's the advantage that you may freely move your labels,
+        and the code would get updated at least semi-automatically. Not fully,
+        because at a certain point moving a label, or inserting instructions
+        between the jump and the label, could cause the jump to get out of the
+        specified range (which is 1 byte for opcode 74). That would require
+        you to manually change the opcode from 74 to 0F 84, but at least the
+        compiler would tell you that the value you've tried to stream to that
+        byte got out of range, with a warning message. For a last hint, here's
+        an example of an unconditioned jump:
+
+        <pre>
+        {
+            E9 &lt;+4 dMyLabel&gt; (jmp MyLabel, unconditioned)
+        }
+        </pre>
+
+        Uhm? Plus 4? Yes, plus 4 in relation to the point where the address
+        begins, and to account for the 4 bytes forming the address this time,
+        because opcode E9 expects 4 bytes to follow: it's a jump, relative,
+        to "full pointer given". Erm... ok, enough with jumps.
+        There's another thing you might know before safely attempting to
+        code some ML. Ah, and no, if you think I've deliberately setup this
+        part to be particularly hard, with the intention to discourage use
+        of hardware-specific machine language in a programming environment
+        that's supposed to be cross-platform, the answer is <i>absolutely</i>
+        no. The fact that it's hard is just normal, being machine language.
+        But on the other hand, the L.in.oleum compiler is an universal
+        compiler, valid for all platforms: it can't be an universal assembler
+        too, because there's no universal assembly in the first place, if you
+        don't count the L.in.oleum language itself. Anyway, the other thing
+        you might consider is how to access you program's memory. That's made
+        of units, and addressed in units. The addresses you receive from the
+        compiler specifying something like &lt;MyVariable&gt; are unit-based,
+        and furthermore they start where the origin pointer says they start.
+        For what concerns the i386 pack, you must know that the origin is EDI
+        and so any addresses might be transformed by your ML as in:
+
+        <blockquote>
+        physical address = nflat address * bytesperunit + workspace origin
+        </blockquote>
+
+        ...so for the specific i386 case, it's address * 4 + edi. This can be
+        done, for complete transparency, with the CPU's internal "address
+        generator", a piece of circuitry that can effectively perform simple
+        computations of such addresses. On CPUs where the generator isn't
+        capable of doing so, there might be other ways, but this is the i386
+        package so that's still what we're talking about. And here's an
+        example accessing a given variable to load its content in register
+        <i>esi</i>: L.in.oleum knows esi as the E register. Ah, the name?
+        Well, the registers on i386 processors have legacy names: they did
+        mean something when the processor worked mostly in "real addressing
+        mode", in interrupt calls and in certain instructions accessing the
+        memory to copy and move portions of it taking implicit registers as
+        operands. In that context esi meant for "extended source index", and
+        identified an extension of the former 16-bit si register built in
+        286 and previous processors. At the moment, though, they're almost
+        all general-purpose registers, with the possible exception of esp,
+        the stack pointer, and of ebp, which like esp implicitly addresses
+        the stack segment. Oh, well, nevermind, and here's the example:
+
+        <pre>
+        {
+            8B B7 &lt;dMyVariable mtp 4&gt; (mov esi,[edi+offset MyVariable*4])
+        }
+        </pre>
+
+        Having a headache? Not my fault, sorry.<br>
+        The rest, pondering enough on the thing, might be straightforward:
+        I'd finally remark once again, that programming in L.in.oleum does
+        not generally involve understanding this chapter too. This is for
+        emergencies and refinement, where you desperately need doing
+        something just a bit faster managing the instructions at their
+        most fundamental level, of where you need doing something that it's
+        not portable and therefore not part of the regular instructions set.
+        There is an example that does such a thing: it reads the CPU
+        identification string, which is mandatory for Pentiums and later
+        or compatibles. This involves executing the "cpuid" instruction,
+        which opcode is 0F A2, and which of course is not in the universal
+        instructions set, because that instruction is in fact not universal,
+        but specific to the said processors. Yes, remember that no machine
+        language opcode is really universal. While the i386 loads eax (the
+        extended accumulator register) with B8, Commodore 64 loaded its
+        accumulator register with a "LDA #value", where LDA translated to
+        the opcode A9, and not B8. What's still universal are all those
+        hexadecimal digits 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F
+        and the concept of a binary machine, which is barely only what
+        L.in.oleum considers allowing. Any parts written in some platform's
+        specific machine language works only on that precise platform, and
+        needs to be entirely rewritten when porting the application to
+        a different platform, with a different processor, with a different
+        operating system...
+
+        <br><br>
+
+        For what concerns a programmer who wishes to build machine language
+        sequences in L.in.oleum applications, that might be all, apart from
+        the suggestion of getting a debugger capable of instantly assembling
+        some of your machine's assembly, therefore showing you the opcodes
+        corresponding to what you just assembled. My one for the i386 sequences
+        presented above and in the example programs using machine language, was
+        the Borland Turbo Debugger 3.1, which in effects assembles for 16-bit
+        real mode, but it's not so difficult to translate that ML to 32-bit once
+        you know that you have to remove prefix bytes 66 (toggle operand size)
+        and 67 (toggle address size), unless you were using a 32-bit mode specific
+        construct like say... lea eax, [eax+ebx]... Anyway, after removing those
+        prefixes, just copy the sequence of ML opcodes and replace any operands
+        with what you intended them to be, including those &lt;symbol
+        specifications&gt;. An example of how I did it:
+
+        <pre>
+    In TD.EXE's "CPU" window, and no program loaded, I typed:
+
+      mov esi, [edi+11111111]
+
+    TD assembled that to:
+
+      67668BB711111111
+
+    From which I removed 67 and 66 (prefixes for 16-bit code):
+
+      8B B7 11111111
+
+    And well... it's easy to guess where the operand went.
+        </pre>
+
+        But don't feel compelled to use TD now: I used that because it's
+        the only program I have here capable of assembling "on the spot",
+        there's probably more recent versions or even some freeware tools
+        for doing that, although I don't know where. I mean, the ideal
+        thing would be an instant assembler that supports 32-bit code for
+        the i386 (in the case of this processor).
+
+        <br><br>
+
+        For what concerns who's curious about the workings of the compiler,
+        but especially those who may like to develope CPU packs for different
+        processors, here follows all the info about how a CPU pack is made.<br><br>
+
+        <div>CPU pack header fields:</div>
+
+        <table cellpadding=5 cellspacing=5>
+        <tr><td valign=top>offset 0</td><td>byte: patterns' alignment in bytes:<br>
+                                            a value of zero means the alignment is 256 bytes.</td></tr>
+        <tr><td valign=top>offset +1</td><td>byte: unused so far, must be zero.</td></tr>
+        <tr><td valign=top>offset +2</td><td>byte: unused so far, must be zero.</td></tr>
+        <tr><td valign=top>offset +3</td><td>byte: unused so far, must be zero.</td></tr>
+        <tr><td valign=top>offset +4</td><td>byte: patterns terminator, byte #1.</td></tr>
+        <tr><td valign=top>offset +5</td><td>byte: patterns terminator, byte #2.</td></tr>
+        <tr><td valign=top>offset +6</td><td>byte: BEA - Big-Endian Activation bitmap, where:<br>
+                                             bit 0: if set, use big-endian for immediate ISMO.<br>
+                                             bit 1: if set, use big-endian for displacement ISMO.<br>
+                                             bit 2: if set, use big-endian for relative address ISMO.<br>
+                                             bit 3: if set, use big-endian for static data.<br>
+                                             bit 4: if set, use big-endian in RTM initialization paragraph.<br>
+                                             bits 5,6,7: unused so far, must be zero.<br>
+                                             <br>
+                                             These flags account for the possibility of having
+                                             big-endian microprocessors, where the order of bytes
+                                             forming values larger than 1 byte must be reversed
+                                             respectively to small-endian. Typically a big-endian
+                                             processor would require the CPU pack designer to set
+                                             all those flags. It has to be noted that while programs
+                                             developed on a small-endian processor can be recompiled
+                                             and made compatible with a big-endian processor, data
+                                             files created with different representations would not
+                                             be equally compatible, unless the files were read and
+                                             written one byte at a time (which is very unlikely).
+                                             Nothing can be done about this: such cases would require
+                                             those files to be converted on a per-file basis.</td></tr>
+        <tr><td valign=top>offset +7</td><td>byte: ACC - uncommon CPU behavior ACCessory flags:<br>
+                                             bit 0: if set, negates all relative jumps addresses (e.g the said 74 05 would be 74 FA).<br>
+                                             bit 1: if set, negates all stack offsets (e.g. $+1 becomes $-1) and pointers ($:5 becomes $:minus 5).<br>
+                                             bits 2..7: unused so far, must be zero.<br>
+                                             <br>
+                                             These flags account for unknown, but theoretically possible,
+                                             CPUs behaving very uncommonly: bit 0 is ACC_REVERSE_JUMPS,
+                                             and causes all relative jump addresses to change sign, for
+                                             the case where a processor wants a forward jump to be marked
+                                             with a negative offset, and vice-versa. Bit 1, ACC_REVERSE_STACK,
+                                             causes all relative pointers and all offsets added to the $
+                                             register to change sign.</td></tr>
+        </table>
+
+        For a valid CPU pack that the compiler will accept, the 8-byte fixed header
+        must be followed exactly by 6241 instruction patterns, therefore needing
+        8 + 6241 x Pa bytes (Pa = patterns' alignment) as the CPU pack file size.
+        Considering how things work now, the overall portability on different CPUs might
+        only be limited by the following considerations, which indeed are "hardware
+        requirements" for L.in.oleum code to be ported to a certain CPU.<br>
+        <br>
+        A) CPU must be based on binary boolean logics and its fundamental operations;<br>
+        B) CPU operands capacity and address range must be at least 32 bit;<br>
+        C) CPU must consider 8 bits as its atomic amount of operational memory;<br>
+        D) CPU must organize programs' instructions serially forwards;<br>
+        E) CPU must allow execution of relocable code;<br>
+        F) CPU must provide LIFO stack memory management.<br>
+        <br>
+        Point B) is a physical constriction: the possible unit before 32 is 16,
+        but 16-bit address range would limit a program to address upto 2^16=65536
+        bytes, 64 Kb of memory. This is physically too small to execute L.in.oleum
+        applications, for many reasons, among which, for instance, the command line
+        vector is supposed to be 32768 units in size: if the unit is 16 bit, this is
+        32768x2 bytes, which again gives 64 Kb. All the addressable memory would be
+        already taken by the command line vector.
+        Point E) more precisely means that the CPU must present at least the
+        possibility to have long-range jump instructions based on relative
+        pointers, and not only absolute (to full, fixed memory pointer given).<br><br>
+
+        <div>Table of ISMO codes for L.in.oleum compiler @ unit=32:</div>
+
+        <table cellpadding=5 cellspacing=5>
+        <tr><td valign=top>Ix.y</td><td>Immediate value of operand x, of y bytes.<br>
+                                        Type byte: uppercase "i" letter (ASCII=73).<br>
+                                        Values for x: 1, 2, 3.<br>
+                                        Values for y: 1, 4.</td></tr>
+        <tr><td valign=top>Dx.4</td><td>Workspace displacement (will be expressed in bytes) of operand x.<br>
+                                        Type byte: uppercase "d" letter (ASCII=68).<br>
+                                        Values for x: 1, 2, 3.</td></tr>
+        <tr><td valign=top>LxZ4</td><td>Relative code address of operand x, adjusted by Z.<br>
+                                        Type byte: uppercase "l" letter (ASCII=76).<br>
+                                        Values for x: 1, 2, 3.<br>
+                                        Values for Z: ASCII A to Z (65 to 90)<br><br>
+                                        Z equals to an adjustment of n bytes,
+                                        relative to the pc address of the code byte
+                                        that corresponds to the first byte of this ISMO,
+                                        and where n is obtained from the conversion of the
+                                        letter replacing that Z byte, in this way:<br><br>
+                                        A = -13<br>
+                                        B = -12<br>
+                                        C = -11<br>
+                                        D = -10<br>
+                                        E = -9<br>
+                                        F = -8<br>
+                                        G = -7<br>
+                                        H = -6<br>
+                                        I = -5<br>
+                                        J = -4<br>
+                                        K = -3<br>
+                                        L = -2<br>
+                                        M = -1<br>
+                                        N = 0<br>
+                                        O = +1<br>
+                                        P = +2<br>
+                                        Q = +3<br>
+                                        R = +4 (i386.bin uses R to skip the address' 4 bytes)<br>
+                                        S = +5<br>
+                                        T = +6<br>
+                                        U = +7<br>
+                                        V = +8<br>
+                                        W = +9<br>
+                                        X = +10<br>
+                                        Y = +11<br>
+                                        Z = +12</td></tr>
+        </table><br>
+
+        <div>CPU pack patterns' sequence, as seen by the compiler:</div>
+
+<pre>
+        OPERAND #1      OPERAND #2           VARIANTS
+
+        // assignment
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // unconditioned jump
+
+      { _immediate,     _no_operand,            1       },
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // jump to subroutine
+
+      { _immediate,     _no_operand,            1       },
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // CPU delay loop, used mostly for application stressing
+
+      { _immediate,     _no_operand,            1       },
+
+        // push on stack
+
+      { _immediate,     _no_operand,            1       },
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // pop from stack
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // integer increment
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // integer decrement
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // integer loop until zero
+
+      { _register,      _immediate,             5       },
+      { _direct,        _immediate,             1       },
+      { _indirect,      _immediate,             5       },
+
+        // jump if subroutine was successful
+
+      { _immediate,     _no_operand,            1       },
+
+        // jump if subroutine failed
+
+      { _immediate,     _no_operand,            1       },
+
+        // return from FAILED subroutine
+
+      { _no_operand,    _no_operand,            1       },
+
+        // return from SUCCESSFUL subroutine or quit main program
+
+      { _no_operand,    _no_operand,            1       },
+
+        // return from subroutine without state report (just return)
+
+      { _no_operand,    _no_operand,            1       },
+
+        // integer addition
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer subtraction
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise AND
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise inclusive OR
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise exclusive OR
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise unsigned shift right
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise unsigned shift left
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if equal (signed/unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if not equal (signed/unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer signed multiplication
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer signed division
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer signed remainder
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise NOT
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // add to stack pointer
+
+      { _immediate,     _no_operand,            1       },
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // subtract from stack pointer
+
+      { _immediate,     _no_operand,            1       },
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // floating-point sine
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // floating-point cosine
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // floating-point square root
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // integer negation
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // floating-point negation
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // integer absolute value
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // floating-point absolute value
+
+      { _register,      _no_operand,            5       },
+      { _direct,        _no_operand,            1       },
+      { _indirect,      _no_operand,            5       },
+
+        // assignment from stack (with immediate relative displacement)
+
+      { _register,      _immediate,             5       },
+      { _direct,        _immediate,             1       },
+      { _indirect,      _immediate,             5       },
+
+        // assignment to stack space (with immediate relative displacement)
+
+      { _immediate,     _immediate,             1       },
+      { _immediate,     _register,              5       },
+      { _immediate,     _direct,                1       },
+      { _immediate,     _indirect,              5       },
+
+        // bitwise signed shift right
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise rotate right
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise rotate left
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer unsigned multiplication
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer unsigned division
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer unsigned remainder
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point addition
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point subtraction
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point multiplication
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point division
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // convert floating-point to signed integer
+
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // convert signed integer to floating-point
+
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise test and jump if zero
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // bitwise test and jump if not zero
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if greater (unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if lower (unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if greater or equal (unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if lower or equal (unsigned)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if greater (signed)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if lower (signed)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if greater or equal (signed)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer compare and jump if lower or equal (signed)
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if equal
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if not equal
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if greater
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if lower
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if greater or equal
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point compare and jump if lower or equal
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point partial remainder
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // floating-point partial arc tangent
+
+      { _register,      _immediate,             5       },
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _immediate,             1       },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _immediate,             5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // NOP
+
+      { _no_operand,    _no_operand,            1       },
+
+        // integer unsigned split
+
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // integer signed split
+
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      },
+
+        // push all registers
+
+      { _no_operand,    _no_operand,            1       },
+
+        // pop all registers
+
+      { _no_operand,    _no_operand,            1       },
+
+        // exchange values
+
+      { _register,      _register,              25      },
+      { _register,      _direct,                5       },
+      { _register,      _indirect,              25      },
+      { _direct,        _register,              5       },
+      { _direct,        _direct,                1       },
+      { _direct,        _indirect,              5       },
+      { _indirect,      _register,              25      },
+      { _indirect,      _direct,                5       },
+      { _indirect,      _indirect,              25      }
+
+        TOTAL PATTERNS ...................... 6241
+</pre>
+
+        When there are 5 variants, the 5 patterns must be ordered in the sequence
+        that uses A, B, C, D, E as the only register operand. When the variants
+        are 25, the 25 patterns must be ordered in the sequence that uses
+        (A;A), (A;B), (A;C), (A;D), (A;E),
+        (B;A), (B;B), (B;C), (B;D), (B;E),
+        (C;A), (C;B), (C;C), (C;D), (C;E),
+        (D;A), (D;B), (D;C), (D;D), (D;E),
+        (E;A), (E;B), (E;C), (E;D), (E;E)
+        as the combinations of the two register operands.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

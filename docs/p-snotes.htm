@@ -1,0 +1,206 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        P-S notes
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        PLATFORM-SPECIFIC NOTES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt>command line arguments' limits</dt><br><br>
+                <dd>
+                The vector called "Command Line", in the run-time module communication area,
+                is 32,768 units long, allowing for 32,767 characters to be passed in the
+                arguments string, plus a null terminator. This, however, may encounter
+                limitations depending on how many characters could be passed as an arguments
+                string by the system or by one of its tools. In Windows' case, it seems there
+                are no pratical limits to the size of the command line arguments <u>ONLY</u>
+                when arguments are passed from an application to another application, via the
+                ShellExecute API call, which is used when you request [FileCommand]=RUN; and
+                pass the arguments after the double vertical bar as explained in the IsoKernel's
+                quick reference. In this way, you may in effects use strings of upto 32,768
+                units, although those, in that case, include the path to the application to run,
+                and that limit is on L.in.oleum's side: to make it clear:
+    <pre>
+    "variables"
+        CommandSpec = { /C/test.exe||begin_arguments..?..end_arguments };
+                        ^--------------(32767 characters)------------^
+    "programme"
+        [FileCommand] = RUN;
+        [FileName] = CommandSpec;
+        isocall;</pre>
+                However, there seem to be tight limits, about which I found no reliable
+                documentation, concerning command line arguments' size when the string
+                holding arguments is built by Windows' explorer by dragging and dropping
+                a group of files over an application's icon. In that case, as far as I've
+                seen, the size of the resulting string can't exceed about 2,000 characters,
+                and if there are enough files in the said group being dropped over the
+                application's icon, explorer appears to unconditionally fail to launch the
+                application and returns a generic error message. This, at least, is what
+                I see happening on XP, and I don't guarantee this information to be correct
+                given that I found it out only experimentally. Other limits concern the size
+                of the command line that may be embedded within a link's destination, where
+                the limit appears to be about 250 characters (MAX_PATH is 260, maybe that's
+                the limit there).
+                </dd>
+        <br><br>
+        <dt>physical screen dimensions in cooperative display mode</dt><br><br>
+                <dd>
+                To prevent the task bar from overlapping the L.in.oleum applications'
+                display, causing the user to "lose" the display from both view and reach,
+                at least until the task bar isn't moved or made non-topmost, version 1.13.10b
+                and laters will limit the physical display size to the part of the screen
+                which is NOT covered by the task bar. Suppose, in the most classical case,
+                that you're dealing with a resolution of 1024x768, but the task bar is
+                horizontal (either on top or on bottom) and 28 pixels tall.
+                Well, the physical resolution seen by your L.in.oleum programs running in
+                that desktop, will be 1024x740. Positioning and relative coordinates are of
+                course managed by the run-time module, completely transparently. Your program,
+                though, will see the screen as a 1024x740 pixels resolution, probably not
+                existing as a standard physical resolution, so don't try to base on those
+                values for "duplicating" the desktop's resolution and go to fullscreen
+                (exclusive) mode. If you really need to do that you may analyze one of the
+                dimensions and try to guess the other, knowing the possible formats, but
+                in general, I wouldn't suggest this. And... well, of course this limitation
+                only applies to cooperative display mode. In exclusive mode you own the
+                whole screen and the reported physical resolution will fit (providing the
+                SETEXCLUSIVEMODE command returned successfully) exactly what you told the
+                RTM to set it to.
+                </dd>
+        <br><br>
+        <dt>the Win32 Run-time Module and the mouse wheel</dt><br><br>
+                <dd>
+                For this system, the mouse wheel movements are reported using the third axis
+                of the pointing device, identified by [PointerZCoordinate] and [PointerDeltaZ].
+                The device can be tracked either in BY COORDINATE or in BY DELTA mode, and the
+                third axis is no different from the other two. It may, however, be pratically
+                limitless in terms of movement: you could keep rotating the wheel up and the Z
+                coordinate would raise to no theoretical limit, until it would hit (in a few
+                years maybe) the pratical limit of the 32-bit signed integer at about 2.2 billion
+                units up. At that point it becomes negative and restarts counting at -2.2 billions.
+                </dd>
+        <br><br>
+        <dt>global K's and the Windows registry</dt><br><br>
+                <dd>
+                To keep the system clean from "mysterious" centralized databases of Global K's
+                appearing as one, or maybe more, files, Global K's in this version of the
+                environment are saved in Windows' system registry, specifically under the
+                common key:
+     <pre>
+     HKEY_CURRENT_USER/Software/Linoleum_shared</pre>
+                In my original intention (and in the first attempt to implement global K's)
+                I was storing their values using the REG_BINARY qualifier. In later tests,
+                I discovered that REG_BINARY was not supported by "ancient" editions of
+                Windows95. But since the rest of the environment was perfectly functional
+                even on those old systems, I was pretty annoyed by the fact that global K's
+                wouldn't have worked there. Closer inspection revealed that Windows95 only
+                supported REG_SZ as the most suitable way to store a set of informations in
+                a single key. Hence, I decided to make the run-time module save global K's
+                as bare text strings. Obviously, global K's have to contain raw binary data
+                in the point of view of L.in.oleum applications, so I needed to encode the
+                32-bit binary data in some way that they wouldn't have caused null-terminated
+                strings to terminate before the end because of a raw null code, and I could
+                qualify them as REG_SZ. The encoding process, despite the cryptic appearence
+                in the RTM's source code around "gc_write" and "gc_read", is instead pretty
+                simple, and works on the principle of saving 3 bytes of binary data into 4
+                bytes of text, about the way base64 encoding in eMail attachments does (but
+                please note it's a completely different encoding mechanism, and it isn't
+                compatible with base64 encoding, even if the principle is similar). Although
+                I will not go into details because it'd take a pretty long explanation, in
+                general the encoding scheme is as follows:
+                <pre>
+      source   source   source
+      byte 0   byte 1   byte 2
+     AAxxxxxx BBxxxxxx CCxxxxxx ----.
+       ||||||   ||||||   ||||||     |
+     00xxxxxx 00xxxxxx 00xxxxxx 00AABBCC
+         +21h     +21h     +21h     +21h
+         |        |        |        |
+     xxxxxxxx xxxxxxxx xxxxxxxx xxxxxxxx
+     encoded  encoded  encoded  encoded
+     byte 0   byte 1   byte 2   byte 4</pre>
+                ...where AA, BB, CC represent the two most significant bits of the source
+                datagram's bytes, which are taken 3 at a time. These bits are grouped to
+                form the fourth byte of the encoded "quantum" of data. The remaining low 6
+                bits of each byte of the source quantum are insulated, and to each byte,
+                now in the decimal range 0 to 63, is added 21h (or 33 in decimal), the ASCII
+                code of the exclamation point. This way the final quantum will be formed by
+                valid ASCII codes in the range 33 to (33+63)=96, that is the characters from
+                the exclamation point to the backquote. The final string holding all of the
+                255 units of raw data, will therefore be made of:
+                <pre>
+     255 units at unit=32, bytesperunit=4,
+     give 255 * 4 = 1020 bytes
+
+     1020 bytes taken in quantums of 3 bytes each,
+     give 1020 / 3 = 340 quantums
+
+     340 quantums encoded as 4 bytes each,
+     give 340 * 4 = 1360 bytes (final encoded string)</pre>
+                ...1360 bytes, or ASCII characters. Plus a null terminator for the
+                string to be stored in the registry, where it takes a total of 1361 bytes
+                (and probably 2722 on XP/2000 and laters because of hrm... Unicode).
+                Now, more than wishing programmers to know what goes on in that point of
+                the run-time module, I wrote this paragraph mainly to explain why something
+                apparently weird happens in that point, and why global K's data in the
+                registry looks so cryptic. It's just that...
+                </dd>
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

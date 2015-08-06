@@ -1,0 +1,130 @@
+(
+
+    Display real-time dragging hook
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		264 bytes *
+    | Allocates:	  4 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      This library contains the Allow Display Dragging subroutine.
+    The subroutine must be provided a calling line [a hook] from inside the
+    application's GUI control loops.
+      In such loops you have to READ THE POINTER once per frame, or this
+    function won't work.
+      Pratically, whenever in your application you're waiting for user input,
+    or need to check for user input, you can allow the user to drag the
+    display window by repeatly calling this function. Allow Display Dragging
+    uses IsoKernel calls to move the display in real-time accordingly to the
+    pointing device's movements, and temporarily switching the pointer to
+    BY DELTA mode, so that its movements can be tracked around the whole
+    physical screen.
+      The basic conditions to begin dragging is moving the pointer over the
+    dragging-pad, and holding its first button [left] down. Releasing that
+    button will then cause the subroutine to stop both real-time pointer
+    tracking and display movements.
+      A little remark: if the dragging-pad is to have a fixed position over
+    the display, the entry parameters may be loaded once and forever at the
+    beginning of the application, since they don't need to be re-loaded
+    before each call to this subroutine [even if they can ALSO be reloaded to
+    change the position of the dragging pad].
+      Postscript: your application must be using the BY COORDINATE mode,
+    otherwise this subroutine won't work properly. In control loops where the
+    BY DELTA mode is used, you simply don't call this subroutine.
+      [Display Animation Rate] indicates the amount of milliseconds between
+    each display position update. The default is 10 milliseconds, allowing for
+    100 updates per second.
+      Note: the iGUI automatically calls this hook in its control loops, but
+    at least under Windows, when the iGUI window is fold you may experience
+    rather slow vertical movements. This is a minor problem in the run-time
+    module; while in BY DELTA mode, the RTM is compelled to confine the mouse
+    pointer to the area of the application's display, in order for it to read
+    the "deltas" in a compatible way which consists in continuously moving the
+    pointer back to the center of the display and then tracking, for every
+    isocall, how much it moved from the center. Of course, when the display
+    window is small enough, only small variations can be detected per isocall,
+    hence a fold window, being 25 pixels in height, moves slowly in vertical.
+      Making this library update faster can help, but makes the system pretty
+    busy while an iGUI window's moving, and I think it'd be a bit unelegant.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+	Allow Display Dragging
+	    [DraggingPad] -> Left, Top, Right, Bottom
+		Variable holding the pointer to a rectangle structure with
+		the actual limits of the display's dragging-pad. That's a
+		rectangular bounding area to be placed anywhere inside the
+		application's display, to indicate the spot where a pointer/
+		cursor should be placed in order to click and start dragging
+		dragging the display.
+		An example of such a structure's declaration is:
+			DP Rect = 10; 34; 268; 56;
+		Where the rectangle goes from 10;34 to 268;56.
+		The structure has to be loaded by pointer, like:
+			[DraggingPad] = DP Rect;
+		In a few words, in many windowed systems it would be
+		like a window's title bar, commonly used to drag windows.
+		For LINOLEUM applications, however, it needs not being
+		exactly a title bar, even considering that terms "window"
+		and "title bar" are nonsensical when confronted with the
+		flexibility of a virtualized screen, or what we call display.
+
+)
+
+"variables"
+
+	Display Animation Rate = 1000 div 100; (default 100 updates/second)
+
+"workspace"
+
+	DraggingPad = 1; (load it with a ptr to a rectangular region's bounds)
+
+"programme"
+
+"Allow Display Dragging"
+      ? [Pointer Status] - PDLEFTBUTTONDOWN -> ADD Out Of Conditions;
+	A = [DraggingPad];
+      ? A = NULL -> ADD Out Of Conditions;
+      ? [Pointer X Coordinate] < [A plus 0] -> ADD Out Of Conditions;
+      ? [Pointer X Coordinate] > [A plus 2] -> ADD Out Of Conditions;
+      ? [Pointer Y Coordinate] < [A plus 1] -> ADD Out Of Conditions;
+      ? [Pointer Y Coordinate] > [A plus 3] -> ADD Out Of Conditions;
+	[Pointer Mode] = BY DELTA;
+	isocall;
+      "ADD Control Loop"
+	[Pointer Command] = READ POINTER;
+	isocall;
+	[Display X Position] + [Pointer Delta X];
+	[Display Y Position] + [Pointer Delta Y];
+	isocall;
+	[Process Command] = SLEEP;
+	[Sleep Timeout] = [Display Animation Rate];
+	isocall;
+      ? [Pointer Status] + PDLEFTBUTTONDOWN -> ADD Control Loop;
+	[Pointer Mode] = BY COORDINATE;
+	isocall;
+      "ADD Out Of Conditions"
+	end;

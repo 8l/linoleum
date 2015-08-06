@@ -1,0 +1,416 @@
+(
+
+	-------------------------------------------------------
+	Quick-and-dirty Lempel-Ziv/LZ77/DHC compression tool,
+	a graphical front-end for LZ and DHC default libraries.
+	Supports loading files upto 1 megaunit, or 4 megabytes.
+	-------------------------------------------------------
+
+	This commented source code is presented to learn from, so feel free
+	to use this code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs. This application comes
+	with the L.in.oleum compiler package - it is part of the "examples"
+	folder - not for sale. Written by Alessandro Ghignola.
+
+	Note: in this folder there's also the "Lizzie TGA Viewver", a short
+	program to decompress TGA pictures compressed at chunk size of 3794
+	words [the generic chunk size]. The "skyback" packet file requested
+	for linking within the stockfile of this program, is the compressed
+	version of "skybackground.tga", and can be also shown with the said
+	viewver, whose buffers are fit for decompressing 1600x1200x32 pics.
+	The TGA viewver is mostly here as an example of how to use the unLZ
+	library in place of LZ, whenever you only need decompression.
+
+)
+
+"libraries"
+
+	igui/defstyle; (INTEGRATED G.U.I - using default style)
+	igui/vcons;    (virtual text console, string converters)
+	gen/dhc;       (Dynamic Huffman Compression engine)
+	gen/lz;        (Variable Lempel-Ziv/LZ77 compression engine)
+
+"stockfile"
+
+	skyback;
+
+"directors"
+
+	unit = 32;
+	symbols map = off;
+	program name = { Lizzie };
+
+"constants"
+
+	INITIAL WIDTH		=  512;
+	INITIAL HEIGHT		=  288;
+	MINIMUM WIDTH		=  288;
+	MINIMUM HEIGHT		=  100;
+	MAXIMUM WIDTH		=  512;
+	MAXIMUM HEIGHT		=  384;
+	MAX MENU OPTIONS	=  100;
+	MAX ONSCREEN OPTIONS	=  100;
+	MAX LEVELS IN SHOW	=    4;
+	MAX FILES IN SELECTOR	= 1000;
+	MAX FILES IN SHOW	=   10;
+	MAX OPTIONS IN QUESTION =   10;
+	MAX FIELDS IN QUESTION	=   10;
+
+"variables"
+
+	intro = {
+
+		Lizzie_is_a_file_compressor_built_using_a_couple_
+		recently_added_default_libraries,_LZ_and_DHC._It_
+		performs_rather_good,_thought_it_doesn't_compress_
+		as_much_as_the_"deflate"_algorithm._Yet,_used_for_
+		applications_to_handle_things_in_the_stockfile_it_
+		may_provide_interesting_self-extracting_abilities.
+		\cr\lf\cr\lf
+		Written_by_Alessandro_Ghignola.\cr\lf
+		Part_of_the_L.in.oleum_package's_examples.\cr\lf
+		The_pic_behind_this_text_is_also_compressed.\cr\lf
+		\cr\lf\cr\lf
+
+		};
+
+	title = { Lizzie };
+	menu  = { .menu. };
+	 01000000h; OPTIONTYPE FILE SELECTOR; { <load_object	  }; load;
+	 02000000h; OPTIONTYPE FILE SELECTOR; { <save_packet	  }; save;
+	 03000000h; OPTIONTYPE SUBMENU;       { <feed_to_vlz/lz77 }; null;
+	 03010000h; OPTIONTYPE NORMAL;	      { _12288_(text)	  }; use txt chunks;
+	 03020000h; OPTIONTYPE NORMAL;	      { *3794__(generic)  }; use gen chunks;
+	 03030000h; OPTIONTYPE NORMAL;	      { _1536__(binary)   }; use bin chunks;
+	 04000000h; OPTIONTYPE NORMAL;	      { _also_feed_to_dhc }; feed to dhc;
+	 05000000h; OPTIONTYPE NORMAL;	      { _quit		  }; quit;
+	endofmenu;
+
+	packet extension  = { .liz };
+
+	crlf		  = { \cr\lf };
+	msg load error	  = { error_loading_object:\cr\lf };
+	msg load object   = { loading_object:\cr\lf };
+	msg object size   = { object_size:_ };
+	msg bytes	  = { _bytes };
+	msg no object	  = { no_object_loaded\cr\lf };
+	msg txt chunks	  = { compressing_at_12288_bytes_per_chunk...\cr\lf };
+	msg gen chunks	  = { compressing_at_3794_bytes_per_chunk...\cr\lf };
+	msg bin chunks	  = { compressing_at_1536_bytes_per_chunk...\cr\lf };
+	msg failed to lz  = { sorry,_lz-uncompressable_object\cr\lf };
+	msg lz pack size  = { LZ_packet_size:_ };
+	msg no packet	  = { no_LZ_packet_to_DHC\cr\lf };
+	msg dhcing	  = { DHC_attempting_to_shrink_LZ_packet...\cr\lf };
+	msg failed to dhc = { DHC_is_unable_to_further_compress_it\cr\lf };
+	msg dhc pack size = { DHC_packet_size:_ };
+	msg lz saved	  = { saved_LZ_packet_as:\cr\lf };
+	msg dhc saved	  = { saved_LZ+DHC_packet_as:\cr\lf };
+	msg save error	  = { error_saving_packet:\cr\lf };
+	msg empty save	  = { nothing_to_save_as_a_packet\cr\lf };
+
+"workspace"
+
+	console text buffer = 2001;
+	caption shadow	    = 4;
+
+	tapestry object     = 175645 div bytes per unit plus 1;
+	tapestry packet     = size of skyback div bytes per unit plus 1;
+
+	object		    = 1 048 576;
+	object size	    = 1;
+	packet		    = 1 048 576;
+	packet size	    = 1;
+	spared		    = 1 048 576;
+	spared size	    = 1;
+
+"programme"
+
+	[file name]	= stockfile;
+	[file command]	= read;
+	[file position] = skyback;
+	[block pointer] = tapestry packet;
+	[block size]	= size of skyback;
+	isocall;
+
+	[lz datagram] = tapestry packet;
+	[lz take bit] = 0;
+	[lz wordfill] = 0;
+	[lz datasize] = 0; (halt when you find end-of-data)
+	[lz chnksize] = 3794;
+	[lz data out] = tapestry object;
+	[lz give bit] = 0;
+	[lz size out] = 175645 mtp 8;
+	=> unLZ;
+
+	=> initialize integrated gui;
+
+	[menu to install] = menu;
+	=> install menu;
+
+	[window title]		 = title;
+	[small caption] 	 = title;
+	[control loop]		 = service control loop;
+	[work area manager]	 = service repaint window;
+	[always clear work area] = no;
+
+	[conout] = console text buffer;
+	[ccolor] = FFFFFFh;
+	[consfx] = service fx antialiasing dim;
+	[cosize] = 2000;
+
+	[console left  padding]  = 4;
+	[console top   padding]  = 6;
+	[console right padding]  = 4;
+	[text interline spacing] = 1;
+
+	[szcout] = intro;
+	=> cout;
+
+	=> enter integrated gui;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service repaint window"
+    (the background picture)
+	[tga display width] -->;
+	[tga display alignment] = [display width];
+	[tga target layer]	= backdrop layer;
+	[tga picture data]	= tapestry object;
+	[tga picture left]	= [left margin relating vector work area];
+	[tga picture top]	= [top margin relating vector work area];
+	[tga display width]	= [right margin relating vector work area];
+	[tga display width]	- [console scroller thickness];
+	[tga display height]	= [bottom margin relating vector work area];
+	[tga display height]	+;
+	[tga effect]		= service fx raw;
+	=> load tga picture;
+	<-- [tga display width];
+    (the same shadow used in "network_node", I like it)
+	[left margin relating caption shadow] = [left margin relating vector work area];
+	[right margin relating caption shadow] = [right margin relating vector work area];
+	[top margin relating caption shadow] = [top margin relating vector work area];
+	[top margin relating caption shadow] - 4;
+	[bottom margin relating caption shadow] = [top margin relating vector work area];
+	[bottom margin relating caption shadow] + 5;
+	[tr bounds] = caption shadow;
+	[tr picture data] = [p menu shadow horizontal];
+	[tr target layer] = backdrop layer;
+	[tr display alignment] = [display width];
+	[tr effect] = service fx alpha dim;
+	=> tile region;
+    (the console text, finally)
+	=> show console;
+	end;
+
+"service control loop"
+	=> control console;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"load"
+	[file selector filter] = null;
+	[on file select] = service load;
+	end;
+    "service load"
+	[object size] = zero;
+	[file command] = read;
+	[file name] = vector selected file name;
+	[file position] = 0;
+	[block pointer] = object;
+	[block size] = 1 048 576 mtp bytes per unit;
+	isocall;
+      ? failed -> load error;
+      ? [file size] > [block size] -> load error;
+	[szcout] = msg load object;
+	=> cout;
+	[szcout] = vector selected file name;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	[szcout] = msg object size;
+	=> cout;
+	[dwcout] = [file size];
+	=> uicout;
+	[szcout] = msg bytes;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	[object size] = [file size];
+	end;
+      "load error"
+	[szcout] = msg load error;
+	=> cout;
+	[szcout] = vector selected file name;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+
+"save"
+	[file selector filter] = packet extension;
+	[on file select] = service save;
+	end;
+    "service save"
+      ? [spared size] = zero -> no dhc packet to save;
+	[file name]	= vector selected file name;
+	[file command]	= write;
+	[file position] = zero;
+	[block pointer] = spared;
+	[block size]	= [spared size];
+	isocall;
+      ? failed -> save error;
+	[file command]	= set size;
+	[file size]	= [spared size];
+	isocall;
+	[szcout] = msg dhc saved;
+	=> cout;
+	[szcout] = vector selected file name;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+      "no dhc packet to save"
+      ? [packet size] = zero -> no lz packet to save;
+	[file name]	= vector selected file name;
+	[file command]	= write;
+	[file position] = zero;
+	[block pointer] = packet;
+	[block size]	= [packet size];
+	isocall;
+      ? failed -> save error;
+	[file command]	= set size;
+	[file size]	= [packet size];
+	isocall;
+	[szcout] = msg lz saved;
+	=> cout;
+	[szcout] = vector selected file name;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+      "no lz packet to save"
+	[szcout] = msg empty save;
+	=> cout;
+	end;
+      "save error"
+	[szcout] = msg save error;
+	=> cout;
+	[szcout] = vector selected file name;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+
+"use txt chunks"
+      ? [object size] = zero -> no object loaded;
+	[option code] = 03010000h; =>	mark option;
+	[option code] = 03020000h; => unmark option;
+	[option code] = 03030000h; => unmark option;
+	[szcout] = msg txt chunks;
+	=> cout;
+	[lz chnksize] = 12288;
+	-> lz it;
+
+"use gen chunks"
+      ? [object size] = zero -> no object loaded;
+	[option code] = 03010000h; => unmark option;
+	[option code] = 03020000h; =>	mark option;
+	[option code] = 03030000h; => unmark option;
+	[szcout] = msg gen chunks;
+	=> cout;
+	[lz chnksize] = 3794;
+	-> lz it;
+
+"use bin chunks"
+      ? [object size] = zero -> no object loaded;
+	[option code] = 03010000h; => unmark option;
+	[option code] = 03020000h; => unmark option;
+	[option code] = 03030000h; =>	mark option;
+	[szcout] = msg bin chunks;
+	=> cout;
+	[lz chnksize] = 1536;
+	-> lz it;
+
+"lz it"
+	[packet size] = 0;
+	[lz datagram] = object;
+	[lz take bit] = 0;
+	[lz wordfill] = 0;
+	[lz datasize] = [object size];
+	[lz data out] = packet;
+	[lz give bit] = 0;
+	[lz size out] = [object size];
+	[lz size out] < 3;
+	=> LZ;
+      ? failed -> failed to lz;
+	[packet size] = [lz bits out];
+	[packet size] > 3;
+      ? [lz bits out] - 7 -> no half bytes;
+	[packet size] +;
+      "no half bytes"
+	[szcout] = msg lz pack size;
+	=> cout;
+	[dwcout] = [packet size];
+	=> uicout;
+	[szcout] = msg bytes;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+
+"feed to dhc"
+	[spared size] = zero;
+      ? [packet size] = zero -> no packet loaded;
+	[szcout] = msg dhcing;
+	=> cout;
+	[dhc datagram] = packet;
+	[dhc take bit] = 0;
+	[dhc wordsize] = 8;
+	[dhc wordfill] = 0;
+	[dhc datasize] = [packet size];
+	[dhc rlatency] = 31;
+	[dhc data out] = spared;
+	[dhc give bit] = 0;
+	[dhc size out] = [packet size];
+	[dhc size out] < 3;
+	=> DHC;
+      ? failed -> failed to dhc;
+	[spared size] = [dhc bits out];
+	[spared size] > 3;
+      ? [dhc bits out] - 7 -> nope half bytes;
+	[spared size] +;
+      "nope half bytes"
+	[szcout] = msg dhc pack size;
+	=> cout;
+	[dwcout] = [spared size];
+	=> uicout;
+	[szcout] = msg bytes;
+	=> cout;
+	[szcout] = crlf;
+	=> cout;
+	end;
+
+"no object loaded"
+	[szcout] = msg no object;
+	=> cout;
+	end;
+
+"no packet loaded"
+	[szcout] = msg no packet;
+	=> cout;
+	end;
+
+"failed to lz"
+	[szcout] = msg failed to lz;
+	=> cout;
+	end;
+
+"failed to dhc"
+	[szcout] = msg failed to dhc;
+	=> cout;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"quit"
+	[quit now] = yes;
+	end;

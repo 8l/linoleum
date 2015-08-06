@@ -1,0 +1,2490 @@
+(
+
+	-----------------------------------------------------------------
+	L.in.oleum Icon Editor for Win32 extecutables, 48x48-pixel icons.
+	-----------------------------------------------------------------
+
+	This commented source code is presented to learn from, so feel free
+	to use this code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs. This application comes
+	with the L.in.oleum compiler package - it is part of the "examples"
+	folder - not for sale. Written by Alessandro Ghignola.
+
+)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"libraries"
+
+	igui/igui; (INTEGRATED G.U.I. LIBRARY)
+
+	(The integrated GUI is an integration library.
+	If you have read the corresponding paragraph in the "docs" folder,
+	you will know that an integration library is a library of which some
+	symbols are to be declared within the main program. This program will
+	present a full listing of the symbols needed by the "iGUI" library.
+	So, if you want to use the iGUI in one of your programs, remember to
+	declare all of the related constants, variables and vectors, or you
+	will just get a huge list of errors concerning undeclared symbols,
+	when you try to compile the program. On the other side, you can see
+	the advantages of this technique: your program can easily control
+	every aspect of an integration library's behaviour. The Icon Editor
+	is presented to learn how: as a general suggestion, however, please
+	avoid use of extremely weird values for the iGUI features. The iGUI
+	is averagely fault-tolerant, but if you compell its subroutines to
+	work with -for example- an extremely small display, or some other
+	stressing situations, before or later it may crash.)
+
+	(If you don't want to change anything in the default parameters for
+	the iGUI, rather than "iGUI" use the library called "DefStyle":
+	DefStyle includes iGUI and defines all of the parameters using the
+	values you can see in this program. DefStyle doesn't define the
+	constants, because the constants are used for memory allocation and
+	they depend on the needings for a given application. For an example
+	of an application using the "DefStyle" library, have a look at the
+	"Minimum iGUI client", placed in "examples" folder as "IGUICLI.TXT")
+
+	(NOTE: To change the look of the buttons, of the mouse cursor and of
+	the program's logo [the one which is used to get the pull-down menu]
+	make copies of the TGA files you can find in /linoleum/main/lib/igui
+	and place those copies inside your program's directory. Then, you can
+	modify the TGA files with your favorite painting tools: the important
+	thing is to save each of them again as truecolor [24 or 32 bit] TGA
+	pictures, having same size [width and height] as the original file.)
+
+	(ONE MORE NOTE: The best way to change the look and feel of an iGUI-
+	based application is to build a new "skin", by following the format
+	of an IGS file and the directions given in library "IGS.txt". One of
+	the examples provided with the compiler that uses IGS' import/export
+	routines for exchanging skins, is the general-purpose network node,
+	found as "examples/network_node/node.txt"; using the IGS library,
+	even if you don't make a new skin, will allow your application to
+	import other skins, even if they were originally not made for your
+	application, because the IGS file format is intended to be a common
+	protocol for exchanging iGUI skins.)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"stockfile"
+
+	(The iGUI library has its own stockfile, but its components are
+	linked before the ones specified by the main program's stockfile.
+	Specifically, the iGUI stockfile includes the graphics for the
+	interface's buttons. Those buttons have fixed names: for instance,
+	the close button is called "btnclose". By default, the compiler looks
+	for those files inside the "mail" folder. If your program needs to
+	change the look of the buttons, you can simply create new TGA pictures
+	for them and place those pictures inside the main program's folder
+	[which is the "Icon Editor" folder in this case]. If you give them
+	the correct names [btnclose.tga for the close button, and have a look
+	at the "stockfile" period within the "iGUI.txt" file to find the
+	other buttons' names] the compiler will link your new pictures,
+	because they will have a higher priority in respect to the default
+	versions from the "main/lib/igui" folder. Just remember to create tga
+	pictures to have ".tga" extension, respect the size of the default
+	pictures [23 x 23 pixels] and to save them as TRUECOLOR, or at least
+	as 256-color, images.)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"directors"
+
+	unit				= 32;
+	symbols map			= OFF;
+	display width			= INITIAL WIDTH;
+	display height			= INITIAL HEIGHT;
+	program name			= { Linoleum_Icon_Editor };
+
+	(The symbols' map may be on, but slows down compilation and it's not
+	needed unless it can help in debugging the program. The display size,
+	instead, must be declared as above, using the value of those two
+	constants, because the iGUI expects the display settings to be
+	declared like so; misalignment in the buttons, in the window title
+	and in other graphical elements would occure otherwise.)
+
+	(One note if you're using DefStyle: you don't need to specify
+	the two tags for the display size. DefStyle does that for you.)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"constants"
+
+    (GUI setup constants)
+	MENU MARKER			= 42; (asterisk)
+	MENU DEMARKER			= 32; (blank space)
+	INITIAL WIDTH			= 376;
+	INITIAL HEIGHT			= 237;
+	MINIMUM WIDTH			= 320;
+	MINIMUM HEIGHT			= 200;
+	MAXIMUM WIDTH			= 640;
+	MAXIMUM HEIGHT			= 480;
+	MAX MENU OPTIONS		= 100;
+	MAX ONSCREEN OPTIONS		= 100;
+	MAX LEVELS IN SHOW		= 4;
+	MAX FILES IN SELECTOR		= 1000;
+	MAX FILES IN SHOW		= 8;
+	MAX OPTIONS IN QUESTION 	= 2;
+	MAX FIELDS IN QUESTION		= 2;
+
+	(The constants control memory allocation for the various elements
+	in the iGUI library. Those constants are the first sample of the
+	symbols to be declared by the main program BUT used by the library.
+	As for all of the symbols needed by a given intregration library,
+	their names are fixed, while their values may change. Now...
+
+	INITIAL WIDTH and INITIAL HEIGHT:
+	The size of the display when the program is run.
+	Conventionally, you may use these values in conjuction to an option
+	in the menu to set back the display size to its "default size", but
+	that's not really needed. Just a commodity for the user...
+
+	MINIMUM WIDTH and MINIMUM HEIGHT:
+	The minimum size the display can be resized to.
+	Any attempts to resize the display below those values will fail,
+	unless your main program sets the display size with a direct isocall.
+	There is a subroutine that can be called to resize the display, and
+	its syntax is:
+		[New Display Width] = ...;
+		[New Display Height] = ...;
+		=> Resize Display;
+	this way to resize the display takes care of rectracing the controls
+	of the iGUI as well as the application's "work area", and it is
+	subject to the restrictions given by the minimum and maximum
+	width/height constants.
+	Minimum width should not be set to less than 248 pixels, or it will
+	result in a negative amount of pixels left to the title bar, which
+	would cause the iGUI to crash.
+	Minimum height should not be set to less than 25 pixels for the same
+	reasons [25 pixels is the height of iGUI's folded windows], but it's
+	strongly suggested to raise it to at least 100 pixels or so, because
+	question boxes may get in great troubles otherwise...
+
+	MAXIMUM WIDTH and MAXIMUM HEIGHT:
+	They are very important, not only because they will limit the user
+	and the program in resizing the display. Also, they fix the amount
+	of memory to be allocated from the workspace. Once you have decided
+	those values, you MUST NOT allow the display to get bigger than that,
+	because otherwise you will be overlapping memory which is not part of
+	your application's workspace, or anyway not part of its video layers.
+
+	MAX MENU OPTIONS:
+	Total amount of options that can be included in the pull-down menu.
+	The "pull-down menu" is that menu appearing when the user clicks upon
+	the MENU LOGO [or menu button]. The amount of options defined by this
+	constant include all options and file selectors inside the sub-menus.
+
+	MAX ONSCREEN OPTIONS:
+	Total amount of options that can be displayed at the same time.
+	It may or may not be equal to MAX MENU OPTIONS, because in most cases,
+	not all of the options in a menu can be held on the screen at a time:
+	if you open a sub-menu and after that open another sub-menu of the
+	same level, the first sub-menu will obviously disappear.
+
+	MAX LEVELS IN SHOW:
+	Currently, it should be fixed to 4 levels.
+	They may be less [not recommended], but NEVER more than 4.
+	Simply, the 32-bit units used to hold the "option code" of the selected
+	options are capable of giving informations about only 4 levels, because
+	each level takes 8 bits. Four levels, however, mean the following:
+
+						MAIN MENU
+					<-- Option 01	|
+				<-- Option 01/01	|
+			<-- Option 01/01/01		|
+		Option 01/01/01/01 [= selected option]	|
+
+	MENU MARKER and MENU DEMARKER:
+	They are ASCII codes of characters to be used for marking certain
+	menu options thought the "Mark Option" and "UnMark Option" subroutines.
+	Normally, an asterisk [code 42] is used for marking, while the code
+	used to unmark options should always be the blank space [code 32]:
+	that's why, if you have an option in a menu that can be marked, you
+	need prepending a blank space to that option's name.
+	See the
+		display mode -> toolbar
+	sub-menu in the Icon Editor to understand how marking is managed.
+
+	MAX FILES IN SELECTOR:
+	That's very important. Some of the menu options can be classified as
+	"file selectors". Later you'll see how. File selectors allow to scroll
+	the current program's work directory in search of a certain file, and
+	the files' list is always sorted alphabetically. Eventually, the list
+	can be also filtered by extension [if some kinds of extensions are
+	supported by the file system, more generally the filter is applied to
+	a certain number of characters at the end of the file's name].
+	To filter and sort at a decent speed, the files' names must be cached,
+	which means stored in the memory workspace: an area is allocated for
+	this purpose, and size of that area is calculated as the maximum length
+	of a file's name [256 characters] multiplied by MAX FILES IN SELECTOR.
+	The constant pratically determines how many files can be present in the
+	work directory in order for them to get all listed in file selectors.
+	Approximately, the memory requirements when unit=32, are 1 megabyte
+	per thousand file names. Presently, you should consider "wasting" at
+	least one megabyte for that list: there can be a lot of files in the
+	work directory [their amount is theoretically unlimited]. And by the
+	way: filtering may greatly improve the capabilities of your application
+	to manage large amounts of files, because not all of the files could
+	get listed in the same file selector.
+
+	MAX FILES IN SHOW:
+	When file selectors show the files' list, of course that list can be
+	scrolled. MAX FILES IN SHOW is the number of file names that can be
+	seen at the same time. It mainly depends on your "ideal" display size,
+	because you only have to make sure the file selector's list is fully
+	visible under most conditions... and do not forget that at the bottom
+	of the list there is ALWAYS an additional line of text: that's where
+	the users can directly type the name of a file, and it is unavoidable
+	to provide that line. Not only it allows selecting file names throught
+	the keyboard: you couldn't create new files if that line wasn't there.
+
+	MAX OPTIONS IN QUESTION:
+	The amount of "replies" that can be used in a "question box".
+	A question box is a pop-up message window that can be used at any time
+	by the main program to prompt the user. Question boxes hold a short
+	text to explain what's the question about, and a given amount of
+	options [buttons or fields] for the user to reply. If your program
+	doesn't use any question boxes where more than 2 options are shown,
+	it is perfectly useless to set that constant's value to more than 2.
+
+	MAX FIELDS IN QUESTION:
+	Again, in "question boxes" there can be text fields to be filled by
+	the user, just like in what's called a "dialog box". Each field is
+	associated with the pointer to a text string. There can be two kinds
+	of text fields: fields whose text string can be changed by the user
+	and fields that are only used to show given text strings. The value
+	of this constant fixes the maximum number of text fields, and must
+	be declared considering the question box that has the highest number
+	of fields. For the Icon Editor, the value is 2.)
+
+    (Application-specific constants)
+	FIXED ICON HEADER DAT0		= 00000028h;
+	FIXED ICON HEADER DAT1		= 00000030h;
+	FIXED ICON HEADER DAT2		= 00000060h;
+	FIXED ICON HEADER DAT3		= 00080001h;
+	FIXED ICON HEADER DAT4		= 00000000h;
+	FIXED ICON HEADER DAT5		= 00000000h;
+	FIXED ICON HEADER DAT6		= 00000000h;
+	FIXED ICON HEADER DAT7		= 00000000h;
+
+	FIXED BMP HEADER DAT0		= 0D364D42h;
+	FIXED BMP HEADER DAT1		= 00000000h;
+	FIXED BMP HEADER DAT2		= 04360000h;
+	FIXED BMP HEADER DAT3		= 00280000h;
+	FIXED BMP HEADER DAT4		= 00300000h;
+	FIXED BMP HEADER DAT5		= 00300000h;
+	FIXED BMP HEADER DAT6		= 00010000h;
+	FIXED BMP HEADER DAT7		= 00000008h;
+
+	(Those "dat" constants are common identifiers for the kind of files
+	managed by the Icon Editor. This program is presented to learn from,
+	so I kept it simple [well, as simple as possible] and it only manages
+	icons and bitmaps having predefined formats. The "icon header" is
+	used to find the small icon in LINOLEUM executable files. The other
+	header [BMP] normally corrsponds to the very first bytes of Windows'
+	bitmap files having 256-color palette and being 48x48 pixels in size.
+	Of course, if you want to create your own bitmap loader, you can
+	download the documentation about those formats and see what those
+	raw values mean. It wouldn't be very difficult, just a bit boring.)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"variables"
+
+    (GUI setup variables / RESIDENT STRINGS)
+
+	Application Description 	= { Icon_Editor };
+	Exit Button Description 	= { End_session };
+	Slep Button Description 	= { Go_dormant };
+	Fold Button Description 	= { Fold/unfold };
+	Maxi Button Description 	= { Full-Size };
+	Full Button Description 	= { Full-Screen };
+	Size Button Description 	= { Adjust_size };
+
+	Root Directory Description	= { System_root };
+	Startup Directory Description	= { Initial_directory };
+	Parent Directory Description	= { Up_one_level... };
+
+	(Those strings are mostly used as the balloon help definitions.
+	The balloon help, for those who don't know [is there anyone?],
+	is a little form usually attached to the tail of the mouse cursor,
+	briefly describing what the cursor is pointing. The balloon help
+	is also used to fully show a file's name in file selectors, and to
+	describe toolbar's buttons.)
+
+    (GUI setup variables / GENERAL MEASURES AND FLAGS)
+
+	Fullscreen Width		= MAXIMUM WIDTH;
+	Fullscreen Height		= MAXIMUM HEIGHT;
+
+	Arrow Region Width		= 12;
+	Arrow Region Height		= 17;
+	Arrow Shadow Region Width	= 18;
+	Arrow Shadow Region Height	= 23;
+	Arrow Hot Spot X		= minus 1;
+	Arrow Hot Spot Y		= minus 1;
+	Horizontal Arrow Shadow Drift	= minus 2;
+	Vertical Arrow Shadow Drift	= minus 2;
+	Arrow Altitude Over Background	= 1000000;
+	Balloon Relative X Position	= minus 6;
+	Balloon Relative Y Position	= 18;
+	Balloon Wraparound Margin	= 300;
+	Balloon Text Padding		= 1;
+
+	Write Caption Over Menu Button	= YES;
+
+	Menu Padding			= 3; (low values sometimes glitching with highlights)
+	Menu Spacing			= 3; (low values sometimes glitching with highlights)
+	Menu Borders			= 1;
+	Menu Cell Padding		= 1; (if < -1, options overlap...)
+	Menu Cell Spacing		= 1;
+	File Selector Width		= 158;
+	File Selector Scrollbar Width	= 22;
+
+	Text Field Cursor Width 	= 1;
+	Text Field Cursor Shift 	= 0;
+	Text Field LeftSide Tolerance	= 16;
+	Text Field RightSide Tolerance	= 16;
+
+	Question Border 		= 1;
+	Question Text Padding		= 12;
+	Question Opt Padding		= 3;
+	Question Opt Spacing		= 5;
+	Question Field Padding		= 2;
+
+       (Fullscreen Width and Fullscreen Height:
+	Physical resolution [size in pixels] of the screen for the full-screen
+	mode. These two variables are set to a couple of default values upon
+	their declaration. Then, they may be changed with the following syntax:
+
+		[Fullscreen Width] = requested width;
+		[Fullscreen Height] = requested height;
+		=> Now Full;
+
+	of course there's the need to provide a screen resolution that the
+	video adapter can setup. Otherwise, the display will be resized but
+	it will still run in "windowed" mode. Also, your MAXIMUM WIDTH and
+	MAXIMUM HEIGHT constants must be set to values at least equal to those
+	two values before your application attempts to go fullscreen.
+
+	Arrow Region Width, Arrow Region Height,
+	Arrow Shadow Region Width, Arrow Shadow Region Height:
+	The iGUI's "arrow" is the mouse cursor. The default cursor shape
+	is placed in linoleum/main/lib/igui, but it can be changed by creating
+	a new file called MPOINTER.TGA and placed in the application's folder.
+	Now, the cursor might have a shadow [MPSHADOW.TGA]: the shadow is
+	traced with the "alpha dim" effect, so it is actually a negative
+	of the shadow, where the shadow itself is bright and the pixels
+	around the shadow are left black. "service FX Alpha Dim", in facts,
+	subtracts the RGB components of the pixels from the background.
+	You should take a look at MPSHADOW.TGA inside linoleum/main/lib/igui
+	[the default cursor's shadow] to understand how to create shadows.
+	If you don't want the shadow to be traced, you should provide a
+	totally black picture as MPSHADOW.TGA, eventually 1x1 pixels to
+	avoid wasting memory and make the executable as little as possible.
+	But an image is always needed, I'm afraid, it's by default linked to
+	the application's stockfile, by the iGUI library itself. If you don't
+	use a shadow for the mouse cursor, anyway, you may avoid wasting time
+	for the iGUI to attempt trace the shadow by setting:
+
+		[Pointer To Arrow Shadow] = NULL;
+
+	Now, for those four values: they define the size of the display area
+	covered by the mouse cursor. They are decided by looking at the size
+	of the cursor shape AND of the cursor shadow, because also the shadow
+	has its own measures: shadow may be either bigger or smaller than the
+	pointer itself, and there are no limits to the two images' size.
+	It is also possible to change the shape of the arrow "on the fly",
+	while the application is running, by loading a couple new images,
+	one of the pointer and one for the shadow, in properly declared areas
+	of memory, and then letting the other related values follow:
+
+		[Pointer To Arrow Shape]     = New Mouse Cursor Shape Buffer;
+		[Pointer To Arrow Shadow]    = Buffer Of The Relative Shadow;
+		[Arrow Region Width]	     = width of the cursor;
+		[Arrow Region Height]	     = height of the cursor;
+		[Arrow Shadow Region Width]  = width of the shadow;
+		[Arrow Shadow Region Height] = height of the shadow;
+
+		...and if you also know the program is using a DefStyle and
+		that its skin may be exported, using the IGS library, you'll
+		have to also update the size of the pointer's shape and its
+		shadow in "vector SX Parts by size", otherwise the changes
+		to the above values would no longer match the values below:
+
+		[vector SX Parts by size plus 7] = bytesize of shape image;
+		[vector SX Parts by size plus 8] = bytesize of shadow image;
+
+	Arrow Hot Spot X and Arrow Hot Spot Y:
+	Relatively to the upper left corner of the mouse cursor, they are
+	the coordinates of the pixel where a mouse click becomes effective.
+	Normally, they correspond to the arrow's tip, if the cursor you have
+	designed for your application is shaped in the form of an arrow.
+
+	Horizontal Arrow Shadow Drift, Vertical Arrow Shadow Drift:
+	They may be positive or negative. The X coordinate expands positively
+	right, and the Y coordinate expands positively down. The two measures
+	are expressed in pixels, and they determine the "drift" [movement in
+	relation to the mouse cursor's coordinates] of the cursor's shadow.
+	Their values are used as "pure" when the cursor is placed in the upper
+	left corner of the display window; otherwise, additional movement for
+	the shadow is given by the next parameter [read below].
+
+	Arrow Altitude Over Background:
+	To give an idea that the mouse cursor is superimposed to the display
+	contents [and "floats" upon the display], the shadow is moved as if
+	there was a light source placed in the display's top-left corner.
+	Altitude for the mouse cursor in relation to its shadow is specified
+	by this value: it is a "divider", in reality, so the bigger the value,
+	the higher the mouse cursor floats. A value of ZERO is not permitted
+	[it would be a division by zero, which would crash programs]; a value
+	that's equal to the constant "GREATEST SIGNED INTEGER", provided by
+	the compiler, would mean the shadow does never change its relative
+	position while the mouse cursor is being moved.
+
+	Balloon Relative X Position and Balloon Relative Y Position:
+	Set the relative position of the upper left corner of the ballon help
+	form, in relation to the same corner of the mouse cursor. They may be
+	negative, but users normally expect to find the balloon help straight
+	below the mouse cursor, which happens for X = ZERO and Y > ZERO.
+
+	Balloon Wraparound Margin:
+	The texts used to describe iGUI's buttons and other elements can be as
+	long as you want, even though they should be like "short notes". Well,
+	in case they should get longer than expected, or longer than the actual
+	display's width, they couldn't be showen on a single line, and the so-
+	called "word wrapping" would be needed. This margin tells the iGUI how
+	many pixels the text can be long BEFORE it's forced to continue on the
+	next line. Pratically, if it's 200 pixels it means: the text can expand
+	upto 200 pixels in width. When it reachs 200 pixels, the balloon help
+	form starts expanding VERTICALLY. The vertical limit is given by the
+	actual [Display Height], upon reaching which, the rest is not showen.
+
+	Balloon Text Padding:
+	How many pixels are to be left between the edges of the balloon help
+	form and the form's text. Averagely 2 or 3 pixels would look good.
+
+	Write Caption Over Menu Button:
+	It's a flag, and it could only be set to YES/NO, or TRUE/FALSE if you
+	prefere, or even barely 1/0. If it's set to YES/TRUE/1, it causes the
+	string pointed by [Menu Caption] to be written over the menu button,
+	otherwise the menu button will be displayed without any caption.
+	This last solution, recently introduced, is particularly useful when
+	someone defines a skin for the iGUI, an IGS packet, where the menu
+	button holds a graphical logo of some sort [the menu button image is
+	in fact called "menulogo.tga", and originally the menu caption string
+	wasn't existing at all]. In that case, the regular caption might not
+	be displayed over the logo, and this flag might be set to zero.
+	This flag is part of the "skin block" of "DefStyle.txt", so it gets
+	imported and exported along with the rest of the skin.
+
+	Menu Padding, Menu Spacing, Menu Borders,
+	Menu Cell Padding, Menu Cell Spacing:
+	These parameters affect the look and feel of the pull-down menu.
+	The following scheme *tries* to explain how the values work,
+	but if you're in doubt, you just have to try changing some of them
+	and see what happens to the menu. Oh, and always remember the menu
+	button is placed to the right of the display window's title bar,
+	and it always expands to the left.
+
+
+			    menu borders
+				  -
+				  -
+				->-<-
+		   - - - - - - - -> > > > > > > > > > > > > > > > > > >
+		  |		  >		    |		      >
+	    cell spacing       c  >	     [menu] padding	      >
+		  |	       e  >		    |		      >
+	> > > > > > > > > > >  l  > --padding-- OPTION #1 --padding-- >
+	>		    >  l  >		    |		      >
+	>		    >	  >	     [menu] spacing	      >
+	>     [SUBMENU]     > <-> >		    |		      >
+	>		    >	  > > > > > > > > > > > > > > > > > > >
+	>		    >  p  >		OPTION #2	      >
+	> > > > > > > > > > >  a  >		    |		      >
+			       d  >		 spacing	      >
+			       d  >		    |		      >
+			       i  > > > > > > > > > > > > > > > > > > >
+			       n  >	       LAST OPTION	      >
+			       g  >		    |		      >
+				  >		 padding	      >
+				  >		    |		      >
+				  > > > > > > > > > > > > > > > > > > >
+
+
+	File Selector Width:
+	A "file selector" is basically an option in the menu, marked by a
+	special attribute flag. Rather than resulting in a sub-menu, file
+	selectors result in a list of files, which is sorted, managed and
+	scrolled automatically. The value of "File Selector Width" determines
+	how many pixels those lists are wide. Now, the wider they are, the
+	more of a long file name you can see in the list. But remember it is
+	not of vital importance to provide enough space for the whole name
+	to show: whenever the user hovers a certain file's name, the name is
+	echoed to the balloon help, where it will always show in full
+	[but, say, provide at least enough room for 10 characters or so].
+
+	File Selector Scrollbar Width:
+	The width of the scrollbar used to scroll the list of files in file
+	selectors. Be aware it subtracts some space for the file names...
+
+	Text Field Cursor Width:
+	To see a "text field" in action, look at the last line of a file
+	selector and try typing some text while the selector is displayed.
+	This value determines the width of the text cursor... dito.
+
+	Text Field Cursor Shift:
+	How many pixels the text cursor is moved from its "ideal" position.
+	It is sometimes needed to account for the space between characters
+	and to fit the cursor to the style of the font you're using... you
+	should choose a value so that the cursor is placed between two
+	characters where an eventual keystroke would be inserted. In most
+	cases, if your font looks quite normal, you can simply set it to zero.
+
+	Text Field LeftSide Tolerance,
+	Text Field RightSide Tolerance:
+	Text fields can hold an undefined number of characters in the string,
+	but often their physical width is not enough to show the full string.
+	So, they can be horizontally scrolled while editing their contents.
+	Left and right side tolerance values are the number of pixels the text
+	cursor can get near to a border before the text is scrolled. The sum of
+	left+right side tolerance values must not exceed the physical width of
+	your application's smallest text field.
+
+	Question Border, Question Text Padding,
+	Question Opt Padding, Question Opt Spacing, Question Field Padding:
+	It's better to make another scheme, to explain the functions of those
+	five parameters.
+
+
+					       question border
+						      -
+						      -
+	     --->-----<------- text padding	      -
+		|     | 			      -
+	  |	|     | 			      -
+	- - - - > > > > > > > > > > > > > > > > > > > >
+	  |	>     | 			      >
+	  |	>     | 			      >
+	- - - - > - - QUESTION TEXT		      >
+	  |	>				      >
+	text	>				      >
+	padding >				      >
+	     -- > - - - - - - - - - - - - - - - - - - >---|
+	     |	>				      >   | text padding
+	     |	> - - - - - - - - - - - - - - - - - - >---|
+	     |	>  >>>>>>>>>>>>>>>>>>>>>>>>>>	      >
+	 [*] |	>  >[field padding]	    >	      >
+	     |	>  > CONTENT OF TEXT FIELD  >	      >
+	     |	>  >[field padding]	    >	      >
+	     |	>  >>>>>>>>>>>>>>>>>>>>>>>>>>	      >
+	     -- > - - - - - - - - - - - - - - - - - - >---|
+		>				      >   | opt spacing
+		> - - - - - - - - - - - - - - - - - - >---|
+		>  >>>>>>>>>>>>>     >>>>>>>>>>>>>    >
+		>  >[opt padd.]>     >		 >    >
+		>  > OPTION #1 >     > OPTION #2 >    >
+		>  >[opt padd.]>     >		 >    >
+		>  >>>>>>>>>>>>>     >>>>>>>>>>>>>    >
+		> - - - - - - -|- - -|- - - - - - - - >---|
+		>	       |     |		      >   | opt spacing
+		> > > > > > > >|> > >|> > > > > > > > >---|
+			       |     |
+			   ---->-----<---- opt spacing
+
+
+	[*] this section is added only if one of more text fields are part
+	of the question's datascript. Fields are placed one below the other,
+	and between a field and the next one are [Question Opt Spacing] pixels.)
+
+    (GUI setup variables / COLOURS AND EFFECTS)
+	Title Bar Text Color		= FFFFFFh;
+	Arrow Shape Transparent Color	= FF00FFh;
+	Arrow Shadow Transparent Color	= 000000h;
+	Balloon Text Color		= FFFFFFh;
+	Menu Text Color 		= FFFFFFh;
+	Directory Name Color		= 15C0C5h;
+	Menu Disabled Text Color	= 5078B0h;
+	Text Field Text Color		= FF80FFh;
+	Question Text Color		= B8C8FFh;
+	Question Opt Color		= FFFF00h;
+
+       (Title Bar Text Color:
+	color used to write the display window's title bar text.
+
+	Arrow Shape Transparent Color:
+	normally the mouse cursor hasn't a rectangular shape, but the TGA image
+	holding the shape itself [MPOINTER.TGA] must be rectangular. The parts
+	of that rectangular image which are not part of the cursor's shape must
+	be set to a particular color of your choice [used only for them]: then,
+	if you indicate the HEX value of that color [FF00FFh is bright magenta]
+	within [Arrow Shape Transparent Color], the iGUI will not overwrite the
+	display background with the cursor image in correspondence of any pixel
+	marked by the transparent color. This is only effective, however, if
+	you are using "service FX Superimpose" for [Arrow Shape Effect].
+
+	Arrow Shadow Transparent Color:
+	there is normally no need to set it to a particular value, because the
+	shadow is traced by "service FX Alpha Dim". That effect subtracts the
+	RGB components of the image pixels from the background, so to get some
+	transparent pixels you just have to leave them totally black.
+	Since you may certainly change the effect to trace the shadow, if you
+	used a "superimpose" effect you'd also need to use this variable for
+	selecting the transparent color.
+
+	Balloon Text Color:
+	the color used to write the text of the balloon help form.
+
+	Menu Text Color:
+	the color used for the options in the pull-down menu.
+
+	Directory Name Color:
+	the color used for the names of directories in file selectors.
+
+	Menu Disabled Text Color:
+	the color used for disabled options in the pull-down menu.
+
+	Text Field Text Color:
+	the color used to write the actual contents of text fields,
+	in both file selectors and question boxes...
+
+	Question Text Color:
+	the color used to write the text of a question box.
+
+	Question Opt Color:
+	the color used for the options at the bottom of a question box.)
+
+	Title Bar Text Effect		= service FX Antialiasing Dim;
+	Arrow Shape Effect		= service FX Alpha Lit Superimpose;
+	Arrow Shadow Effect		= service FX Alpha Dim;
+	Active Button Effect		= service FX Alpha Lit;
+	Pushed Button Effect		= service FX Alpha Dim;
+	Inactive Button Effect		= service FX Alpha Dim;
+	Balloon Background Effect	= service FX Raw;
+	Balloon Text Effect		= service FX Antialiasing Dim;
+	Menu Text Effect		= service FX Antialiasing Dim;
+	Selected Option Effect		= service FX Alpha Dim;
+	Pushed Option Effect		= service FX Alpha Light;
+	Text Field Text Effect		= service FX Antialiasing Dim;
+	Text Cursor Effect		= service FX Alpha Dim;
+	Question Body Effect		= service FX Raw;
+	Question Text Effect		= service FX Antialiasing Dim;
+	Question Field Edge Effect	= service FX Doublestrike Antialiasing Dim;
+	Question Field Body Effect	= service FX Raw;
+	Question Opt Edge Effect	= service FX Doublestrike Antialiasing Dim;
+	Question Opt Body Effect	= service FX Raw;
+	Question Opt Text Effect	= service FX Antialiasing Dim;
+	Question Border Effect		= service FX Doublestrike Antialiasing Dim;
+	Balloon Border Effect		= service FX Doublestrike Antialiasing Dim;
+
+       (The values of those variables must point to service subroutines which
+	will manage the tracement of single pixels for the related elements of
+	the GUI. Available effects are in "linoleum/main/lib/gen/pixelfx.txt".
+
+	Title Bar Text Effect:
+	affects the pixels forming the title bar's text.
+
+	Arrow Shape Effect:
+	affects the pixels forming the mouse cursor's shape.
+
+	Arrow Shadow Effect:
+	affects the pixels forming the mouse cursor's shadow.
+
+	Active Button Effect:
+	affects the pixels forming the window control buttons when they
+	are lit. Particularly, the full-screen button and the fold button.
+
+	Pushed Button Effect:
+	affects the pixels forming the window control buttons while they
+	are pushed down by a mouse click. All buttons are affected, and
+	also the "menu button" is.
+
+	Inactive Button Effect:
+	affects the pixels forming the window control buttons and the
+	menu button whenever they cannot be selected. For instance, the
+	menu button cannot be selected while the display window is folded.
+
+	Balloon Background Effect:
+	affects the pixels forming the help balloon's background,
+	or the rectangle over which the balloon text is traced.
+
+	Balloon Text Effect:
+	affects the pixels forming the text in the balloon help.
+
+	Menu Text Effect:
+	affects the pixels forming the text in the pull-down menu, including
+	the names of directories listed in file selectors.
+
+	Selected Option Effect:
+	used to highlight menu options while the mouse cursor's hovering them.
+
+	Pushed Option Effect:
+	used to highlight menu options while they are pushed [i.e. clicked].
+
+	Text Field Text Effect:
+	affects the pixels used for text strings edited thought text fields.
+
+	Text Cursor Effect:
+	affects the pixels forming the text cursor shape [it's a rectangle]:
+	the text cursor is used in text fields, including the text field for
+	specific file names as the last line of a file selector.
+
+	Question Body Effect:
+	affects the pixels forming the background rectangle of question boxes.
+
+	Question Text Effect:
+	affects the pixels forming the text written in question boxes.
+
+	Question Opt Body Effect:
+	affects the pixels forming the shape of the options in question boxes.
+
+	Question Opt Text Effect:
+	affects the pixels forming the text of the options in question boxes.
+
+	Question Border Effect:
+	affects the pixels forming the border around question boxes.
+
+	Balloon Border Effect:
+	affects the pixels forming the border around the balloon help;
+	later, [Balloon Border] will define how thick that border must be.)
+
+ vector Title Bar Active Colors 	= 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f;
+ vector Title Bar Inactive Colors	= 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Balloon Background Shaders	= 0.8f; 0.9f; 1.0f; 0.8f; 0.9f; 1.0f; 0.9f; 1.0f; 1.0f;
+ vector Active Button Colors		= 0.0f; 0.0f; 0.5f; 0.0f; 0.0f; 0.5f; 0.0f; 0.0f; 0.5f;
+ vector Pushed Button Colors		= .25f; .25f; .25f; .25f; .25f; .25f; 0.0f; 0.0f; 0.0f;
+ vector Inactive Button Colors		= 0.0f; 0.0f; 0.0f; .67f; .67f; .67f; 0.0f; 0.0f; 0.0f;
+ vector Menu Background Colors		= .33f; .33f; .33f; .33f; .33f; .33f; 0.0f; 0.0f; 0.0f;
+ vector Menu Borders Colors		= 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Selected Option Colors		= 0.0f; 0.0f; 0.0f; 0.4f; 0.5f; 0.0f; 0.0f; 0.0f; 0.0f;
+ vector Pushed Option Colors		= 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f; 0.1f;
+ vector Text Cursor Colors		= 0.0f; 0.4f; 0.6f; 0.0f; 0.4f; 0.6f; 0.0f; 0.7f; 1.0f;
+ vector Question Body Colors		= 1.0f; 1.0f; 1.0f; 0.0f; 0.0f; 0.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Border Colors		= .25f; .25f; .25f; 0.5f; 0.5f; 0.5f; .75f; .75f; .75f;
+ vector Question Field Edge Colors	= 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Field Body Colors	= 1.0f; 1.0f; 1.0f; .75f; .75f; 1.0f; 1.0f; 1.0f; 1.0f;
+ vector Question Option Edge Colors	= 0.3f; 0.3f; 0.3f; 0.6f; 0.6f; 0.6f; 1.0f; 1.0f; 1.0f;
+
+       (All of those vectors are 9 units in size, and each represents a shade
+	of color to be used for the corresponding elements in the GUI. They
+	are always used by the "Rectangle" subroutine, for which detailed
+	informations can be found in "linoleum/main/lib/gen/rect.txt".
+
+	vector Title Bar Active Colors:
+	used to trace the background of the display window's title bar when
+	the display window is active [focused by the user].
+
+	vector Title Bar Inactive Colors:
+	used to trace the background of the display window's title bar when
+	the display window is inactive.
+
+	vector Balloon Background Shaders:
+	used for the rectangle around the text in the balloon help.
+
+	vector Active Button Colors:
+	used to highlight the "full-screen" and "fold/unfold" buttons
+	when the corresponding feature is actually in effect.
+
+	vector Pushed Button Colors:
+	used to simulate the pressure of the window control buttons.
+
+	vector Inactive Button Colors:
+	used to signal certain buttons cannot be selected at a certain time.
+
+	vector Menu Background Colors:
+	used for the pull-down menu background.
+
+	vector Menu Borders Colors:
+	used for the borders of pull-down menus, and visible only if borders
+	are present, that is, [Menu Borders] is greater than zero.
+
+	vector Selected Option Colors:
+	used to highlight selected options in pull-down menus.
+
+	vector Pushed Option Colors:
+	used to highlight pushed [=clicked] options in pull-down menus.
+
+	vector Text Cursor Colors:
+	used to fill the text cursor's shape within text fields.
+
+	vector Question Body Colors:
+	used to fill the background of question boxes.
+
+	vector Question Border Colors:
+	used to fill the border eventually surrounding question boxes.
+	The border is there if [Question Border] is greater than zero.
+
+	vector Question Field Edge Colors:
+	used to fill the fixed edge around text fields within question
+	boxes. The fixed edge is always 1 pixel wide.
+
+	vector Question Field Body Colors:
+	used to fill the background of text fields, upon which the actual
+	contents of the field can be modified. Make it light if the color
+	of a text field's text is dark, and vice-versa. The color of text
+	field's text is given by "Text Field Text Color".
+
+	vector Question Option Edge Colors:
+	all of the options in questions have a 1-pixel fixed edge.
+	You can choose the colors of that edge: light colors are recommended
+	if the question box background ["Question Body Colors"] is dark, and
+	dark colors should be used if the question box background is bright.
+	The colors used to fill the boxes for the options are managed with a
+	special method, explained by the following paragraph...)
+
+ vector Question Default Option Body	= 1.0f; 1.0f; 1.0f; 0.9f; .95f; 1.0f; 0.7f; .75f; 0.9f;
+ vector Question Generic Option Body	= 1.0f; 1.0f; 1.0f; .95f; .95f; .95f; .85f; .85f; .85f;
+
+       (vector Question Default Option Body
+	holds the gradients used to colour the default option, typically the
+	first option, of a question box; the rest of the options being filled
+	with the gradients given in "vector Question Generic Option Body"; at
+	the moment, the fact that an option is considered a "default option"
+	does not influence the behaviour of the question box, in near future,
+	however, if question boxes and other iGUI elements will be keyboard-
+	driven other than mouse-driven, the default option will be the option
+	that will be followed upon pressing the "ENTER" key; options in a
+	question are internally numbered starting from zero, and the value
+	that gives the default option if an application doesn't assign it to
+	some specific option number, is in facts zero, and corresponds to the
+	very first option: that value, if to be changed, might be re-loaded
+	in variable [Q Default Option] on a per-question basis, that is, just
+	before calling the "Question" subroutine.)
+
+ vector Balloon Border Colors		= 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f; 1.0f;
+	Balloon Border			= 1;
+
+       (vector Balloon Border Colors
+	the gradients used to fill the border behind the balloon help.
+
+	Balloon Border
+	thickness of the balloon help border, in pixels.)
+
+    (GUI setup variables / DATASCRIPTS)
+
+	On Question Overscan = { DISPLAY_TOO_SMALL \cr\lf TO_SHOW_QUESTION! };
+		(POSSIBLE REPLIES ------------- CORRESPONDING ACTIONS)
+		{ Maximize };			Q Maximize;
+		{ Cancel };			NULL;
+		NULL;
+
+       (On Question Overscan:
+	it is a "predefined question" that MUST be included by your application
+	for the iGUI to find it. Differently from common interfaces, the iGUI
+	is a LINOLEUM library, and LINOLEUM applications cannot get out of
+	their display window [or open "child windows"]. For this reason there
+	may be certain cases in which the display window is NOT ENOUGH LARGE to
+	show a particular question [whose text/buttons take too much room to
+	fit in the display window/screen]. In such cases, the user is asked
+	to choose wether the iGUI should try again display the question after
+	the display has been maximized, or should ignore the question at all.
+	I know this can be rather bothering, but there's no better solution:
+	LINOLEUM applications must be able to run fullscreen, and in such cases
+	the screen cannot be resized! On the other hand, if the iGUI tried
+	displaying the question on a display that is too small, the options to
+	reply to the question would probably not be in sight: the user couldn't
+	select them and the application would enter a neverending wait state.
+	The best thing to do, at all, is keeping questions small enough to fit
+	in most cases. While it is necessary to keep the "On Question Overscan"
+	datascript as small as possible, because it will be used in emergency.
+	"On Question Overscan" is customizable by applications, but the option
+	to maximize the display *must* point to "Q Maximize", a subroutine
+	defined inside the iGUI source code.)
+
+ vector Tools Bar Layout =
+	vector to New as void;
+	vector to New as default;
+	TOOLS BAR SEPARATOR;
+	vector Button for credits;
+	vector Button to exit;
+	END OF TOOLS;
+
+	(The layout of a tools bar is defined by just mounting a vector
+	with pointers to tool buttons' datascripts, in the sequence they'll
+	have to show along the bar. This could be configured and customized
+	by creating some code to insert/delete buttons in the above kind
+	of vector. The layout ends with constant value "END OF TOOLS", a.k.a.
+	a simple null unit. There can be separators in the bar, each 4 pixels
+	wide, when a value of "TOOLS BAR SEPARATOR" is found in place of a
+	button's datascript pointer. Separators may be also concatenated. )
+
+ vector to New as void = New as void; { New_as_void };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	777777h; service FX Alpha Dim;
+
+ vector to New as default = New as default; { New_as_default };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 0 1 0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 0 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 0 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 0 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 0 1 1 1 1 1 0 1 1 0 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 0 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 0 0 0 0 1 1 0 1 1 1 0 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 0 1 1 1 0 1 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	777777h; service FX Alpha Dim;
+
+ vector Button for credits = Show Credits; { Credits };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	777777h; service FX Alpha Dim;
+
+ vector Button to exit = Quit; { Quit };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 0 1 1 1 1 1 0 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 0 1 1 1 1 1 0 1 1 1 1 1 0 0 0 b;
+	0 0 0 1 1 1 1 1 0 1 1 1 1 1 0 1 1 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	777777h; service FX Alpha Dim;
+
+	(A toolbar button's datascript is a vector following the syntax:
+	  pointer to management subroutine;
+	  { Tool_Tip_String,_describing_what_the_button_does. };
+	  Twenty-three units holding the shape of each scanline in the
+	  button's icon shape. The shape can be easily composed with
+	  binary 0's and 1's to mark the pixels, as you can see above.
+	  color of each lit pixel of the icon;
+	  pointer to service routine managing every pixel of the icon's
+	  shape, it can be selected from those appearing in PixelFX.txt;)
+
+    My Menu Caption = { IconEd };
+
+       (Above is a small string to be used as the caption of the menu button,
+	intended to hold the program's name or, by default, the string "MENU",
+	but it's useful to place the program's name there instead of putting it
+	as part of the window's caption, so the window's caption remains entirely
+	dedicated to the document's name.)
+
+    Icon Editor Menu Layout =			{ MENU };
+	01000000h; OPTION TYPE SUBMENU; 	{ <New_Icon	  }; NULL;
+	01010000h; OPTION TYPE NORMAL;		{    as_void	  }; New as void;
+	01020000h; OPTION TYPE NORMAL;		{    as_default   }; New as default;
+	02000000h; OPTION TYPE FILE SELECTOR;	{ <Load_from_EXE  }; Load from program;
+	03000000h; OPTION TYPE FILE SELECTOR;	{ <Load_from_BMP  }; Load from file;
+	04000000h; OPTION TYPE FILE SELECTOR;	{ <Save_to_EXE	  }; Save to program;
+	05000000h; OPTION TYPE FILE SELECTOR;	{ <Save_to_BMP	  }; Save to file;
+	06000000h; OPTION TYPE SUBMENU; 	{ <Display	  }; NULL;
+	06010000h; OPTION TYPE SUBMENU; 	{    <Window	  }; NULL;
+	06010100h; OPTION TYPE NORMAL;		{	Iconize   }; Iconize;
+	06010200h; OPTION TYPE NORMAL;		{	Fold	  }; Fold;
+	06010300h; OPTION TYPE NORMAL;		{	Maximize  }; Maximize;
+	06010400h; OPTION TYPE NORMAL;		{	Default   }; Default;
+	06020000h; OPTION TYPE SUBMENU; 	{    <Screen	  }; NULL;
+	06020100h; OPTION TYPE NORMAL;		{	_320x200  }; Set rez 320x200;
+	06020200h; OPTION TYPE NORMAL;		{	_320x240  }; Set rez 320x240;
+	06020300h; OPTION TYPE NORMAL;		{	_512x384  }; Set rez 512x384;
+	06020400h; OPTION TYPE NORMAL;		{	_640x400  }; Set rez 640x400;
+	06020500h; OPTION TYPE NORMAL;		{	*640x480  }; Set rez 640x480;
+	06030000h; OPTION TYPE SUBMENU; 	{    <Toolbar	  }; NULL;
+	06030100h; OPTION TYPE NORMAL;		{	*Enabled  }; Toolbar On;
+	06030200h; OPTION TYPE NORMAL;		{	_Disabled }; Toolbar Off;
+	07000000h; OPTION TYPE NORMAL;		{ _Show_credits   }; Show credits;
+	08000000h; OPTION TYPE NORMAL;		{ _Exit_program   }; Quit;
+	END OF MENU;
+
+       (The menu layout is composed as a datascript.
+	A datascript is a sequence of raw data units, vectors and text strings:
+	you may call it a "structure" if you like. But it's not a structure,
+	'cos access to those data is not managed automatically by the compiler.
+	The first label in a datascript ["Icon Editor Menu Layout" in this case]
+	gives the pointer to that script. The others are simply allocated by the
+	compiler in the exact sequence in which they are declared...
+	Each datascript, in order to be effectively useful, must have a
+	dedicated subroutine which is able to interpretate the given script;
+	in case of menu layout datascripts, that subroutine is "Install Menu".
+
+	The menu datascript begins by allocating a text string, indicating the
+	text to be used when the mouse cursor hovers the "menu button". The
+	menu button is always 100 pixels wide and 23 pixels tall, and its logo
+	is taken from the picture called "MENULOGO.TGA" [either the one placed
+	inside the program's source code directory, or the one placed in the
+	"linoleum/main/lib/igui" directory: if the compiler doesn't find a file
+	with that name in the program's directory, it takes the one from the
+	abovely mentioned folder].
+
+	After that string, there's a sequence of "option records".
+	Each record is formed by the following data:
+
+		option code
+		option type
+		option name
+		option manager
+
+    option code
+	The option code is arbitrary, at least partially: a menu must be built
+	following the classic tree structure, but the codes for each "leaf" can
+	be arbitrary and between zero and 255 [FFh]. The option code must be
+	specified in hexadecimal format but, in theory, if you consider it as
+	a "fake decimal" [aka binary-coded decimal], it doesn't hurt.
+	I mean, rather than declaring the tenth option in the main menu as
+	having code 0A000000h, you can simplify the code to 10000000h.
+	If you don't see how the code is organized, think to it as if there
+	were spaces between each couple of digits, this way: 10 00 00 00, and
+	in facts, if you like, you may effectively space the digits that way
+	in the declaration, given that spaces are meaningless in L.in.oleum.
+	Now, in reality, "10" in hexadecimal means 16, not 10. But it doesn't
+	matter: as I said before, the option code is partially arbitrary.
+	"Partially", not "totally", because the option code still determines
+	the placement of a certain option in the menu tree. Options from the
+	main menu follow a sequence like:
+		01000000h
+		02000000h
+		03000000h
+	but would you be able to declare a menu of, say, 50 different options
+	and then see it fully displayed on the screen? No, unless your display
+	was very very tall. That's why you're strongly suggested to organize
+	complex menus into sub-menus, by grouping their options. To declare
+	options to be part of sub-menus, you have to proceed this way...
+		01000000h
+		02000000h
+		    02010000h
+		    02020000h
+		    02030000h
+		03000000h
+	Above, the second menu option is in reality a sub-menu. In that
+	sub-menu there are three other options. Option codes like 02010000h are
+	level-2 codes. You can keep placing normal options inside sub-menus,
+	until level 4 [the last byte in the option code], like:
+		01000000h
+		02000000h
+		    02010000h [level-2 code]
+			02010100h [level-3 code]
+			02010200h
+			02010300h
+			    02010301h [level-4 code]
+			    02010302h
+			02010400h
+		    02020000h
+		    02030000h
+		03000000h
+
+    option type
+	Can assume one of four values, or a combination of some of them.
+	Those values are defined by the constants:
+		OPTION TYPE NORMAL
+		OPTION TYPE SUBMENU
+		OPTION TYPE FILE SELECTOR
+		OPTION TYPE DISABLED
+	Actually, those other two values are reserved to the iGUI:
+		OPTION TYPE FILENAME
+		OPTION TYPE FILENAMEBOX
+	and they must not be specified in the menu layout declaration,
+	because such options are automatically added to the menu when a
+	file selector is opened. Now, for the first four values...
+
+    OPTION TYPE NORMAL
+	a normal option.
+	When the user selects a normal option, the pull-down menu is closed
+	and then the corresponding subroutine is called. The subroutine to be
+	called at that point, is said to be the "option manager".
+
+    OPTION TYPE SUBMENU
+	an option which, when selected, opens a sub-menu.
+	In one of the previous examples, there was a sub-menu:
+		01000000h
+		02000000h
+		    02010000h
+		    02020000h
+		    02030000h
+		03000000h
+	to let iGUI understand that the second option in the main menu,
+	having option code = 02000000h, is in reality a submenu, you have
+	to declare the corresponding option type as OPTION TYPE SUBMENU.
+	Otherwise, the option would be listed but would have no effect.
+	Submenus may have an option manager, but they normally don't: an
+	exception is represented by file selectors, which have managers;
+	the goal of their managers will be mentioned later.
+
+    OPTION TYPE FILE SELECTOR
+	The file selector is a special sub-menu.
+	It is built automatically by the iGUI library.
+	Well, not entirely, but it will be explained later.
+      * Please note that, given the above notes about the option code, which
+	can't be used to nest sub-menus placed at more than 4 levels, level-
+	4 codes must not be associated with a file selector, because a file
+	selector is "by definition" a submenu.
+
+    OPTION TYPE DISABLED
+	An option that cannot be selected.
+	At least, an option that cannot be selected upon installing the menu,
+	if you're declaring it as disabled. Options can always be enabled and
+	disabled while a menu is installed, by using a couple of subroutines:
+	"Enable Option" and "Disable Option". More info later.
+
+    option name
+	After "option code" and "option type", which are single data units,
+	there's the option name: this one is a plain text string. There's
+	nothing more to say about it... it is what the iGUI will write in
+	the pull-down menu.
+
+    option manager
+	Following the "option name" string, there's the last data unit in an
+	option's record. It points to the subroutine to be called whenever
+	the user selects [=clicks] the corresponding option in the menu.
+	In practice, you simply need to indicate the name of the subroutine:
+	the LINOLEUM compiler will replace it with the corresponding address.
+	In case you're declaring an option as OPTION TYPE SUBMENU, you should
+	not need a management subroutine at all. In this case, replace the
+	name of the subroutine with "NULL" [NULL is a constant defined by the
+	compiler, and indicates an integer zero value]. See, for example:
+		01000000h; OPTION TYPE SUBMENU; { <New_Icon }; NULL;
+	the first option in the Icon Editor's menu is a submenu, and it just
+	opens the corresponding options' list, but needs no subroutines to
+	operate, and thus, the option manager is set to NULL.
+	Sub-menus *may* have a manager, a subroutine, but it would be called
+	BEFORE the sub-menu is opened. And sub-menus don't cause the menu to
+	be closed, differently from normal options.
+
+    FILE SELECTORS:
+	Additional considerations about file selectors must be done.
+	File selectors are pratically sub-menus, but they NEED a manager.
+	The manager, in this case, is a subroutine whose duty is to set up
+	a couple of parameters for the corresponding file selector to operate.
+	Those parameters are:
+		[File Selector Filter] = pointer to filter string;
+		[On File Select] = pointer to service subroutine;
+	to understand what they are, you have to know how file selectors work:
+	they first need to retrieve a list of the files in the application's
+	directory [remember that LINOLEUM applications don't know about the
+	existence of other directories]. That list is alphabetically sorted,
+	and *eventually* filtered. If you want a list of ALL files, you have
+	to set [File Selector Filter] to NULL. Otherwise, you have to set it
+	to the pointer of a text string giving the sequence of characters to
+	be used as a filter. Normally, on DOS/Windows systems, the filter is
+	represented by the files' extension, so the string should be formed
+	by the desired extension, preceeded by a single dot, like .BMP .EXE
+	.TGA etc... oh, and by the way, the filter is NEVER case-sensitive.
+	The other parameter is [On File Select]: that's the pointer to a
+	service subroutine [a subroutine declared using the "service" prefix]
+	which will be called whenever a file is selected from the list.
+	The [On File Select] subroutine is supposed to perform operations
+	with the selected file. When the iGUI calls your [On File Select]
+	subroutine, it first copies the name of the selected file inside the
+	variable called "vector Selected File Name", which is a string, and
+	which can be upto 511 units in size. The string is NULL-terminated,
+	so the effective length of a file name can be upto 510 characters:
+	it is formed by the path and the file name, the file being reported
+	complete with its absolute path.)
+
+	(Here follow other variables and vectors relating the Icon Editor...)
+
+	Quit Client = NO;
+
+	Credits Prompt = {
+		Instant_registration:\cr\lf
+		---------------------\cr\lf
+		Please_type_your_name\cr\lf
+		or_nickname_below... };
+		{ F/1st_name__ };		First name; 30; 10;
+		{ F/Last_name_ };		Last name; 30; 10;
+		{ Continue };			NULL;
+		{ Cancel };			Quit Funny Registration;
+		NULL;
+
+	Credits Box = {
+		Written_by_Alex.tg\cr\lf
+		Home_Sweet_Pixel_software\cr\lf
+		http://anywhere.i.am\cr\lf\lf
+		Product_registered_to: };
+		{ S/ }; 			First name; 30; 29;
+		{ S/ }; 			Last name; 30; 29;
+		{ Laughs... };			NULL;
+		NULL;
+
+	Credits Unreg = {
+		Hey_I_was_kidding!\cr\lf\lf
+		You_don't_really_need\cr\lf
+		to_register_this_program,\cr\lf
+		it's_free..._it's_just_an\cr\lf
+		example_of_the_Linoleum's\cr\lf
+		iGUI_integration_library! };
+		{ A-HA! }; NULL;
+		NULL;
+
+	Ok to quit = { Really_quit? };
+		{ Yes };			Quit program;
+		{ No }; 			Do not quit;
+		NULL;
+
+	LIFP ERR Not extant = {
+		FILE_ERROR:\cr\lf
+		file_not_found. };
+		{ Retry };			service Load Icon From Program;
+		{ Cancel };			NULL;
+		NULL;
+
+	LIFP ERR Not accessible = {
+		FILE_ERROR:\cr\lf
+		can't_read_from_file. };
+		{ Retry };			service Load Icon From Program;
+		{ Cancel };			NULL;
+		NULL;
+
+	LIFP ERR Wrong format = {
+		FILE_DATA_ERROR:\cr\lf
+		not_a_LINOLEUM_program_file. };
+		{ Cancel };			NULL;
+		NULL;
+
+	LIFF ERR Not extant = {
+		FILE_ERROR:\cr\lf
+		file_not_found. };
+		{ Retry };			service Load Icon From File;
+		{ Cancel };			NULL;
+		NULL;
+
+	LIFF ERR Not accessible = {
+		FILE_ERROR:\cr\lf
+		can't_read_from_file. };
+		{ Retry };			service Load Icon From File;
+		{ Cancel };			NULL;
+		NULL;
+
+	LIFF ERR Wrong format = {
+		WARNING:\cr\lf\cr\lf
+		Image_size_must_be_48x48_pixels,\cr\lf
+		and_have_a_256-colors_palette.\cr\lf
+		The_selected_file_does_not_seem\cr\lf
+		to_meet_these_requirements. };
+		{ Load_anyway... };		LIFF Do not care image format;
+		{ Cancel };			NULL;
+		NULL;
+
+	SITP ERR Not extant = {
+		FILE_ERROR:\cr\lf
+		file_not_found. };
+		{ Retry };			service Save Icon To Program;
+		{ Cancel };			NULL;
+		NULL;
+
+	SITP ERR Not accessible = {
+		FILE_ERROR:\cr\lf
+		can't_write_to_file.\cr\lf\cr\lf
+		Note:_if_the_selected_program\cr\lf
+		______is_in_use,_close_it_and\cr\lf
+		______select_"Retry". };
+		{ Retry };			service Save Icon To Program;
+		{ Cancel };			NULL;
+		NULL;
+
+	SITP ERR Wrong format = {
+		FILE_DATA_ERROR:\cr\lf
+		not_a_LINOLEUM_program_file. };
+		{ Cancel };			NULL;
+		NULL;
+
+	SITF ERR Generic = {
+		FILE_ERROR:\cr\lf
+		can't_create_selected_file\cr\lf
+		or_write_permission_denied. };
+		{ Retry };			service Save Icon To File;
+		{ Cancel };			NULL;
+		NULL;
+
+ vector Background shade		= 1.0f; 1.0f; 1.0f; 0.7f; 0.9f; 0.8f; 0.5f; 0.7f; 0.6f;
+	Icon Tile X			= UNDEFINED;
+	Icon Tile Y			= UNDEFINED;
+	Icon Pixel			= UNDEFINED;
+ vector Tile borders			= UNDEFINED *** 4;
+ vector Tile gradients			= UNDEFINED *** 9;
+ vector Black tile gradients		= 0.0f *** 9;
+	Icon string			= { Icon_shape };
+	Palette string			= { Icon_palette };
+	BG Color			= 255;
+	FG Color			= ZERO;
+	BG string			= { BG };
+	FG string			= { FG };
+	Brush Color			= UNDEFINED;
+	Dest pixel X			= UNDEFINED;
+	Dest pixel Y			= UNDEFINED;
+ vector Color ID string 		= { xxx };
+ vector Pixel ID string 		= { xxx };
+ vector Red meter gradients		= 1f;0f;0f; 1f;0f;0f; 0f;0f;0f;
+ vector Green meter gradients		= 0f;1f;0f; 0f;1f;0f; 0f;0f;0f;
+ vector Blue meter gradients		= 0f;0f;1f; 0f;0f;1f; 0f;0f;0f;
+ vector Meter string			= { xxx% };
+	EXE extension			= { .EXE };
+	BMP extension			= { .BMP };
+	Palette position in file	= UNDEFINED;
+	Shape position in file		= UNDEFINED;
+	Void Icon			= { Void_Icon };
+	Default Icon			= { Default_Icon };
+	User fears registration 	= UNDEFINED;
+	First name			= { YOUR_NAME }; extend upto: 30;
+	Last name			= { HERE... }; extend upto: 30;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"workspace"
+
+	Icon				= 48 multiplied 48;
+	Spare				= 48 multiplied 48;
+	Palette 			= 256;
+	File contents buffer		= 10000;
+	Present file name		= 256;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"programme"
+
+       (Subroutines to know:
+	--------------------
+	What's first written in the display window's title bar until the
+	application doesn't eventually change the title bar itself is
+	"NO NAME". The title bar can be changed by using the following syntax:
+
+		[Window Title] = pointer to new title string;
+		=> Update Title Bar;
+
+	To change the menu layout or to install the first menu layout,
+	use this other call:
+
+		[Menu To Install] = pointer to new menu layout datascript;
+		=> Install Menu;
+
+	To change the layout of the tools bar or to install the first
+	tools bar, use this:
+
+		[Tools Bar To Install] = pointer to tools bar layout;
+		=> Install Tools Bar;
+
+		NOTE: the tools bar has to be enabled with a call to
+		=> Enable Tools Bar; in order for it to get visible.
+
+	To enter iGUI's control loop:
+
+		[Work Area Manager] = service subroutine to retrace work area;
+		[Control Loop] = service subroutine to interact with the user;
+		=> Enter Integrated GUI;
+
+		[your application should spend most of its runtime in this
+		subroutine; on return from that call, it means the user wants
+		to quit. For instance, pressing the close button of the display
+		window causes the "Enter Integrated GUI" subroutine to return.]
+
+	To go fullscreen:
+
+		[Fullscreen Width] = value, constant or variable;
+		[Fullscreen Height] = value, constant or variable;
+		=> Now Full;
+
+		[it won't work if you don't specify a display resolution which
+		is supported by the video card, so you should always provide a
+		certain number of alternative resolutions.]
+
+	To go fullsize:
+
+		=> Now Maxi;
+
+		[if you're running fullscreen, this will automatically
+		revert the display back to windowed mode...]
+
+	To iconize the display window:
+
+		=> Now Slep;
+
+		[if you're running fullscreen, this will automatically
+		revert the display back to windowed mode...]
+
+	To resize the display window to an arbitrary size:
+
+		[New Display Width] = value, constant or variable;
+		[New Display Height] = value, constant or variable;
+		=> Resize Display;
+
+		[if you're running fullscreen, this will automatically
+		revert the display back to windowed mode...]
+
+	To retrace the contents of the display [frame refresh]:
+
+		=> Refresh Display;
+
+	To update the video memory [without retracing]:
+
+		=> Update Layers;
+
+	To retrace the title bar without changing it:
+
+		=> Update Title Bar;
+
+	To show balloon help descriptions:
+
+		[Balloon Text String] = pointer to description's string;
+
+	To hide balloon help descriptions:
+
+		[Balloon Text String] = NULL;
+
+	To mark menu options [by default with an asterisk]:
+
+		[Option Code] = option code of the option to mark;
+		=> Mark Option;
+
+	To unmark menu options [by default with a blank space]:
+
+		[Option Code] = option code of the option to unmark;
+		=> UnMark Option;
+
+	To enable menu options:
+
+		[Option Code] = option code of the option to enable;
+		=> Enable Option;
+
+	To disable menu options:
+
+		[Option Code] = option code of the option to disable;
+		=> Disable Option;
+
+	To pop up a question box:
+
+		[Question Datascript] = pointer to question's datascript;
+		=> Question;
+
+	To enable the tools bar:
+
+		=> Enable Tools Bar;
+
+	To disable the tools bar:
+
+		=> Disable Tools Bar;)
+
+	[Menu Caption] = My Menu Caption;
+	[Small Caption] = My Menu Caption;
+
+	=> Initialize Integrated GUI;
+	=> Enable Tools Bar;
+
+	[Tools Bar To Install] = vector Tools Bar Layout;
+	=> Install Tools Bar;
+
+	[Menu To Install] = Icon Editor Menu Layout;
+	=> Install Menu;
+
+	=> New as default;
+
+    "Session Reprise"
+	[Work Area Manager] = service Work Area Manager;
+	[Control Loop] = service Main Control Loop;
+	=> Enter Integrated GUI;
+	[Question Datascript] = Ok to quit;
+	=> Question;
+	? [Quit Client] = NO -> Session Reprise;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"Quit program"
+    (requests iGUI to return to main program from "Enter Integrated GUI")
+	[Quit Now] = YES;
+    (requests main program to quit)
+	[Quit Client] = YES;
+	end;
+
+"Do not quit"
+    (requests iGUI to return to main program from "Enter Integrated GUI")
+	[Quit Now] = YES;
+    (requests main program to keep running and re-enter the iGUI)
+	[Quit Client] = NO;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"New as default"
+	B = vector Selected File Name;
+	[B plus 00] = 73;   (I)
+	[B plus 01] = 67;   (C)
+	[B plus 02] = 79;   (O)
+	[B plus 03] = 78;   (N)
+	[B plus 04] = 69;   (E)
+	[B plus 05] = 68;   (D)
+	[B plus 06] = 46;   (.)
+	[B plus 07] = 69;   (E)
+	[B plus 08] = 88;   (X)
+	[B plus 09] = 69;   (E)
+	[B plus 10] = NULL; (filename string terminator)
+	[File Name] = vector Selected File Name;
+	[File Command] = TEST;
+	isocall; ? ok -> NAD They renamed it;
+	[B plus 00] = 80;   (P)
+	[B plus 01] = 82;   (R)
+	[B plus 02] = 79;   (O)
+	[B plus 03] = 71;   (G)
+	[B plus 04] = 82;   (R)
+	[B plus 05] = 65;   (A)
+	[B plus 06] = 77;   (M)
+	[B plus 07] = 46;   (.)
+	[B plus 08] = 69;   (E)
+	[B plus 09] = 88;   (X)
+	[B plus 10] = 69;   (E)
+	[B plus 11] = NULL; (filename string terminator)
+    "NAD They renamed it"
+	=> service Load Icon From Program;
+	[Window Title] = (string) Default Icon;
+	=> Refresh Display;
+	end;
+
+"New as void"
+	[BG Color] = 255;
+	[FG Color] = ZERO;
+	A = Icon;
+	B = 48 multiplied 48;
+	    "Set icon pixels to all white"
+		[A] = 255;
+		A+;
+		B ^ Set icon pixels to all white;
+	A = Palette;
+	B = 256;
+	C = ZERO;
+	    "Build default palette"
+		E = C; E & 00000011b; E < 6;
+		E ,= E; E ** 1.250f; E =, E;
+		D = E;				(B of 3:3:2 8-bit palette)
+		E = C; E & 00011100b; E < 3;
+		E ,= E; E ** 1.125f; E =, E;
+		E < 8; D | E;			(G of 3:3:2 8-bit palette)
+		E = C; E & 11100000b;
+		E ,= E; E ** 1.125f; E =, E;
+		E < 16; D | E;			(R of 3:3:2 8-bit palette)
+		[A] = D;
+		A+; C+;
+		B ^ Build default palette;
+	[Window Title] = (string) Void Icon;
+	=> Refresh Display;
+	end;
+
+"Load from program"
+	[File Selector Filter] = EXE extension;
+	[On File Select] = service Load Icon From Program;
+	end;
+
+"Load from file"
+	[File Selector Filter] = BMP extension;
+	[On File Select] = service Load Icon From File;
+	end;
+
+"Save to program"
+	[File Selector Filter] = EXE extension;
+	[On File Select] = service Save Icon To Program;
+	end;
+
+"Save to file"
+	[File Selector Filter] = BMP extension;
+	[On File Select] = service Save Icon To File;
+	end;
+
+"Iconize"
+	=> Now Slep;
+	end;
+
+"Fold"
+	=> Now Fold;
+	end;
+
+"Maximize"
+	=> Now Maxi;
+	end;
+
+"Default"
+	[New Display Width] = INITIAL WIDTH;
+	[New Display Height] = INITIAL HEIGHT;
+	=> Resize Display;
+	end;
+
+"UnMark all resolutions"
+	[Option Code] = 06020100h; => UnMark Option;
+	[Option Code] = 06020200h; => UnMark Option;
+	[Option Code] = 06020300h; => UnMark Option;
+	[Option Code] = 06020400h; => UnMark Option;
+	[Option Code] = 06020500h; => UnMark Option;
+	end;
+
+"Set rez 320x200"
+	=> UnMark all resolutions;
+	[Option Code] = 06020100h; => Mark Option;
+	[Fullscreen Width] = 320;
+	[Fullscreen Height] = 200;
+	=> Now Full;
+	end;
+
+"Set rez 320x240"
+	=> UnMark all resolutions;
+	[Option Code] = 06020200h; => Mark Option;
+	[Fullscreen Width] = 320;
+	[Fullscreen Height] = 240;
+	=> Now Full;
+	end;
+
+"Set rez 512x384"
+	=> UnMark all resolutions;
+	[Option Code] = 06020300h; => Mark Option;
+	[Fullscreen Width] = 512;
+	[Fullscreen Height] = 384;
+	=> Now Full;
+	end;
+
+"Set rez 640x400"
+	=> UnMark all resolutions;
+	[Option Code] = 06020400h; => Mark Option;
+	[Fullscreen Width] = 640;
+	[Fullscreen Height] = 400;
+	=> Now Full;
+	end;
+
+"Set rez 640x480"
+	=> UnMark all resolutions;
+	[Option Code] = 06020500h; => Mark Option;
+	[Fullscreen Width] = 640;
+	[Fullscreen Height] = 480;
+	=> Now Full;
+	end;
+
+"Toolbar On"
+	[Option Code] = 06030100h; => Mark Option;
+	[Option Code] = 06030200h; => UnMark Option;
+	=> Enable Tools Bar;
+	end;
+
+"Toolbar Off"
+	[Option Code] = 06030100h; => UnMark Option;
+	[Option Code] = 06030200h; => Mark Option;
+	=> Disable Tools Bar;
+	end;
+
+"Show credits"
+	[User fears registration] = NO;
+	[Question Datascript] = Credits Prompt;
+	=> Question;
+	? [User fears registration] = YES -> Do not register;
+	[Question Datascript] = Credits Box;
+	=> Question;
+    "Do not register"
+	end;
+    "Quit Funny Registration"
+	[User fears registration] = YES;
+	[Question Datascript] = Credits Unreg;
+	=> Question;
+	end;
+
+"Quit"
+	[Quit Now] = YES;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Work Area Manager"
+
+(This is the subroutine called by the iGUI each time the display needs
+to be retraced, so you should place there the code to draw all of the
+visible elements of the "work area" of the display. The work area is
+identified by the rectangular region defined by "vector Work Area": by
+default it corresponds to the whole display except the title bar, which
+is 25 pixels tall, and a fixed 1-pixel edge surrounding the display.)
+
+    (Clearing background with a nice and bright shade)
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Work Area;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Background shade;
+	=> Rectangle;
+    (Drawing icon to the left of the display starting from 10;34)
+	[Icon Pixel] = 0;
+	[Icon Tile Y] = 34;
+    "Icon vertical loop"
+	[Icon Tile X] = 10;
+	    "Icon horizontal loop"
+		A = vector Tile borders;
+		[A plus 0] = [Icon Tile X];
+		[A plus 1] = [Icon Tile Y];
+		[A plus 2] = [Icon Tile X];
+		[A plus 3] = [Icon Tile Y];
+		[A plus 2] + 3; (width of the tile is 3 pixels, edges included)
+		[A plus 3] + 3; (height of the tile is 3 pixels, edges included)
+		[A plus 0]+;
+		[A plus 1]+;
+		A = [Icon Pixel];
+		A = [A plus Icon];
+		B = [A plus Palette]; B & FF0000h; B > 16; B ,= B; B // 255f;
+		C = [A plus Palette]; C & 00FF00h; C > 8; C ,= C; C // 255f;
+		D = [A plus Palette]; D & 0000FFh; D ,= D; D // 255f;
+		A = vector Tile gradients;
+		[A plus 0] = B; [A plus 1] = C; [A plus 2] = D;
+		[A plus 3] = B; [A plus 4] = C; [A plus 5] = D;
+		[A plus 6] = B; [A plus 7] = C; [A plus 8] = D;
+		[Rectangle Target Layer] = Backdrop Layer;
+		[Rectangle Display Alignment] = [Display Width];
+		[Rectangle Bounds] = vector Tile borders;
+		[Rectangle Effect] = service FX Raw;
+		[Rectangle Gradients] = vector Tile gradients;
+		=> Rectangle;
+		[Icon Pixel]+;
+		[Icon Tile X] + 3;
+		? [Icon Tile X] < 10 plus 144 -> Icon horizontal loop;
+	[Icon Tile Y] + 3;
+	? [Icon Tile Y] < 34 plus 144 -> Icon vertical loop;
+    (Description of the icon grid)
+	[String]		= Icon string;
+	[Ink]			= 0;
+	[Text X]		= 32;
+	[Text Y]		= 40 plus 144;
+	[Text Effect]		= service FX Raw;
+	[Text Display Width]	= [Display Width];
+	[Text Display Height]	= [Display Height];
+	[Text Display Origin]	= Backdrop Layer;
+	[Text Region]		= NULL;
+	[Text Window]		= NULL;
+	[Text Word Wrap]	= OFF;
+	[Text Ghost Mode]	= OFF;
+	=> STD Write;
+    (Drawing palette to the right of the icon starting from 164;34)
+	[Icon Pixel] = 0;
+	[Icon Tile Y] = 34;
+    "Pal vertical loop"
+	[Icon Tile X] = 164;
+	    "Pal horizontal loop"
+		A = vector Tile borders;
+		[A plus 0] = [Icon Tile X];
+		[A plus 1] = [Icon Tile Y];
+		[A plus 2] = [Icon Tile X];
+		[A plus 3] = [Icon Tile Y];
+		[A plus 2] + 8; (width of the tile is 8 pixels, edges included)
+		[A plus 3] + 8; (height of the tile is 8 pixels, edges included)
+		[Rectangle Target Layer] = Backdrop Layer;
+		[Rectangle Display Alignment] = [Display Width];
+		[Rectangle Bounds] = vector Tile borders;
+		[Rectangle Effect] = service FX Raw;
+		[Rectangle Gradients] = vector Black tile gradients;
+		=> Rectangle;
+		A = vector Tile borders;
+		[A plus 0]+;
+		[A plus 1]+;
+		[A plus 2]-;
+		[A plus 3]-;
+		A = [Icon Pixel];
+		B = [A plus Palette]; B & FF0000h; B > 16; B ,= B; B // 255f;
+		C = [A plus Palette]; C & 00FF00h; C > 8; C ,= C; C // 255f;
+		D = [A plus Palette]; D & 0000FFh; D ,= D; D // 255f;
+		A = vector Tile gradients;
+		[A plus 0] = B; [A plus 1] = C; [A plus 2] = D;
+		[A plus 3] = B; [A plus 4] = C; [A plus 5] = D;
+		[A plus 6] = B; [A plus 7] = C; [A plus 8] = D;
+		[Rectangle Target Layer] = Backdrop Layer;
+		[Rectangle Display Alignment] = [Display Width];
+		[Rectangle Bounds] = vector Tile borders;
+		[Rectangle Effect] = service FX Raw;
+		[Rectangle Gradients] = vector Tile gradients;
+		=> Rectangle;
+		[Icon Pixel]+;
+		[Icon Tile X] + 8;
+		? [Icon Tile X] < 164 plus 128 -> Pal horizontal loop;
+	[Icon Tile Y] + 8;
+	? [Icon Tile Y] < 34 plus 128 -> Pal vertical loop;
+    (Description of the palette grid)
+	[String]		= Palette string;
+	[Ink]			= 0;
+	[Text X]		= 164;
+	[Text Y]		= 40 plus 128;
+	[Text Effect]		= service FX Raw;
+	[Text Display Width]	= [Display Width];
+	[Text Display Height]	= [Display Height];
+	[Text Display Origin]	= Backdrop Layer;
+	[Text Region]		= NULL;
+	[Text Window]		= NULL;
+	[Text Word Wrap]	= OFF;
+	[Text Ghost Mode]	= OFF;
+	=> STD Write;
+    (Drawing both color indicators)
+	=> Refill Color Indicators;
+    (Description of the background color indicator)
+	[String]		= BG string;
+	[Ink]			= 0;
+	[Text X]		= 184;
+	[Text Y]		= 61 plus 128;
+	[Text Effect]		= service FX Raw;
+	[Text Display Width]	= [Display Width];
+	[Text Display Height]	= [Display Height];
+	[Text Display Origin]	= Backdrop Layer;
+	[Text Region]		= NULL;
+	[Text Window]		= NULL;
+	[Text Word Wrap]	= OFF;
+	[Text Ghost Mode]	= OFF;
+	=> STD Write;
+    (Description of the foreground color indicator)
+	[String]		= FG string;
+	[Ink]			= 0;
+	[Text X]		= 228;
+	[Text Y]		= 61 plus 128;
+	[Text Effect]		= service FX Raw;
+	[Text Display Width]	= [Display Width];
+	[Text Display Height]	= [Display Height];
+	[Text Display Origin]	= Backdrop Layer;
+	[Text Region]		= NULL;
+	[Text Window]		= NULL;
+	[Text Word Wrap]	= OFF;
+	[Text Ghost Mode]	= OFF;
+	=> STD Write;
+	end;
+"Refill Color Indicators"
+    (Drawing background color indicator)
+	A = vector Tile borders;
+	[A plus 0] = 164;
+	[A plus 1] = 60 plus 128;
+	[A plus 2] = 164 plus 15;
+	[A plus 3] = 60 plus 128 plus 15;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Black tile gradients;
+	=> Rectangle;
+	A = vector Tile borders;
+	[A plus 0]+;
+	[A plus 1]+;
+	[A plus 2]-;
+	[A plus 3]-;
+	A = [BG Color];
+	B = [A plus Palette]; B & FF0000h; B > 16; B ,= B; B // 255f;
+	C = [A plus Palette]; C & 00FF00h; C > 8; C ,= C; C // 255f;
+	D = [A plus Palette]; D & 0000FFh; D ,= D; D // 255f;
+	A = vector Tile gradients;
+	[A plus 0] = B; [A plus 1] = C; [A plus 2] = D;
+	[A plus 3] = B; [A plus 4] = C; [A plus 5] = D;
+	[A plus 6] = B; [A plus 7] = C; [A plus 8] = D;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Tile gradients;
+	=> Rectangle;
+    (Drawing foreground color indicator)
+	A = vector Tile borders;
+	[A plus 0] = 204;
+	[A plus 1] = 60 plus 128;
+	[A plus 2] = 204 plus 15;
+	[A plus 3] = 60 plus 128 plus 15;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Black tile gradients;
+	=> Rectangle;
+	A = vector Tile borders;
+	[A plus 0]+;
+	[A plus 1]+;
+	[A plus 2]-;
+	[A plus 3]-;
+	A = [FG Color];
+	B = [A plus Palette]; B & FF0000h; B > 16; B ,= B; B // 255f;
+	C = [A plus Palette]; C & 00FF00h; C > 8; C ,= C; C // 255f;
+	D = [A plus Palette]; D & 0000FFh; D ,= D; D // 255f;
+	A = vector Tile gradients;
+	[A plus 0] = B; [A plus 1] = C; [A plus 2] = D;
+	[A plus 3] = B; [A plus 4] = C; [A plus 5] = D;
+	[A plus 6] = B; [A plus 7] = C; [A plus 8] = D;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Tile gradients;
+	=> Rectangle;
+    (Drawing actual FG color's R-G-B meters)
+	A = vector Tile borders;
+	[A plus 0] = 294;
+	[A plus 1] = 33;
+	[A plus 2] = 312 plus 7;
+	[A plus 3] = 35 plus 128;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Black tile gradients;
+	=> Rectangle;
+	A = vector Tile borders;
+	[A plus 0] = 295;
+	[A plus 1] = 34;
+	[A plus 2] = 295 plus 7;
+	[A plus 3] = 34 plus 128;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Red meter gradients;
+	=> Rectangle;
+	A = [FG Color]; A = [A plus Palette]; A & FF0000h; A > 16 plus 1;
+	B = vector Tile borders; [B plus 1] + 127; [B plus 1] - A;
+	[Rectangle Effect] = service FX Alpha Light;
+	[Rectangle Gradients] = vector Active Button Colors;
+	=> Rectangle;
+	A = vector Tile borders;
+	[A plus 0] = 303;
+	[A plus 1] = 34;
+	[A plus 2] = 303 plus 7;
+	[A plus 3] = 34 plus 128;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Green meter gradients;
+	=> Rectangle;
+	A = [FG Color]; A = [A plus Palette]; A & FF00h; A > 8 plus 1;
+	B = vector Tile borders; [B plus 1] + 127; [B plus 1] - A;
+	[Rectangle Effect] = service FX Alpha Light;
+	[Rectangle Gradients] = vector Active Button Colors;
+	=> Rectangle;
+	A = vector Tile borders;
+	[A plus 0] = 311;
+	[A plus 1] = 34;
+	[A plus 2] = 311 plus 7;
+	[A plus 3] = 34 plus 128;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Blue meter gradients;
+	=> Rectangle;
+	A = [FG Color]; A = [A plus Palette]; A & FFh; A > 1;
+	B = vector Tile borders; [B plus 1] + 127; [B plus 1] - A;
+	[Rectangle Effect] = service FX Alpha Light;
+	[Rectangle Gradients] = vector Active Button Colors;
+	=> Rectangle;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Main Control Loop"
+
+(The control loop is responsible for user's interaction with the application.
+For instance, when you have to check for a mouse click on a particular area
+of the work area, you should place the code here. The control loop, in facts,
+is called by the iGUI continuously. Therefore, if you have to animate the
+display, you should do it here. It needs to be fast, or it will slow down the
+movements of the mouse cursor and interaction in general. Please also note
+these lines below:)
+
+	? [Client Owns Mouse Pointer] = YES -> MCP Begin;
+	end;
+
+	"MCP Begin"
+
+(Checks the flag called [Client Owns Mouse Pointer]. If its value equals the
+constant "YES", the main loop can begin, otherwise the control loop does
+nothing and returns immediately. That's because when the said flag is set to
+"NO", your application should never check for actions performed throught the
+mouse. It's easy to understand: when [Client Owns Mouse Pointer] = NO, it
+means the mouse cursor is hovering one of the iGUI's controls, and thus your
+application shouldn't disturb it. Another thing which is not used by the Icon
+Editor, but that couldn't be shared with the iGUI, is the keyboard. The
+respective flag is [Client Owns Text Cursor]: while a file selector is open,
+the file selector intercepts every keystroke to let the user specify the file
+name, and the flag [Client Owns Text Cursor] is set to NO. The Icon Editor
+doesn't need to intercept the keyboard input, so this flag is not checked;
+nonetheless, if your application, differently from the Icon Editor, HAS to
+check for keyboard input, it should avoid doing that while the above flag is
+set to "NO", otherwise it may retrieve keystrokes even while the user is
+typing a file name inside a file selector.)
+
+	? [Pointer X Coordinate] < 10 -> Not hovering icon shape;
+	? [Pointer X Coordinate] >= 10 plus 144 -> Not hovering icon shape;
+	? [Pointer Y Coordinate] < 34 -> Not hovering icon shape;
+	? [Pointer Y Coordinate] >= 34 plus 144 -> Not hovering icon shape;
+	[Balloon Text String] = vector Pixel ID string;
+	A = [Pointer X Coordinate]; A - 10; A / 3; [Dest pixel X] = A;
+	B = [Pointer Y Coordinate]; B - 34; B / 3; [Dest pixel Y] = B;
+	C = B; C * 48; C + A;
+	[vector Pixel ID string plus 2] = [C plus Icon];
+	[vector Pixel ID string plus 2] / 1;
+	[vector Pixel ID string plus 2] % 10;
+	[vector Pixel ID string plus 2] + 48;
+	[vector Pixel ID string plus 1] = [C plus Icon];
+	[vector Pixel ID string plus 1] / 10;
+	[vector Pixel ID string plus 1] % 10;
+	[vector Pixel ID string plus 1] + 48;
+	[vector Pixel ID string plus 0] = [C plus Icon];
+	[vector Pixel ID string plus 0] / 100;
+	[vector Pixel ID string plus 0] % 10;
+	[vector Pixel ID string plus 0] + 48;
+	? [Pointer Status] - PD LEFT BUTTON DOWN plus PD RIGHT BUTTON DOWN
+		-> Been hovering icon shape;
+	[Brush Color] = [FG Color];
+	? [Pointer Status] - PD RIGHT BUTTON DOWN -> Draw in foreground color;
+	[Brush Color] = [BG Color];
+    "Draw in foreground color"
+	[C plus Icon] = [Brush Color];
+	C = vector Tile borders;
+	A * 3; A + 10;
+	B * 3; B + 34;
+	[C plus 0] = A;
+	[C plus 1] = B;
+	[C plus 2] = A; [C plus 2] + 3;
+	[C plus 3] = B; [C plus 3] + 3;
+	A = vector Tile borders;
+	[A plus 0]+;
+	[A plus 1]+;
+	A = [Brush Color];
+	B = [A plus Palette]; B & FF0000h; B > 16; B ,= B; B // 255f;
+	C = [A plus Palette]; C & 00FF00h; C > 8; C ,= C; C // 255f;
+	D = [A plus Palette]; D & 0000FFh; D ,= D; D // 255f;
+	A = vector Tile gradients;
+	[A plus 0] = B; [A plus 1] = C; [A plus 2] = D;
+	[A plus 3] = B; [A plus 4] = C; [A plus 5] = D;
+	[A plus 6] = B; [A plus 7] = C; [A plus 8] = D;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Tile borders;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Tile gradients;
+	=> Rectangle;
+	[L2L Region] = vector Tile borders;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Command] = RETRACE;
+	[Display Live Region] = vector Tile borders;
+	isocall;
+	-> Been hovering icon shape;
+    "Not hovering icon shape"
+	? [Balloon Text String] != vector Pixel ID string -> Been hovering icon shape;
+	[Balloon Text String] = NULL;
+    "Been hovering icon shape"
+	? [Pointer X Coordinate] < 164 -> Not hovering color palette;
+	? [Pointer X Coordinate] >= 164 plus 128 -> Not hovering color palette;
+	? [Pointer Y Coordinate] < 34 -> Not hovering color palette;
+	? [Pointer Y Coordinate] >= 34 plus 128 -> Not hovering color palette;
+	[Balloon Text String] = vector Color ID string;
+	A = [Pointer X Coordinate]; A - 164; A > 3;
+	B = [Pointer Y Coordinate]; B - 34; B > 3;
+	B < 4; A + B;
+	[vector Color ID string plus 2] = A;
+	[vector Color ID string plus 2] / 1;
+	[vector Color ID string plus 2] % 10;
+	[vector Color ID string plus 2] + 48;
+	[vector Color ID string plus 1] = A;
+	[vector Color ID string plus 1] / 10;
+	[vector Color ID string plus 1] % 10;
+	[vector Color ID string plus 1] + 48;
+	[vector Color ID string plus 0] = A;
+	[vector Color ID string plus 0] / 100;
+	[vector Color ID string plus 0] % 10;
+	[vector Color ID string plus 0] + 48;
+	? [Pointer Status] - PD LEFT BUTTON DOWN plus PD RIGHT BUTTON DOWN
+		-> Been hovering color palette;
+	? [Pointer Status] - PD RIGHT BUTTON DOWN -> Set foreground color;
+	[BG Color] = A;
+	-> Set background color;
+    "Set foreground color"
+	[FG Color] = A;
+    "Set background color"
+	=> Refill Color Indicators;
+	A = vector Tile borders;
+	[A plus 0] = 164;
+	[A plus 1] = 60 plus 128;
+	[A plus 2] = 204 plus 15;
+	[A plus 3] = 60 plus 128 plus 15;
+	[L2L Region] = vector Tile borders;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Command] = RETRACE;
+	[Display Live Region] = vector Tile borders;
+	isocall;
+	A = vector Tile borders;
+	[A plus 0] = 285;
+	[A plus 1] = 33;
+	[A plus 2] = 312 plus 7;
+	[A plus 3] = 35 plus 128;
+	[L2L Region] = vector Tile borders;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Command] = RETRACE;
+	[Display Live Region] = vector Tile borders;
+	isocall;
+	-> Been hovering color palette;
+    "Not hovering color palette"
+	? [Balloon Text String] != vector Color ID string -> Been hovering color palette;
+	[Balloon Text String] = NULL;
+    "Been hovering color palette"
+	? [Pointer X Coordinate] < 294 -> Not hovering color meters;
+	? [Pointer X Coordinate] > 312 plus 7 -> Not hovering color meters;
+	? [Pointer Y Coordinate] < 35 -> Not hovering color meters;
+	? [Pointer Y Coordinate] >= 35 plus 128 -> Not hovering color meters;
+	[Balloon Text String] = vector Meter string;
+	A = [Pointer Y Coordinate]; A - 35; A < 1;
+	B = 255; B - A; B * 100; B / 255;
+	[vector Meter string plus 2] = B;
+	[vector Meter string plus 2] / 1;
+	[vector Meter string plus 2] % 10;
+	[vector Meter string plus 2] + 48;
+	[vector Meter string plus 1] = B;
+	[vector Meter string plus 1] / 10;
+	[vector Meter string plus 1] % 10;
+	[vector Meter string plus 1] + 48;
+	[vector Meter string plus 0] = B;
+	[vector Meter string plus 0] / 100;
+	[vector Meter string plus 0] % 10;
+	[vector Meter string plus 0] + 48;
+	? [Pointer Status] - PD LEFT BUTTON DOWN
+		-> Been hovering color meters;
+	B = 255; B - A;
+	A = [FG Color];
+	? [Pointer X Coordinate] <= 294 plus 7 -> Set RED meter;
+	? [Pointer X Coordinate] >= 312 -> Set BLUE meter;
+    "Set GREEN meter"
+	B < 8;
+	[A plus Palette] & FF00FFh;
+	[A plus Palette] | B;
+	-> Refresh meters;	
+    "Set RED meter"
+	B < 16;
+	[A plus Palette] & 00FFFFh;
+	[A plus Palette] | B;
+	-> Refresh meters;
+    "Set BLUE meter"
+	[A plus Palette] & FFFF00h;
+	[A plus Palette] | B;
+    "Refresh meters"
+	=> Refresh Display;
+	-> Been hovering color meters;
+    "Not hovering color meters"
+	? [Balloon Text String] != vector Meter string -> Been hovering color meters;
+	[Balloon Text String] = NULL;
+    "Been hovering color meters"
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Load Icon From Program"
+	[File Name] = vector Selected File Name;
+	[File Command] = TEST;
+	isocall; ? failed -> LIFP Error not extant;
+	? [File Status] - PERMIT TO READ -> LIFP Error not accessible;
+	=> Find Icon Data;
+	? failed -> LIFP Error wrong format;
+	[File Name] = vector Selected File Name;
+	[File Position] = [Palette position in file];
+	[File Command] = READ;
+	[Block Pointer] = Palette;
+	[Block Size] = 1024;
+	isocall;
+	[File Name] = vector Selected File Name;
+	[File Position] = [Shape position in file];
+	[File Command] = READ;
+	[Block Pointer] = File contents buffer;
+	[Block Size] = 48 mtp 48;
+	isocall;
+	[Bit Stream Pointer] = File contents buffer;
+	[Starting Bit Number] = ZERO;
+	[Bit Field Size] = 8;
+	A = 48 mtp 48; (Windows pix start from the bottom, it's carthesian stuff... bah)
+	B = 48;
+	    "LIFP Translate line"
+		C = 48;
+		A - 48;
+		A-->;
+		    "LIFP Translate dot"
+			A-->; B-->; C-->;
+			=> Get Bit Field;
+			<--C; <--B; <--A;
+			[A plus Icon] = [Bit Field Content];
+			A+; [Starting Bit Number] + 8;
+			C ^ LIFP Translate dot;
+		<--A;
+		B ^ LIFP Translate line;
+	=> Show Present File Name;
+	=> Refresh Display;
+	end;
+    "LIFP Error not extant"
+	[Question Datascript] = LIFP ERR Not extant;
+	=> Question;
+	end;
+    "LIFP Error not accessible"
+	[Question Datascript] = LIFP ERR Not accessible;
+	=> Question;
+	end;
+    "LIFP Error wrong format"
+	[Question Datascript] = LIFP ERR Wrong format;
+	=> Question;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Load Icon From File"
+	[File Name] = vector Selected File Name;
+	[File Command] = TEST;
+	isocall;
+	? failed -> LIFF Error not extant;
+	? [File Status] - PERMIT TO READ -> LIFF Error not accessible;
+	A = [File Size];
+	[File Name] = vector Selected File Name;
+	[File Position] = ZERO;
+	[File Command] = READ;
+	[Block Pointer] = File contents buffer;
+	[Block Size] = 4;
+	isocall;
+	? [File contents buffer] != FIXED BMP HEADER DAT0 -> LIFF Error wrong format;
+    "LIFF Do not care image format"
+	[File Name] = vector Selected File Name;
+	[File Position] = A; [File Position] - 48 mtp 48 plus 1024;
+	[File Command] = READ;
+	[Block Pointer] = Palette;
+	[Block Size] = 1024;
+	isocall;
+	[File Name] = vector Selected File Name;
+	[File Position] = A; [File Position] - 48 mtp 48;
+	[File Command] = READ;
+	[Block Pointer] = File contents buffer;
+	[Block Size] = 48 mtp 48;
+	isocall;
+	[Bit Stream Pointer] = File contents buffer;
+	[Starting Bit Number] = ZERO;
+	[Bit Field Size] = 8;
+	A = 48 mtp 48; (Windows pix start from the bottom, it's carthesian stuff... bah)
+	B = 48;
+	    "LIFF Translate line"
+		C = 48;
+		A - 48;
+		A-->;
+		    "LIFF Translate dot"
+			A-->; B-->; C-->;
+			=> Get Bit Field;
+			<--C; <--B; <--A;
+			[A plus Icon] = [Bit Field Content];
+			A+; [Starting Bit Number] + 8;
+			C ^ LIFF Translate dot;
+		<--A;
+		B ^ LIFF Translate line;
+	=> Show Present File Name;
+	=> Refresh Display;
+	end;
+    "LIFF Error not extant"
+	[Question Datascript] = LIFF ERR Not extant;
+	=> Question;
+	end;
+    "LIFF Error not accessible"
+	[Question Datascript] = LIFF ERR Not accessible;
+	=> Question;
+	end;
+    "LIFF Error wrong format"
+	[Question Datascript] = LIFF ERR Wrong format;
+	=> Question;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Save Icon To Program"
+	[File Name] = vector Selected File Name;
+	[File Command] = TEST;
+	isocall;
+	? failed -> SITP Error not extant;
+	? [File Status] - PERMIT TO WRITE -> SITP Error not accessible;
+	=> Find Icon Data;
+	? failed -> SITP Error wrong format;
+	[File Name] = vector Selected File Name;
+	[File Position] = [Palette position in file];
+	[File Command] = WRITE;
+	[Block Pointer] = Palette;
+	[Block Size] = 1024;
+	isocall;
+	[Bit Stream Pointer] = File contents buffer;
+	[Starting Bit Number] = ZERO;
+	[Bit Field Size] = 8;
+	A = 48 mtp 48; (Windows pix start from the bottom, it's carthesian stuff... bah)
+	B = 48;
+	    "SITP Translate line"
+		C = 48;
+		A - 48;
+		A-->;
+		    "SITP Translate dot"
+			[Bit Field Content] = [A plus Icon];
+			A-->; B-->; C-->;
+			=> Set Bit Field;
+			<--C; <--B; <--A;
+			A+; [Starting Bit Number] + 8;
+			C ^ SITP Translate dot;
+		<--A;
+		B ^ SITP Translate line;
+	[File Name] = vector Selected File Name;
+	[File Position] = [Shape position in file];
+	[File Command] = WRITE;
+	[Block Pointer] = File contents buffer;
+	[Block Size] = 48 mtp 48;
+	isocall;
+	=> Show Present File Name;
+	=> Update Title Bar;
+	end;
+    "SITP Error not extant"
+	[Question Datascript] = SITP ERR Not extant;
+	=> Question;
+	end;
+    "SITP Error not accessible"
+	[Question Datascript] = SITP ERR Not accessible;
+	=> Question;
+	end;
+    "SITP Error wrong format"
+	[Question Datascript] = SITP ERR Wrong format;
+	=> Question;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service Save Icon To File"
+	A = ZERO;
+	B = 54 div 4 plus 1; (54 is the total size of the various bitmap headers)
+	    "SITF Clear headers"
+		[A plus File contents buffer] = ZERO;
+		A+; B ^ SITF Clear headers;
+	[File contents buffer plus 0] = FIXED BMP HEADER DAT0;
+	[File contents buffer plus 1] = FIXED BMP HEADER DAT1;
+	[File contents buffer plus 2] = FIXED BMP HEADER DAT2;
+	[File contents buffer plus 3] = FIXED BMP HEADER DAT3;
+	[File contents buffer plus 4] = FIXED BMP HEADER DAT4;
+	[File contents buffer plus 5] = FIXED BMP HEADER DAT5;
+	[File contents buffer plus 6] = FIXED BMP HEADER DAT6;
+	[File contents buffer plus 7] = FIXED BMP HEADER DAT7;
+	[Bit Stream Pointer] = File contents buffer;
+	[Starting Bit Number] = 54 mtp 8; (palette is after the headers)
+	[Bit Field Size] = 32;
+	A = ZERO;
+	B = 256;
+	    "SITF Translate palette"
+		[Bit Field Content] = [A plus Palette];
+		A-->; B-->;
+		=> Set Bit Field;
+		<--B; <--A;
+		A+; [Starting Bit Number] + 32;
+		B ^ SITF Translate palette;
+	[Bit Field Size] = 8;
+	A = 48 mtp 48; (Windows pix start from the bottom, it's carthesian stuff... bah)
+	B = 48;
+	    "SITF Translate line"
+		C = 48;
+		A - 48;
+		A-->;
+		    "SITF Translate dot"
+			[Bit Field Content] = [A plus Icon];
+			A-->; B-->; C-->;
+			=> Set Bit Field;
+			<--C; <--B; <--A;
+			A+; [Starting Bit Number] + 8;
+			C ^ SITF Translate dot;
+		<--A;
+		B ^ SITF Translate line;
+	[File Name] = vector Selected File Name;
+	[File Position] = ZERO;
+	[File Command] = WRITE;
+	[Block Pointer] = File contents buffer;
+	[Block Size] = 48 mtp 48 plus 1078;
+	isocall; ? failed -> SITF Error generic;
+	=> Show Present File Name;
+	=> Update Title Bar;
+	end;
+    "SITF Error generic"
+	[Question Datascript] = SITF ERR Generic;
+	=> Question;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"Find Icon Data"
+	A = ZERO;
+	    "FID Explore"
+		[File Name] = vector Selected File Name;
+		[File Position] = A;
+		[File Command] = READ;
+		[Block Pointer] = File contents buffer;
+		[Block Size] = 10000 mtp BYTES PER UNIT;
+		isocall;
+		B = [Block Size]; B / BYTES PER UNIT; B - 8;
+		? B <= ZERO -> FID Error;
+		C = [Block Pointer];
+		    "FID Examine"
+			? [C plus 0] != FIXED ICON HEADER DAT0 -> FID Not found;
+			? [C plus 1] != FIXED ICON HEADER DAT1 -> FID Not found;
+			? [C plus 2] != FIXED ICON HEADER DAT2 -> FID Not found;
+			? [C plus 3] != FIXED ICON HEADER DAT3 -> FID Not found;
+			? [C plus 4] != FIXED ICON HEADER DAT4 -> FID Not found;
+			? [C plus 5] != FIXED ICON HEADER DAT5 -> FID Not found;
+			? [C plus 6] != FIXED ICON HEADER DAT6 -> FID Not found;
+			? [C plus 7] != FIXED ICON HEADER DAT7 -> FID Not found;
+			C - [Block Pointer]; C * BYTES PER UNIT; A + C;
+			-> FID Found;
+		    "FID Not found"
+			C+;
+			B ^ FID Examine;
+		A + [Block Size];
+		-> FID Explore;
+    "FID Found"
+	[Palette position in file] = A; [Palette position in file] + 40;
+	[Shape position in file] = A; [Shape position in file] + 40 plus 1024;
+	end;
+    "FID Error"
+	fail;
+
+"Show Present File Name"
+	A = ZERO;
+	    "SPFN Loop"
+		[A plus Present file name] = [A plus vector Selected File Name];
+		A+; ? [A plus vector Selected File Name minus 1] = ZERO -> SPFN Stop;
+		-> SPFN Loop;
+    "SPFN Stop"
+	[Window Title] = Present file name;
+	end;

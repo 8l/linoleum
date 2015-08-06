@@ -1,0 +1,190 @@
+(
+
+    Mersenne Twister MT19937,
+    Linoleum version derived from C version.
+    --------------------------------------------------------------------------
+    | Weighs:		808 bytes *
+    | Allocates:       2508 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	Real number version - 1999/10/28
+	--------------------------------
+	"Generate real RND" generates one pseudorandom real number
+	which is uniformly distributed on [0,1]-interval, for each
+	call. "Set random seed" sets initial values to the working
+	area of 624 words. Before "Generate real RND", "Set random
+	seed" should be called once. [Seed is any 32-bit integer.]
+	Integer generator is "Generate integer RND".
+
+	Original comments follow.
+	-------------------------
+	Coded by Takuji Nishimura, considering the suggestions by
+	Topher Cooper and Marc Rieffel in July-Aug. 1997.
+	Translated to Linoleum by Alessandro Ghignola, Jan 21/2001
+
+	This library is free software; you can redistribute it and/or
+	modify it under the terms of the GNU Library General Public
+	License as published by the Free Software Foundation; either
+	version 2 of the License, or - at your option - any later
+	version. This library is distributed in the hope that it will
+	be useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the GNU Library General Public License for more details.
+	You should have received a copy of the GNU Library General
+	Public License along with this library; if not, write to the
+	Free Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+	02111-1307  USA
+
+	Copyright [C] 1997, 1999 Makoto Matsumoto and Takuji Nishimura.
+	Any feedback is very welcome. For any question, comments,
+	see http://www.math.keio.ac.jp/matumoto/emt.html or email
+	matumoto@math.keio.ac.jp
+
+	REFERENCE
+	M. Matsumoto and T. Nishimura,
+	"Mersenne Twister: A 623-Dimensionally Equidistributed Uniform
+	Pseudo-Random Number Generator", ACM Transactions on Modeling
+	and Computer Simulation, Vol. 8, No. 1, January 1998, pp 3--30.
+
+)
+
+"constants"
+    ( Period parameters )
+	MT19937 N			= 624;
+	MT19937 M			= 397;
+	MT19937 MATRIX A		= 9908B0DFh;
+	MT19937 UPPER MASK		= 80000000h;
+	MT19937 LOWER MASK		= 7FFFFFFFh;
+    ( Tempering parameters )
+	MT19937 TEMPERING MASK B	= 9D2C5680h;
+	MT19937 TEMPERING MASK C	= EFC60000h;
+	MT19937 TEMPERING SHIFT U	= 11;	(right)
+	MT19937 TEMPERING SHIFT S	= 7;	(left)
+	MT19937 TEMPERING SHIFT T	= 15;	(left)
+	MT19937 TEMPERING SHIFT L	= 18;	(right)
+
+"variables"
+    ( Entry values )
+	RND Seed			= 4357;
+	RND Seed array			= UNDEFINED;
+
+    ( Output )
+	RND				= UNDEFINED;
+
+    ( Internal )
+ vector MT19937 mag01			= ZERO; MT19937 MATRIX A;
+	MT19937 mti			= MT19937 N plus 1;
+
+"workspace"
+ vector MT19937 mt			= MT19937 N;
+	MT19937 kk			= 1;
+	MT19937 y			= 1;
+	RND ItoR cast ranger		= 1;
+
+"programme"
+
+      ( Initializing the array with a seed, originally "sgenrand" )
+
+"Set random seed"
+	B = [RND Seed];
+	C = 69069;
+	D = MT19937 N;
+	E = vector MT19937 mt;
+    "SRS Next element"
+	A = B; A & FFFF0000h; [E] = A;
+	B * C; B+;
+	A = B; A & FFFF0000h; A > 16; [E] | A;
+	B * C; B+;
+	E+;
+    D ^ SRS Next element;
+	[MT19937 mti] = MT19937 N;
+	A = GREATEST SIGNED INTEGER; A ,= A;
+	[RND ItoR cast ranger] = 1f; [RND ItoR cast ranger] // A;
+	end;
+
+      ( Initialization by "Set random seed" is an example.
+	Theoretically, there are 2^19937-1 possible states as an intial
+	state. This subroutine allows to choose any of 2^19937-1 ones.
+	Essential bits in the array pointed by "RND Seed array" is
+	following 19937 bits:
+		RND Seed array[0] & UPPER_MASK,
+		RND Seed array[1], ..., RND Seed array[N minus 1].
+	RND Seed array[0] & LOWER_MASK is discarded.
+	Theoretically, the array can take any values except all zeros. )
+
+"Set random seed array" (lsgenrand)
+	? [RND Seed array] = UNDEFINED -> Set random seed;
+	A = [RND Seed array];
+	B = vector MT19937 mt;
+	C = MT19937 N;
+    "SRSA Copy" [B] = [A]; A+; B+; C ^ SRSA Copy;
+	[MT19937 mti] = MT19937 N;
+	A = GREATEST SIGNED INTEGER; A ,= A;
+	[RND ItoR cast ranger] = 1f; [RND ItoR cast ranger] // A;
+	end;
+
+"Generate real RND"
+	? [MT19937 mti] < MT19937 N -> GRRND No regeneration yet;
+	? [MT19937 mti] != MT19937 N plus 1 -> GRRND No default seed;
+	=> Set random seed;
+    "GRRND No default seed"
+	A = vector MT19937 mt;				(mt[kk])
+	B = vector MT19937 mt plus 1;			(mt[kk+1])
+	C = vector MT19937 mt plus MT19937 M;		(mt[kk+M])
+	[MT19937 kk] = MT19937 N minus MT19937 M;	(kk counter)
+    "GRRND First for"
+      ( first line )
+	E = [A]; E & MT19937 UPPER MASK; [MT19937 y] = E;
+	E = [B]; E & MT19937 LOWER MASK; [MT19937 y] | E;
+      ( second line )
+	E = [C];
+	D = [MT19937 y]; D > 1; E # D;
+	D = [MT19937 y]; D & 1; D + vector MT19937 mag01; E # [D];
+	[A] = E;
+      ( loop and incrementing pointers )
+	A+; B+; C+;
+	[MT19937 kk] ^ GRRND First for;
+	[MT19937 kk] = MT19937 N minus 1;		(new kk counter...)
+	[MT19937 kk] - MT19937 N minus MT19937 M;	(...from N-M to N-1)
+	C - MT19937 N;					(mt[kk+(M-N)])
+    "GRRND Second for"
+      ( first line )
+	E = [A]; E & MT19937 UPPER MASK; [MT19937 y] = E;
+	E = [B]; E & MT19937 LOWER MASK; [MT19937 y] | E;
+      ( second line )
+	E = [C];
+	D = [MT19937 y]; D > 1; E # D;
+	D = [MT19937 y]; D & 1; D + vector MT19937 mag01; E # [D];
+	[A] = E;
+      ( loop and incrementing pointers )
+	A+; B+; C+;
+	[MT19937 kk] ^ GRRND Second for;
+      ( calculating last words apart )
+	A = vector MT19937 mt plus MT19937 N minus 1;	(mt[N-1])
+	B = vector MT19937 mt;				(mt[0])
+	C = vector MT19937 mt plus MT19937 M minus 1;	(mt[M-1])
+	E = [A]; E & MT19937 UPPER MASK; [MT19937 y] = E;
+	E = [B]; E & MT19937 LOWER MASK; [MT19937 y] | E;
+	E = [C];
+	D = [MT19937 y]; D > 1; E # D;
+	D = [MT19937 y]; D & 1; D + vector MT19937 mag01; E # [D];
+	[A] = E;
+      ( ok, the mt vector is ready )
+	[MT19937 mti] = ZERO;
+    "GRRND No regeneration yet"
+	A = vector MT19937 mt; A + [MT19937 mti]; [MT19937 mti]+; [MT19937 y] = [A];
+	A = [MT19937 y]; A >> MT19937 TEMPERING SHIFT U; [MT19937 y] # A;
+	A = [MT19937 y]; A << MT19937 TEMPERING SHIFT S; A & MT19937 TEMPERING MASK B; [MT19937 y] # A;
+	A = [MT19937 y]; A << MT19937 TEMPERING SHIFT T; A & MT19937 TEMPERING MASK C; [MT19937 y] # A;
+	A = [MT19937 y]; A >> MT19937 TEMPERING SHIFT L; [MT19937 y] # A;
+      ( now returning value within [RND] )
+	[RND] ,= [MT19937 y];
+	[RND] ** [RND ItoR cast ranger];
+	end;

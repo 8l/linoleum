@@ -1,0 +1,851 @@
+
+      ( *** LINOLEUM Example 16: Data Management System *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "16_data_management_system.TXT",
+	   WITH THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	A variation of example number 13, the one allowing to write some
+	text throught the keyboard. The program now SAVES and automatically
+	RELOADS what you write, throught a very simple interface. Pratically
+	it works like a tiny notepad. It is important because it explains
+	how to perform files' input-output. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"libraries"
+	myfont;
+
+"directors"
+
+	program name = { DMS_Test };
+	unit = 32;
+
+"constants"
+
+	WHITE = FFFFFFh;
+	PURE BLUE = 0000FFh;
+	DARK GREEN = 008000h;
+	DARK RED = 800000h;
+
+	EDGE WIDTH = 4;
+	EDGE HEIGHT = 4;
+
+"variables"
+
+	BG color = WHITE;
+
+	Write at X = 0;
+	Write at Y = 0;
+	Text color = 0;
+	Write text = 0;
+	Write with = 0;
+
+	Current character X = 0;
+	Current character Y = 0;
+
+	Offset to current character in string = 0;
+
+	Dot X = 0; Dot Y = 0; Stop X = 0; Stop Y = 0;
+	Current shape unit = 0; Dot Mask = 0;
+
+	Title text	= { Type_some_text_-_ESC_to_quit. };
+	Commands text	= { ENTER=SAVE_CONTENT_TO_FILE... };
+	Separator	= { \us\us\us\us\us\us\us\us\us\us\us\us\us\us\us\us
+				\us\us\us\us\us\us\us\us\us\us\us\us\us\us\us };
+
+	User text length = 0;
+	User text file name = { short\usnote.txt };
+
+"workspace"
+
+	Primary display = 49152;
+	User text = 1000;
+
+"programme"
+
+	[Display Origin] = Primary display;
+	[User text] = 0;
+
+	[File Name]		= User text file name;
+	[File Position] 	= 0;
+	[File Command]		= READ;
+	[Block Pointer] 	= User text;
+	[Block Size]		= 1000 multiplied BYTES PER UNIT;
+	isocall;
+
+	? [File Status] + ERROR -> rewrite text;
+	[User text length] = [Block Size];
+	[User text length] / BYTES PER UNIT;
+
+    "rewrite text"
+	=> Clear the display with BG color;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH;
+	[Text color] = DARK GREEN;
+	[Write text] = Title text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH plus 20;
+	[Text color] = DARK GREEN;
+	[Write text] = Commands text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH plus 25;
+	[Text color] = DARK RED;
+	[Write text] = Separator;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH plus 45;
+	[Text color] = PURE BLUE;
+	[Write text] = User text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+    "wait for key and read it when ready"
+	[Console Command] = GET CONSOLE INPUT; isocall;
+	? failed -> wait for key and read it when ready;
+
+	? [Console Input] = 8 -> backspace;
+	? [Console Input] = 13 -> save the text;
+	? [Console Input] = 27 -> escape;
+	? [Console Input] < 32 -> unrecognized key;
+	? [Console Input] > 127 -> unrecognized key;
+
+    "normal key"
+	A = [User text length];
+	[A plus User text] = [Console Input];
+	[A plus User text plus 1] = 0;
+	[User text length]+;
+	-> rewrite text;
+
+    "backspace"
+	? [User text length] = 0 -> wait for key and read it when ready;
+	[User text length]-;
+	A = [User text length];
+	[A plus User text] = 0;
+	-> rewrite text;
+
+    "unrecognized key"
+	[Console Input] = 63;
+	-> normal key;
+
+    "save the text"
+	[File Name]	= User text file name;
+	[File Position] = 0;
+	[File Command]	= WRITE;
+	[Block Pointer] = User text;
+	[Block Size]	= [User text length];
+	[Block Size]	* BYTES PER UNIT;
+	isocall;
+	[File Name]	= User text file name;
+	[File Position] = 0;
+	[File Command]	= SET SIZE;
+	[File Size]	= [User text length];
+	[File Size]	* BYTES PER UNIT;
+	isocall;
+	-> wait for key and read it when ready;
+
+    "escape"
+	end;			(of MAIN PROGRAM)
+
+"Write TXT"
+  ( Function to write a text string at given coordinates.
+    [Write at X] = X coordinate of upper left corner of the text;
+    [Write at Y] = Y coordinate of upper left corner of the text;
+    [Text color] = color pattern for text string to be written;
+    [Write text] = pointer to a null-terminated text string;
+    [Write with] = pointer to a bit-mapped font. )
+	D = [Write text];
+	E = [Write with];
+	? D = 0 -> Failure writing text;
+	? [E] != FONT HEADER -> Failure writing text;
+	[Current character X] = [Write at X];
+	[Current character Y] = [Write at Y];
+	[Offset to current character in string] = 0;
+    "Loop for characters in string"
+	A = [Offset to current character in string];
+	A + [Write text];
+	A = [A];
+	? A = 0 -> End of text string;
+	? A < 32 -> Next character;
+	? A > 127 -> Next character;
+	B = A; B - 32; B / [E plus OFFSET FONT ALIGNMENT];
+	C = A; C - 32; C % [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] = B;
+	[Current shape unit] * [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] * [E plus OFFSET FONT BODY];
+	[Current shape unit] + C;
+	[Current shape unit] + [Write with];
+	[Current shape unit] + OFFSET FONT SHAPE;
+	[Dot Y] = [Current character Y];
+	[Stop Y] = [Current character Y];
+	[Stop Y] + [E plus OFFSET FONT BODY];
+    "Loop for scan lines in pointer shape"
+	[Dot X] = [Current character X];
+	[Stop X] = [Current character X];
+	[Stop X] + [E plus OFFSET FONT WIDTH];
+	[Dot Mask] = 80000000h;
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+    "Loop for pixels in pointer shape"
+	D = [Current shape unit];
+	? [D] - [Dot Mask] -> No dot in shape at this point;
+	A = [Dot X];
+	B = [Dot Y];
+	C = [Text color];
+	=> Plot;
+    "No dot in shape at this point"
+	[Dot Mask] @> 2;
+	[Dot X]+;
+	? [Dot X] < [Stop X] -> Loop for pixels in pointer shape;
+	[Current shape unit] + [E plus OFFSET FONT ALIGNMENT];
+	[Dot Y]+;
+	? [Dot Y] < [Stop Y] -> Loop for scan lines in pointer shape;
+	[Current character X] + [E plus OFFSET FONT WIDTH];
+	A = [Display Width]; A - EDGE WIDTH;
+	? [Current character X] < A -> Next character;
+	[Current character X] = EDGE WIDTH;
+	[Current character Y] + [E plus OFFSET FONT BODY];
+    "Next character"
+	[Offset to current character in string]+;
+	-> Loop for characters in string;
+    "End of text string"
+	end;
+    "Failure writing text"
+	fail;
+
+"Plot"
+    ( Draws a single dot.
+      Two display types supported: 16 and 32 bit.
+      Coordinates are checked. All regs destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Clear the display with BG color"
+	A = [Display Origin];
+	B = [Display Width];
+	B * [Display Height];
+	C = [BG color];
+    "Loop to clear all of it"
+	[A] = C; A+;
+	B ^ Loop to clear all of it;
+	end;
+
+( Well, it all derives from the tiny note-book program seen in example 13.
+It's pratically the same program but this time, it can ALSO save the text
+to a file, and reload the same text once the program is launched again.
+That's the DATA MANAGEMENT SYSTEM, or DMS. It allows files management,
+plus some other interesting features giving a lot of advantages to both
+users and programmers. )
+
+( The DMS routines are invoked by loading some parameters, called:
+
+[File Name]	      = pointer to the name of the target file;
+			the file name is seen as a simple text string,
+			upto 256 characters, or units, in size, and
+			terminated by a zero unit like any other
+			strings in the LINOLEUM environment.
+
+[File Command]	      = decides what to do with the file, and it can be
+			assigned to any of the following constants:
+			TEST		gathers informations about the
+					target file; tells you wether the
+					file exists or not, returns the
+					size of the file, in bytes,
+					and also updates some flags in the
+					[File Status] variable to tell you
+					if your application can READ and/or
+					WRITE to the file;
+			READ		reads a block of data from the file,
+					trasferring it to a memory area of
+					which you can specify the pointer;
+			WRITE		writes a block of data to the file,
+					taking the data from a memory area
+					referred by pointer;
+			SET SIZE	resizes the file, so that the file
+					will be X bytes long - X is specified
+					by the [File Size] variable - in any
+					cases: it works always, either if the
+					file must be truncated, or extended;
+					when it's extended, however, remember
+					appended memory bytes may not be set
+					to a conventional zero pattern, thus
+					they may simply contain garbage...;
+			DESTROY 	destroys the file, by deleting it
+					from the target volume; you should
+					prompt the user for confirmation,
+					before you destroy a file;
+			GET FIRST FILE	finds the name of the first file
+					stored in the current environment:
+					the current environment is the
+					folder, directory, or VTOC, where
+					your application is; the name is
+					returned in a memory area pointed
+					by the [File Name] variable; if you
+					need changing the current environment
+					see example 20_DIRit.txt;
+			GET NEXT FILE	finds the name of the next file
+					stored in the current environment:
+					this command should be issued in a
+					loop, until [File Status] variable
+					contains the ERROR flag, meaning
+					there are no more files; the name is
+					equally returned as a string pointer
+					stored in [File Name];
+			RUN		runs the application indicated in
+					[File Name]. The [File Name] string
+					may also contain the command-line
+					parameters, according to the syntax:
+					ApplicationFileName||parameters block
+
+[File Size]	      = depends on the [File Command] settings, but generally
+			contains the actual size of the file after a certain
+			operation has been performed: if the operation was
+			TEST, the file is neither read nor written, but the
+			[File Size] variable is updated with its actual size;
+			this variable is also used to set the new size of the
+			file, when [File Command] equals SET SIZE;
+
+[File Position]       = it's used when [File Command] equals READ or WRITE,
+			to determine the starting point of the data block
+			since the beginning of the file; a value of zero for
+			[File Position] will start reading or writing from
+			the file's first byte; a value which is beyond the
+			current size of the file will cause the command
+			to fail - yes, even in case you were WRITEing,
+			because you must first extend the file using the
+			SET SIZE command;
+
+[File Status]	      = it's updated after a TEST, READ, WRITE, SET SIZE,
+			GET FIRST/NEXT FILE operation is performed, and
+			holds these four flags:
+			READY		the file is ready to be operated:
+					this flag is set when the file name
+					referred to an EXISTING file;
+			ERROR		there were some troubles during last
+					operation; depending on [File Command]
+					it may assume differend meanings,
+					discussed below...
+			PERMIT TO READ	informs your application that it's
+					possible to read from the file: it
+					means the system is not protecting
+					the file in some ways;
+			PERMIT TO WRITE informs your application that it's
+					possible to write to the file: also
+					affects the feasibility of a SET SIZE
+					command, because if you don't have
+					permit to write, you can't even change
+					the actual size of the target file;
+					normally, files created by your own
+					Lino programs give you always permit
+					to write. However, you may also meet
+					protected files, so check for it!
+					Also, PERMIT TO WRITE is never set
+					when accessing the "stock file".
+
+[Block Pointer]       = specifies a pointer to the first memory unit of the
+			data block reserved by your program to READ and WRITE
+			operations: it's not used by other operations;
+
+[Block Size]	      = specifies the size, in bytes, of the data block
+			to be read from, or written to, the file; remember
+			it's in BYTES, not in UNITS, and that a UNIT means
+			<BYTES PER UNIT> bytes, where BYTES PER UNIT is a
+			constand automatically declared by the compiler.
+
+As you can see, it's really easy to operate with files.
+There's no need to open and close them, and access rights are extremely
+simplified just like error conditions. Some expert programmers may notice
+there's the lack of a function to set the current "directory". This topic
+is subject to particular conventions with L.IN.OLEUM, resumed under the
+name of "universal file system paradigm", for which I recommend reading the
+full source code of example number 20. )
+
+( Now to get back to the use of the DMS functions, once you have loaded
+all requested parameters, you just have to issue a call to the IsoKernel:
+
+	isocall;
+
+and the IsoKernel will take care of everything about opening the file,
+operating with it as the current operating system wants it, closing it and
+finally reporting your application about the results. Once you called the
+IsoKernel, you may check for errors by testing the ERROR flag, like so:
+
+	? [File Status] + ERROR -> whoops there was a problem;
+	? [File Status] - ERROR -> all right no problems;
+
+	or: ? failed -> whoops there was a problem;
+	    ? ok -> all right no problems;
+
+The ERROR flag may mean many different things, accordingly to the
+requested operation. Here's a very useful quick reference:
+
+	[File Command] = TEST;
+	ERROR status means the file doesn't actually exist.
+	If you try to read from that file, the operation will fail.
+	If you try to write to that file, the IsoKernel will try to create
+	it as a new file, and then write the data block to it.
+
+	[File Command] = READ;
+	ERROR status means the IsoKernel was unable to read from the file,
+	either because the file doesn't exist, or because your application
+	is not allowed by the operating system to read from that file.
+
+	[File Command] = WRITE;
+	ERROR status means one of the following cases:
+	      - if the file exists, the file was not accessible for writes;
+	      - if the file doesn't exist, the DMS was unable to create it;
+	      - if the file exists AND the DMS granted permission to write
+		to it, it means there's a trouble with the current volume:
+		maybe - for example - a disc is not inserted in the current
+		drive, or that disc is write-protected.
+
+	[File Command] = SET SIZE;
+	ERROR status generally means the application is not allowed to
+	change the size of the target file; if, however, the operation was
+	to EXTEND the file, it probably means there wasn't enough free space
+	in the current environment to extend the file to the requested size.
+
+	[File Command] = DESTROY;
+	ERROR status generally means the file doesn't exist; if, however,
+	you first tested the file to see if it's present and you know it is,
+	it should mean your application is not allowed to delete that file.
+
+	[File Command] = GET FIRST FILE;
+	ERROR status would mean no files are present in the current
+	environment, BUT you shouldn't believe it: it's very suspicious,
+	because AT LEAST YOUR APPLICATION - after all, it IS a file itself -
+	should be present, and so it's more probable that there's been some
+	troubles with the disc. That, unless you changed the environment to
+	some other path using the SET DIR command detailed in example 20.
+
+	[File Command] = GET NEXT FILE;
+	ERROR status signals, always, that there are no more files to list.
+
+	[File Command] = RUN;
+	ERROR status signals general error from the operating system.
+	The cause could be a lack of free resources or that the application
+	file doesn't exist, or even wrong syntax in the command line.
+
+Possible malfunctions not signalled by the ERROR flag:
+
+	[File Command] = READ;
+	The EFFECTIVE NUMBER OF BYTES read from the file may NOT correspond
+	to the requested [Block Size], but if no error status was reported,
+	it probably means there were not enough data in the file: that is,
+	your application reached the end of that file, or attempted to read
+	beyond the current file size. It has to be safely considered some
+	kind of hardware or filesystem malfunction ONLY IF the TEST function
+	reports the size of the file includes enough data for the said read
+	operation to succeed in full.
+
+	[File Command] = WRITE;
+	The EFFECTIVE NUMBER OF BYTES written to the file may NOT correspond
+	to the requested [Block Size], but if no error status was reported,
+	in 99% of cases it means there's not enough free space in the volume;
+	in a minority of cases it may signal hardware/filesystem malfunction,
+	but this kind of problem cannot be safely identified.
+
+Final indications and tips:
+
+      - You can create void files.
+	Just perform a write of zero bytes to the target file.
+	Providing the target file is not existing, it will be a void file.
+	In case the file already exists and it's not void, you can issue
+	a SET SIZE command specifying [File Size] = 0 to truncate the file
+	to zero bytes: this will also make it a void file, and to be sincere,
+	even the SET SIZE command can be used this way to create a void file,
+	you don't necessarily need using WRITE.
+
+      - Beware of [File Size] and [File Position] set to negative values.
+	In both cases, error status is assumed, no matter which are the
+	other parameters. There's also another thing to consider: both
+	[File Size] and [File Position] may be too large to fit in the
+	32-bit range when expressed in bytes. Error would be equally
+	reported in such cases. These values, in fact, must be positive
+	integers. If the most significant bit, the sign bit, results to be
+	set, an error occurs; the resulting file address space is therefore
+	limited, considering a unit of 32 bits, to 2 ^ 31 bytes, that is,
+	two gigabytes. If your file is bigger, I'm sorry but you'll have to
+	split it in more than one file, and manage the fragments separately.
+
+      - Let me remark the fact that you need to pass the file name by
+	pointer, and not by value. The "value" of a string is in theory a
+	non-sense, and in practice it's the 32-bit-padded ASCII code of the
+	string's very first character.
+	This also applies to the names returned by GET FIRST FILE and GET
+	NEXT FILE. I mean, when you load [File Name] you have to load it as:
+
+		[File Name] = Name of the string holding the file name;
+
+	and NOT as:
+
+		[File Name] = [Name of the string holding the file name];
+
+	the compiler won't warn you about such errors, because both syntaxes
+	are legal when using text strings, so be careful.
+
+      - Do not assume extended files throught the SET SIZE command to be
+	zero-initialized. I mean, do not assume the appended data bytes
+	to be conventionally set to zero: they may be, but it depends on
+	your operating system. Some systems may extend the file by
+	appending a sequence of zeroed bytes, while some may just move
+	the End-Of-File pointer used by the operating system to know where
+	a certain file physically ends. In this last case, the new section
+	of the file may be filled with garbage. So don't forget, if you
+	need it, to initialize the new section of the file by writing one
+	or more data blocks of zeroed bytes, after resizing the file, to
+	fill the section going from the old "end of file" to the new one.
+	A better way to extend a certain file is, effectively, by just
+	writing some data after setting [File Position] = [File Size],
+	but in this case, of course, you first need the DMS to tell you
+	about the actual size, by TESTing the file.
+
+      - Do not assume a WRITE operation to truncate the file if it ends
+	before reaching the actual end of the file: see what this same
+	example does when saving to its text file named "Short Note.TXT"
+	and you'll find a SET SIZE command issued right after the WRITE
+	operation. It's here to delete any sections of the file which
+	are no longer needed, in case the user first saved a certain text,
+	then deleted some characters from that text and saved it again.
+
+      - Do not assume a WRITE operation to extend the file when you start
+	writing beyond the actual size of the file. The right way to append
+	data to a file is setting [File Position] = [File Size] before
+	issuing the WRITE command... and remember to always initialize
+	[File Size] by TESTing the target file first. Setting [File Position]
+	to a value that's greater than current file size will cause the WRITE
+	command to fail. To write after the current position, AT LEAST you
+	should first extend the file using the SET SIZE command.
+
+      - Do not assume a WRITE operation to INSERT data bytes in files.
+	It always OVERWRITES existing data bytes, if any: it doesn't
+	"push" away the bytes beyond [File Position] so that they won't
+	be overwritten. It works like a text cursor in "overwrite" mode. )
+
+( And that concluded files managment. Now, there's a particular file in the
+LINOLEUM's DMS. It's called the APPLICATION's STOCK FILE and programs only
+have PERMIT TO READ from it. It's very very useful and there's only one
+*correct* way to access it: using the following syntax.
+
+	[File Command] = READ;
+	[File Name] = STOCK FILE;
+	[File Position] = the byte where stuff to read begins;
+	[Block Pointer] = my destination buffer;
+	[Block Size] = size of my destination buffer mtp BYTESPERUNIT;
+	isocall;
+
+The constant STOCK FILE, in reality, means zero.
+It's conventionally used as to mean "I want to access the stock file"
+because you cannot declare any data having effective address of zero:
+since the first unit, unit 0, is always taken by the [CodeOrigin] pointer
+for indirect jumps and calls, your first variable would start from unit 1. )
+
+( What's the stock file here for? To create stand-alone applications and SFX
+archives. Someone will already have understood, but I have to explain anyway.
+A stand-alone application is a program which is ONLY formed by a single
+executable file, the one called PROGRAM when it's first compiled. It's called
+a stand-alone application to distinguish it from other programs needing for
+additional files, called "support files", in order for them to work properly.
+For example, DLLs are support files. So are bitmaps, graphics, audio records,
+data tables, child processes' executable files, and many other kinds...
+LINOLEUM totally ---discourages--- the use of EXTERNAL support files.
+In its phylosophy, applications should only consist of a stand-along executable
+file, containing everything that's needed to startup the application. Of course,
+this still doesn't include any files that were CREATED by the application to
+save users data, such as the "Short Note.TXT" file created by this example, and
+generally any files being in some way considered documents by the application.
+The GOAL is to avoid any needs for external "installation software", like the
+InstallShield and suchs, to avoid any possible malfunctions, dead files, and
+accumulation of rubbish inside the HD. It's a major difficulty for how today's
+applications are organized. They have to share system files, DLLs which may
+be outdated and need to be replaced with a new version, but even in this case
+the new version may cause some older programs to stop working... I absolutely
+disagree with this crappy way to organize software, and the concept behind the
+"stock file" is my personal solution. )
+
+( On the other side, LINOLEUM applications, no matter how complex they are,
+can be formed by a single file. Inside that file, there are all support files.
+The construction and management of the stock file is totally automated by the
+compiler. Let's make an example. )
+
+( Suppose you need a picture as the background for your program, just like
+the "LINOLEUM Installation" - which source code is available - program does.
+Suppose the picture is in BITMAP format, having BMP extension, and its
+original file name is "TAPESTRY.BMP". If you want it to be linked to the
+stock file, you would have to place that file IN THE SAME folder where
+you're keeping the source code for the application, and write the following
+in the source code, right after the "libraries" period and before "directors":
+
+	"stockfile"
+		TAPESTRY;
+
+this simple statement means to the compiler that the file called TAPESTRY,
+with any extension - BMP in this case - must be linked to the stock file.
+
+There are, of course, some conventions for the file names to be specified in
+the "stockfile" period. Severe limitations are there, but I hope you can deal
+with them, since they're here for maximum compatibility, and they're effective
+only for a normally restricted set of files, those forming the application:
+
+	- file names must contain only letters or numbers;
+	- the case of letters is uninfluent and will be FORCED to lowercase;
+	- file names must be no longer than 8 characters;
+	- extensions are ignored: the first file found with that name counts.
+
+Also, the compiler sets up for you a special constant, called TAPESTRY,
+indicating the position of the original file inside the whole stock file.
+For the first file, this position is ZERO, so it'd be like declaring constant
+TAPESTRY = 0 inside the "constants" period. But you don't need to do that:
+you only need to put the name of the file inside the "stockfile" period,
+because the constant may change accordingly to the layout of the stock file,
+and that's the reason why the compiler itself will declare it for you.
+Another constant, called "Size of TAPESTRY", is declared to indicate the
+size of that support file, always espressed in memory bytes. Even this other
+constant is declared for you by the compiler, and automatically.
+Now let's see how to bring the original support file into the workspace.
+It's very easy. First of all, setup a block of memory of the required size.
+The size must be CONVERTED TO UNITS: although the size of the file is in bytes,
+as it must be, the size of workspace memory areas is espressed in units; there's
+a simple formula to do that: area = file size in bytes / BYTESPERUNIT + 1
+...because the size of the file may not be a multiple of BYTESPERUNIT [since
+our unit is 32 bytes, BYTESPERUNIT is 4 and this means the file size, in bytes,
+is not a multiple of 4]... to solve that approximation problem, we add 1 unit,
+so we're always sure the allocated area is enough for the file's data.
+
+	"workspace"
+		Tapestry image data = Size of TAPESTRY div BYTESPERUNIT plus 1;
+
+Once you got the pointer to the new memory block, which is called
+"Tapestry image data" in the above example, you can extract the file
+from the stock file, with a simple READ operation:
+
+		[File Name] = STOCK FILE;
+		[File Command] = READ;
+		[File Position] = TAPESTRY;
+		[Block Pointer] = Tapestry image data;
+		[Block Size] = Size of TAPESTRY;
+		isocall;
+
+That's all you need to do.
+At this point, you're ready to call your own routine to decode the bitmap
+and trace it to the video display. Such a routine would need to know the
+pointer to the bitmap, which is still "Tapestry image data", exactly like
+the "LINOLEUM Installation" program does by passing, along with a few other
+parameters for the TGA loader to use, its background pic's pointer as:
+
+	[tga picture data] = tapestry pic buffer;
+	.
+	.
+	.
+	=> load tga picture;
+
+Uhm... talking of pointers, one of my fears is still for programmers not
+understanding what brackets mean around names. This has nothing to do with
+loading that bitmap, but it seems to me the best moment to try and explain
+WHEN you have to use brackets around names and WHEN you don't have to.
+I know assembly programmers will certainly have understood, so they don't
+need to take a look to the following paragraph. Others should read it. )
+
+( As the manual says, the square brackets signal to the compiler that it must
+not take the value associated with a certain symbol. Instead, it must take the
+value CONTAINED in the memory unit POINTED BY that value. As I said about
+the "variables" period in the manual, when the compiler declares a variable it
+defines a symbol having the name of that variable and then associates it with
+an actually free memory unit in the main workspace. Please take a look to a
+very useful file created by the compiler for debugging purposes: I'm talking
+of the symbols map, SMBLSMAP.TXT
+
+For instance, that file, referred to the variable "Dot X" in this same program,
+says something similar to the following:
+
+00000073, VARIABLE: <DotX> EFFECTIVE ADDRESS: <7B0h>, <1968d>
+00000073, --- STREAMING <0h/0d/0.00000f>
+
+Once and - I guess - forever, let's understand it!
+73 is the line number in the source code file where the variable is declared.
+Then follows the name of the variable - note the blank space is not counted -
+and the effective address associated with the variable. In this case, the
+address is 7B0h, in hexadecimal, or 1968, in decimal. Well, in case of a
+variable, the effective address is the POINTER to that variable inside the
+main workspace. And it's 1968.
+
+The second line about that variable, is referred to the action, performed by
+the compiler, of STORING the variable's initial value inside the workspace.
+Since "Dot X" is initially declared as	 "Dot X = 0;"	the compiler
+says "STREAMING <0h/0d/0.00000f>" to mean that at this point, in the
+workspace, has been saved value zero, which is zero in hexadecimal and zero
+in decimal. The floating-point value is unpredictable. In this case it
+seems to be zero, but you can't rely on it if the variable was assigned to an
+integer type value. The floating-point representation of the value is only correct
+if the variable was declared as floating-point type. Don't believe it's zero in this
+case. It's listed as zero, but it isn't, if considered by floating-point operators.
+The correct way to declare value zero in floating-point, is typing 0f, not just 0.
+Now, getting back to the function of the square brackets, when you write:
+
+	A = Dot X;
+
+It means register A is set to 1968.
+Because 1968 is the EFFECTIVE ADDRESS of the variable.
+By typing	A = Dot X;	you are indicating the address because "Dot X" is a
+symbol known by the compiler to mean 1968. This is technically called a
+"load by pointer" operation, or the act of "passing a pointer".
+If, instead, you write:
+
+	A = [Dot X];
+
+It means register A is set to the ACTUAL VALUE of the Dot X variable.
+Because by enclosing the symbol name between square brackets, you're
+indicating the compiler to take the CONTENT OF THE MEMORY UNIT
+which is POINTED by that symbol. It would be the same thing as writing:
+
+	A = [1968];
+
+And if it's performed without changing variable Dot X since the first
+initialization - the one made in the "variables" period when it was declared -
+then it would mean register A would be loaded with integer value ZERO.
+
+For what concerns the compiler's "warning" messages, one kind happens
+when you load a variable by address rather than loading by value, like for:
+
+	A = Dot X;
+
+In this case the compiler says:
+"Instruction is referring EFFECTIVE ADDRESS, not the CONTENT."
+But please note it's called a warning because it's not an error.
+It may be the right thing to do, depending on how your program works.
+For example, strings are ALWAYS loaded by pointer, because their "value"
+isn't formed by a single unit and would be a nonsense to load them by value.
+You'd just get the value of the first unit in the string, and that'd be wrong.
+And if you want the compiler to suppress the warning message you may use the
+"pragma" prefix, by writing:
+
+	A = pragma Dot X;
+
+...this way, the compiler doesn't give any warnings: it knows the operation
+looks weird, but by writing "pragma" you ensure the compiler that you know
+that's the right thing to do in that point of the program. A note: the pragma
+prefix was first introduced with L.IN.OLEUM compiler v 1.13.6b, if you want
+your source code to be compiled by older versions you must NOT use "pragma".
+
+Another warning message is given by writing:
+
+	A = [1968];
+
+this time the compiler says:
+"Is constant assumed to mean an immediate constant?"
+Because not even this kind of syntax is an error, but it's VERY suspicious.
+It looks strange that you're trying to load a variable and you KNOW its
+effective address to be 1968. Of course you may have read it from the
+symbols map, as we did before, but that value is not a "real" constant,
+because it may vary according to the current layout of the main workspace.
+I mean, if you declared another variable before Dot X, then Dot X would no
+longer be associated with effective address 1968. Instead, with 1969!
+Even in this case, you may force the compiler to shut up by writing:
+
+	A = pragma [1968];
+	   ...or...
+	A = [pragma 1968];
+
+...which most common use may be to load the effective address of a run-time
+module control variable which is NOT declared by the compiler as a vector:
+this is done, for instance, in the "EKey.txt" library to load the effective
+address of "KEY F1".
+
+To conclude, writing something like:
+
+	A = [1968f];
+
+doesn't give a warning. This time it's an error and it breaks compilation.
+You're using a floating-point value as a pointer. Since a unit can't be split
+in fractional parts, the compiler takes it as a complete nonsense. I'm saying
+this clearly because you should never use a floating-point value as a pointer.
+Please note the following is LEGAL:
+
+	A = 1968f;
+	B = [A];
+
+but possibly catastrophic.
+In this last case the compiler is unable to tell if register A is actually
+containing a floating-point value, and can't give you an error for this.
+Nonetheless, such an operation would almost certainly produce a page
+fault, showen by Windows as a small message box stating the application will
+be closed as soon as the user clicks the OK button, and that eventally some
+informations about the fault may be sent to Microsoft for remote debugging.
+That's why I'm insisting on this topic: I'm saying beware of such mistakes.
+The memory page fault, the fact that you're trying to access to one or more
+locations outside your actual workspace - that is, outside the range from
+address zero to the address given by the value of [RAMTop] minus 1 - is in
+fact almost the *ONLY* true cause of crashes for a L.IN.OLEUM application. )
+
+( Here are some equivalences with C, for C/C++ programmers to learn:
+
+	LINOLEUM					C/C++
+
+	A = Dot X;					A = &Dot_X;
+	A = [Dot X];					A = Dot_X;
+	A = Dot X; A = [A];				A = *(&Dot_X);
+
+all right, C programmers?
+And forget about type casting. LINOLEUM doesn't care about data types.
+It gives you units of memory, you decide whatever you consider them to be.
+That, and several other reasons such as the lack of structured objects, and
+of course the low-level orientation for *extreme* performance, why I say,
+almost for joke, that L.IN.OLEUM is a programmer-oriented language, not an
+object-oriented language. Like the very first L.IN.OLEUM addict, Peterpaul
+Klein Haneveld, said on his home page, IT GIVES BACK POWER TO THE PROGRAMMER.
+And he's definitely right. The programmer is the only mind behind L.IN.OLEUM
+programs, not some compiler's facilities with hidden internal mechanisms.
+Everything, in L.IN.OLEUM code, is under the sun, clearly visible either in
+the main program's source code or in a library, both of which are -always-
+plain text, at least before being compiled.
+And that's what I wanted it to be. Just that.
+
+But then again, this is MY ideal concept of an universal programming language,
+it is by no means supposed to be YOURS, too. I'm just giving it out for free,
+as I will always be doing. You try it, if you don't like it, you indeed spent
+nothing but some time. Since it's no business, since I don't have to mantain
+some company behind it, I am at peace with the fact that you may not like it:
+admittedly, I am developing L.IN.OLEUM *mostly* because I use it MYSELF. )

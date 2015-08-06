@@ -1,0 +1,172 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        workspace<br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "workspace" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This period follows "variables", if "variables" is used.<br>
+        This period preceeds "programme", <u>if "programme" is used</u>.<br>
+        (it is possible to build libraries with no code inside)<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        At this point, there isn't really much to know about the workspace:
+        we know what it is, and it's been explained in detail while we were
+        talking of the variables. But there's a fact: all of the variables
+        you declared from within the "variables" period will raise the size
+        of your application. You can certainly allocate a mega-unit (well,
+        the equivalent of a megabyte in the n-FLAT workspace, meaning 4 Mb
+        if your CPU unit is 32 bit) by creating a huge vector inside the
+        "variables" period. But it would result in a 4-megabyte application!
+        What if you just want to allocate a mega-unit of memory without the
+        need to specify the initial value for every single unit?
+        There can be a trailing section of the workspace, which is not
+        initialized and not saved inside the application, and locations
+        in it always take the conventional value of zero.
+        This trailing section is called "rest of the workspace", counterpart
+        of what's declared in the "variables" period: the variables period,
+        in facts, takes the name of "main workspace".
+        The rest of the workspace is managed in the "workspace" period.
+        Inside this period you are always declaring variables and vectors
+        which are not streamed to the physical workspace, but cause a given
+        amount of memory to be allocated when the program is launched.
+        In many other programming languages, what I'm calling the "rest
+        of the workspace" is usually defined "heap space".
+
+        <br><br>
+
+        Take, for example, the case where you need to load a whole picture
+        inside a memory vector. Suppose you're in need of a picture which is
+        400 pixels wide and 300 pixels tall. For each pixel you will have to
+        reserve a memory unit: this gives a total of 400x300 = 120000 units,
+        physically resulting in 480000 bytes for unit = 32, about 480 kb!
+        Now there's no real need to set all of these units to a particular
+        value, because the vector is to be subsequently loaded from a disk
+        file containing the picture.
+
+        <br><br>
+
+        Here comes the "workspace" period: in this period you use a syntax
+        which is very similar to the one used to declare a single variable
+        or constant in the above periods. The only difference is that within
+        the workspace period you specify a name and associate this name with
+        a memory vector extending for X units, where X is the value you write
+        to the right side of the equal sign. So if you need 120000 units for
+        your picture to be loaded, you would have to write something like:
+
+        <blockquote>
+                picture = 120000;
+        </blockquote>
+
+        or, if you want to take note of the size of the picture:
+
+        <blockquote>
+                picture = 400 multiplied 300;
+        </blockquote>
+
+        Now it's very easy: "picture" is the EFFECTIVE ADDRESS of a vector
+        extending for 120000 units. You can manage it in the same way you
+        would manage a vector declared in "variables", just you have to
+        remember that none of the memory units of the "picture" vector have
+        been initialized. They are all initially assigned to a value of zero,
+        and cannot be initialized if not by your program code.
+
+        <br><br>
+
+      <li>"no label" also works within the "workspace" period,
+        and allocates some more uninitialized memory without
+        registering a symbol name, WHILE implicitly unabeled
+        memory units can't be specified in "workspace" period.</li><br>
+
+      <li>Any symbols declared in "workspace" are by default considered
+        to be vectors, so you DON'T NEED to make their names preceeded
+        by the "vector" keyword to avoid warnings, even if it's allowed.</li><br>
+
+        <br>
+        This is a little roadmap explaining where these last vectors are
+        placed in relation to your program's initialized workspace:
+        <br>
+
+        <pre>
+  Location zero                        Default RAMTop
+        |                                     |
+        X               Y                     Z
+        |---------------|---------------------|-------------- -  -   -    -
+        |main workspace |rest of the workspace|
+        |---------------|---------------------|-------------- -  -   -    -
+        ^               ^                     ^                    >>>
+   beginning          end of                end of            rest of mem.
+  of the road      "variables"           "workspace"         not in control
+                                                           of the application
+        </pre>
+
+        From the above map:
+
+        <blockquote>
+              X corresponds to address zero in the workspace;<br><br>
+              Y corresponds to the end of the workspace which has been
+                allocated from within the "variables" period, and which
+                is to be called "main workspace" or "initialized workspace";<br><br>
+              Z corresponds to the end of the "workspace" period, and also
+                marks the address immediately above the HIGHEST memory
+                address which is in control of your program - this value,
+                very important, will be lately referred as "default RAMTop".
+        </blockquote>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

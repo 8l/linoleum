@@ -1,0 +1,570 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        directors<br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "directors" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This period follows "stockfile", if "stockfile" is used.<br>
+        This period preceeds "constants", if "constants" is used.<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+The L.in.oleum environment provides access to a number of standard peripherals:
+"standard peripherals" means some things the computer (a programmable machine
+in general) use for input and output, and that will be always, no matter what
+kind of machine is running the program, either present or simulable. There may
+be physical or "logical" peripherals, for example the printer is a pretty
+physical peripheral, while a network socket is an "imaginary" peripheral.
+For your information, and apart from the initial settings given in this
+"directors" period, most of the communication between a L.in.oleum application
+and the computer's peripherals happens via the "Run-Time Module", abbreviated
+in RTM for short. At present, and most probably forever, the run-time module
+exists in eight "variants", each including or not including the eight possible
+combinations of "modular extensions", being the printer interface, the audio
+playback interface, and the network interface.
+For such specific tasks, you will have to specify a special director tag,
+"modular extensions": because such tasks are considered to be "optionals" for
+a typical application's execution, while taking some memory, time and resources
+to be included. The L.in.oleum environment by default of the above director tag
+doesn't provide support for any of them; yet, if the specific application, or a
+library, requires one of those "modules" to be initialized and made available
+in the final executable, then the main program or one of its libraries can specify
+a combination of the requested "capabilities". Later in this same file, the
+exact syntax and possible values for the "modular extensions" director tag
+will be given.
+<br><br>
+All peripherals are initially configured using some equates in the "directors"
+period: these equates are called <i>director tags</i>. On this page there's a
+list of the peripherals and their related tags. Differently from the periods'
+order, the tags' order does not matter. To find out everything there is about
+peripherals' management, which is pretty obviously the core of application-to-system
+interaction, and the most massively documented topic of this whole manual,
+you'll have to see ALL the packaged examples and the
+<a href = "ikrnl_qr.htm">isokernel</a> reference guide. Reading and learning
+all immediately would probably result confusing, if not at all impossible, but
+after all you probably don't need doing that: you'll normally need to start dealing
+with the most vital peripherals, such as video output, mass memory (files,
+directories, drive units), keyboard and pointing device; and then, once familiar
+with L.in.oleum's syntax, basic principles, and with the way the run-time module
+communicates with programs, it might not be extremely difficult to learn about
+additional peripherals at the time you will effectively need them.
+
+<br>
+<blockquote>
+        <br><br><li>CENTRAL MEMORY</li><br>
+        Today called Random Access Memory or RAM, and sometimes referred
+        to as "DRAM" (Data RAM) to distinguish the mainboard's memory
+        from the video card's memory (VRAM), the part of the DRAM that's
+        made accessible to a L.in.oleum application is called the application's
+        WORKSPACE. While the other peripherals can have initial settings
+        specified in the "directors" period, the workspace is setup by the
+        "variables" and "workspace" periods.<br>
+        <br>
+        Notes:
+        <blockquote>
+                Someone may notice the lack of a memory manager, even though
+                dynamic memory allocation is still made possible by changing
+                the "total workspace size", given by an RTM variable called
+                [RAMTop]. Heap management is better for a lot of good reasons,
+                mainly BEST PERFORMANCE and simplicity. Heap management
+                dramatically reduces memory fragmentation, improves startup
+                and execution speed of the application, and causes less "disk
+                swapping". Modern operating systems will find local heap
+                management an ideal condition to work with, for many reasons.
+        </blockquote>
+        <br><br><li>MICROPROCESSOR UNIT</li><br>
+        The <i>unit</i> director tag is provided only for the compiler to
+        acknowledge the code of a certain application and see if it can be
+        compiled and successfully executed on the present machine. Actually,
+        the compiler's unit is 32, so just set this value ALWAYS to 32.
+        Notice the other director tags MAY NOT be specified (meaning the
+        default values will be used for those tags), but the <i>unit</i>
+        tag MUST be specified (or the compiler will refuse to compile the
+        program at all).<br>
+        <br>
+        Syntax:
+        <blockquote>
+                unit = 32;
+        </blockquote>
+        <br><br><li>THREAD PRIORITY</li><br>
+        A thread is a program executed in a straight line, from its first
+        instruction to the last (and eventually using jumps and subroutines
+        to control its flow). L.in.oleum is a <i>STRICTLY THREADED</i> language,
+        where programs are never interrupted, as opposed to a <i>callback-based</i>
+        mechanism, where programs have straight and short initialization sections,
+        then enter an "idle" loop that just waits for the operating system to call
+        certain parts of the program only when it's considered necessary.
+        The speed at which applications run in a multitasking environment is often
+        given by their thread's priority. But be careful: if your program runs at
+        higher-than-normal priority, it means less CPU time is left to other
+        programs and to the operating system itself. This may result in potentially
+        dangerous effects for the system's integrity. Now, since the thread's
+        priority can be changed during the application's run time, it is advisable
+        to start with a normal priority and eventually raise it while your
+        application is performing time-critical operations. Vice versa, if your
+        application is doing nothing important and you want to send it to a
+        "quiescent" state until the user reactivates it, you may set a very low
+        priority level for your thread, and specially, *delay* execution for brief
+        periods of time, throught the "SLEEP" command of the [Process Command] unit,
+        for which I recommend reading the <a href = "ikrnl_qr.htm">isokernel</a>
+        quick reference along with a few of the examples that use this technique
+        to create "popup" applications, such as the "LinoClock" (example 19).<br>
+        <br>
+        Syntax:
+        <blockquote>
+        thread priority = VERY LOW PRIORITY; (or)<br>
+        thread priority = LOW PRIORITY; (or)<br>
+        thread priority = NORMAL PRIORITY; (or)<br>
+        thread priority = HIGH PRIORITY; (or)<br>
+        thread priority = VERY HIGH PRIORITY;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        thread priority = HIGH PRIORITY;
+        </blockquote>
+        <br>
+        Default value would be:
+        <blockquote>
+        thread priority = NORMAL PRIORITY;
+        </blockquote>
+        <br><br><li>VIDEO DISPLAY</li><br>
+        What L.in.oleum applications use is an abstract display, which
+        can be represented by either a rectangular area of the physical
+        screen, called a "window", or the whole physical screen. A "windowed"
+        display is called a COOPERATIVE display, the whole screen is called
+        the EXCLUSIVE display (because it doesn't allow other applications
+        to share the screen at the same time). The video display (don't
+        call it screen, never: the screen is a physical thing, while the
+        L.in.oleum display is an abstraction of the physical screen) can be
+        sized and setup using five important director tags.<br>
+        <br>
+        Syntax:
+        <blockquote>
+        display width = width of the display in pixels;<br>
+        display height = height of the display in pixels;<br>
+        display x position = distance in pixels (or) MIDDLE;<br>
+        display y position = distance in pixels (or) MIDDLE;<br>
+        display mode = COOPERATIVE (or) EXCLUSIVE;<br>
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        display width = 444;<br>
+        display height = 222;<br>
+        display x position = 80;<br>
+        display y position = 50;<br>
+        display mode = COOPERATIVE;<br>
+        </blockquote>
+        <br>
+        Default values would be:
+        <blockquote>
+        display width = 256;<br>
+        display height = 192;<br>
+        display x position = MIDDLE;<br>
+        display y position = MIDDLE;<br>
+        display mode = COOPERATIVE;<br>
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        Whenever setting up EXCLUSIVE display mode, consider the
+        physical screen has its own aspect ratio to respect, and
+        only a few well supported sizes are actually possible:
+        the RTM tries to setup any kind of resolution, but fails
+        if it's not supported. In such cases, the display is
+        automatically reverted to COOPERATIVE mode. Well supported
+        resolutions are 320x200, 320x240, 512x384, 640x400, 640x480,
+        800x600, 1024x768... also, consider <i>display x position</i>
+        and <i>display y position</i> are ininfluent when using exclusive
+        display mode, and will be forced to be both zero. Under Windows,
+        remember the exclusive display mode is initialized using the
+        DirectDraw interface, so you should warn your users that DirectX
+        is needed. Now, in effects, if you don't have the DirectX interface
+        installed in Windows, it doesn't mean that you can't use a L.in.oleum
+        program designed for the exclusive display mode: it will just show
+        in windowed mode, but it WILL work. The Win32 package doesn't ask
+        very much to DirectX: it just uses a very few API calls to set up
+        the requested resolution, and gathers a pointer to the linear frame
+        buffer. The functions that manage to copy workspace memory to the
+        frame buffer are embedded into the run-time module itself.
+        The requested color depth, in bits, of the exclusive display, is
+        32 (8:8:8:8), 24 (8:8:8) or 16 bits (5:6:5). The RTM will first try
+        to setup a 32-bit mode, then fall down to 24 and finally 16 bits.
+        If none of those color depths are supported by the hardware along
+        with the requested resolution, the display will finally open in
+        windowed mode.
+        </blockquote>
+        <br>
+        Notes on COOPERATIVE or "windowed" mode:
+        <blockquote>
+        It is NOT exactly a window. It is not a window using your
+        system's GUI. If you want to setup your own GUI, allowing to
+        drag the window, and resize it, and for any other thing... you
+        can, but it's your program's responsibility to provide a GUI.
+        Of course there's a functional GUI provided in the default
+        libraries (it's called iGUI and stands for "integrated GUI",
+        since it's an "integration library"). The cooperative display
+        MAY be moved across the screen, but its borders cannot get out
+        of the physical screen, and it is not a normal window: it's more
+        like a "black hole" upon the screen, where the operating system
+        does not rule. Further infos: see the Icon Editor (which uses
+        the integrated GUI) and the <a href = "librarie.htm">libraries</a>
+        period (if curious to know what an <i>integration library</i> is).
+        </blockquote>
+        <br><br><li>POINTING DEVICE</li><br>
+        Normally, today we use mice as pointing devices. Calling such
+        peripherals "pointing devices" is a more generic way to define
+        them. Actually, you are certainly authorized to think the
+        standard pointing device IS the mouse. Trackpads, trackballs etc...
+        work the same anyway. It is important to realize the pointing
+        device may be SHARED with other applications or exclusively
+        used by your application: the best way is to let your application
+        <i>capture</i> the pointing device only when it's needed, while
+        keeping it shared for the rest of the time. There IS a director tag
+        to setup the pointing device so that it's captured by your
+        application since the beginning of its run time, but it is not
+        advisable to specify this tag, unless your application starts in
+        exclusive display mode (also not advisable - it is strongly
+        suggested that the initial display mode should be cooperative,
+        and only after the user selected the proper resolution you should
+        try to switch to exclusive display mode).<br>
+        <br>
+        Syntax:
+        <blockquote>
+        pointer mode = BY COORDINATE or BY DELTA;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        pointer mode = BY DELTA;
+        </blockquote>
+        <br>
+        Default value would be:
+        <blockquote>
+        pointer mode = BY COORDINATE;
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        Ignore this tag...<br>
+        Do not change the default mode.<br>
+        BY DELTA will capture the pointing device.<br>
+        BY COORDINATE will keep it shareable.
+        </blockquote>
+        <br><br><li>AUXILIARY POINTING DEVICES (APD)</li><br>
+        For instance, <i>joysticks</i> are auxiliary pointing devices.
+        Differently from mice, auxiliary pointers may have three axis
+        (X, Y, Z) and a number of buttons (upto 32). Auxiliary pointing
+        devices are to be detected and used in the run time: there are no
+        director tags to set them up, because their setup and use is strictly
+        device-dependent. Yet, L.in.oleum provides a fully standardized
+        interface with them, but their configuration is also supposed to
+        change during the runtime (e.g. a game's player unplugs the first
+        joystick or plugs in another joystick...) and so you can't have
+        director tags to manage their startup state. Furthermore, a special
+        command is provided to query and initialize all the auxiliary
+        pointers "on the fly", whenever the application might request for
+        an update about how many of them are available, and at least once
+        to allow the RTM to initialize the interface.
+        <br><br><li>MASS STORAGE (disk memory)</li><br>
+        It is managed by the DMS (Data Management System), which is
+        controlled throught the [File...] group of the run-time module's
+        communication area variables, also known as the "DMS data group".
+        See the <a href = "ikrnl_qr.htm">isokernel</a> reference guide for
+        more precise informations about file access. The DMS, a more generic
+        description for "File System", provides your application the ability
+        of reading, writing, creating and deleting file archives. There are no
+        director tags relating the DMS, but as long as I'm speaking of it, you
+        may start thinking to it as some sort of "universal file system", or even,
+        trying to compare it with an internet address which follows the same
+        syntax regardless of the operating system, a local "Uniform Resource
+        Locator". So be prepared to face something that's at least <i>slightly</i>
+        different from your usual file system, and it might have slightly
+        different rules too. As a quick example to give an idea, the path to
+        this document under Windows would be "C:\Linoleum\docs\director.htm",
+        but the Win32 version of the RTM would instead see it as
+        "/C/Linoleum/docs/director.htm". Detailed discussion of the universal
+        file system paradigm is made in example file 20
+        (<a href="../examples/20_DIRit.txt">DIRit.txt</a>).
+        <br><br><li>CPU DELAY (LOW PROCESSOR SPEED SIMULATION)</li><br>
+        This special director tag will insert a DELAY command looping for the
+        requested number of cycles, between EACH and EVERY of the program's
+        instructions. The overall result is that the program will uniformly slow down,
+        approximately simulating the way it would behave while running on a slower
+        processor.<br>
+        <br>
+        Syntax:
+        <blockquote>
+        cpu delay = amount of cycles;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        cpu delay = 5;
+        </blockquote>
+        <br>
+        Default value would be:
+        <blockquote>
+        cpu delay = 0;
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        Generally speaking, the value given to "cpu delay" might be added to
+        a couple additional cycles, to be considered for initializing the loop
+        and saving/restoring the register used as loop counter (ECX on Intel processors).
+        So in reality, a CPU delay of 1 means delaying execution for at least 3 CPU clock
+        cycles on most modern processors, while a delay of 2 would delay for 4 cycles,
+        a delay of 3 would delay for 5 cycles, and so on... Now, since most of Linoleum's
+        instructions are atomic and executed in 1 cycle, setting cpu delay to 1 means,
+        approximately, simulating a processor that's 3 times slower than the real processor.
+        Yet, the final slowdown even with a delay of only 1 cycle, could in facts be even
+        greater than that, because the fact of inserting a sequence of instructions to perform
+        a loop (this also significantly increases the code size, by the way) between each
+        instruction, causes pipelines misalignment and any possibly pairable instructions on
+        superscalar processors (Pentium and above) to lose the possibility of getting effectively
+        paired with the preceeding/following instructions.
+        You also might be aware that although the program's speed is affected by this delay,
+        the speed of the RUN-TIME MODULE is not, so you have to consider that any isocalls,
+        including those for copying the display to video RAM (the RETRACE command), are
+        absolutely not influenced by the "cpu delay" director. Oh, and one final note: "delay"
+        is an instruction (undocumented in the instructions quick reference, but perfectly
+        functional) and its symbolic code is three hypens (---). Placing something like ---10;
+        at a certain point in the code, would effectively delay the processor for about 12
+        cycles, but only in that point.
+        </blockquote>
+        <br><br><li>APPLICATION STRESSING FLAGS (TEST FLAGS)</li><br>
+        They're intended to help when an application has to be tested for
+        safe execution on an eventually very poor system. These flags may
+        not be left in the directors' period of the final release of an
+        application, because their goal is to "downgrade" the application.
+        If test flags aren't specified, the run-time module will always
+        attempt to setup the system for best performance.<br>
+        <br>
+        Syntax:
+        <blockquote>
+        test flags = flag1 plus flag2 plus flag3...;
+        </blockquote>
+        <br>
+        Possible flags:
+        <blockquote>
+        FORCE 888<br>
+        Forces exclusive display mode (fullscreen mode) to assume the video adapter is
+        only capable of displaying in 8:8:8 packed pixel format, meaning 24 bits per pixel.
+        The default depth is otherwise 8:8:8:8 padded pixel format, meaning 32 bits per pixel.
+        The run-time module reverts to windowed mode if this format is not supported.<br>
+        <br>
+        FORCE 565<br>
+        Forces exclusive display mode to assume adapter only capable of displaying in 5:6:5 packed
+        pixel format, meaning 16 bits per pixel, or 64Kcolors. There is no support for 32Kcolors
+        in 1:5:5:5 pixel format, and modes using less than 15 bits. In case an adapter isn't <i>at
+        least</i> capable of managing 5:6:5 pixel formats, an application must be used in windowed
+        mode only. The run-time module reverts to windowed mode if this format is not supported.<br>
+        <br>
+        DISABLE HPT<br>
+        Disables the high-performance timer. On Pentium and compatible processors the run-time
+        module will use, if available, the Timer Stamp Counter to measure time intervals. That
+        special hardware counter increments its value at each CPU cycle, so it allows measuring
+        very short time intervals, and might be by far the best device to solve synchronization
+        problems. The HPT's actual value is returned as a 32-bit unit as the [Counts] variable,
+        upon reading it throught a "[Timer Command] = READ COUNTS;" IsoKernel call. The returned
+        value is in facts truncated to 32 bit out of its original 64 bits, but it is also divided
+        by 256, in the hope that it will wrap around less often (although it is not recommended
+        to measure sensible amounts of time with the HPT, it's not there for that). Now, if the HPT
+        is not present in the host computer's CPU, the [Counts] variable will have a resolution of
+        upto 1 millisecond, although it will be often much less (1/50th of a second or so). This
+        flag is therefore provided to see if a program requiring rather precise synching would
+        tolerate the eventual absence of the HPT (on 80486 and earlier processors).<br>
+        <br>
+        DISABLE PD<br>
+        Disables the pointing device (whatever it is, mouse, trackball, trackpad, touch-screen...):
+        the pointing device is used for instance by the iGUI to control the pointer arrow. An iGUI
+        program isn't usable without a working pointing device, but if your application simulates
+        it with the keyboard, or includes alternative keyboard shortcuts, you may see if the absence
+        of a pointing device isn't disturbing the application in other ways, before you can safely
+        run it on a computer that doesn't effectively have a pointing device.
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        test flags = FORCE 565 plus DISABLE HPT;
+        </blockquote>
+        <br><br><li>COMPILER's COMMODITY DIRECTORS</li><br>
+        Finally, another couple of director tags are <i>program name</i>
+        and <i>symbols map</i>. They are directives for the compiler to
+        follow, and mean nothing to the PC's peripherals. The <i>program
+        name</i> is a text string upto 39 characters in size, which
+        describes your application. It is an "internal name" and, for example,
+        it's shown under Windows when you press CTRL+ALT+CANC to bring on the
+        tasks' list. Also it's shown as the title of eventual warning messages
+        (title of message boxes relating your application). But it's nothing
+        more than this. You may or may not specify this director tag... even
+        if it's certainly better to specify it. The <i>symbols map</i> can
+        assume one of two values: ON and OFF. By default it's on; if it's
+        turned off, the compiler does never create the SMBLSMAP file. The fact
+        that symbols don't need to be mapped to a file may also speed up
+        compilation a bit, but on the other hand, the symbols map often comes
+        out as an interesting debugging instrument.<br>
+        <br>
+        Syntax:
+        <blockquote>
+        program name = { name of program, a plain text string };<br>
+        symbols map = ON or OFF;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        program name = { Hey_that's_my_program! };<br>
+        symbols map = OFF; (don't bother me with the symbols map)
+        </blockquote>
+        <br>
+        Default values would be:
+        <blockquote>
+        program name = { L.IN.OLEUM runtime };<br>
+        symbols map = ON;
+        </blockquote>
+        <br><br><li>AUDIO PLAYBACK (modular extension)</li><br>
+        As a first thing you should know, there is actually a limit to
+        L.in.oleum's digital audio management. Digital audio can be played
+        but not recorded, that's it. Also, more than 2 channels (2 channels
+        mean stereo output) are not supported, so forget digital surround
+        effects. Of course there is a variety of reasons for these
+        limitations, mainly due to the wide difference in all of the
+        possible audio recording techniques.
+        What remains of the capabilities are the possibility of both
+        synthetizing audio in real time or streaming it from archives
+        (f.ex. by translating RIFF waveform files, or by decoding MPEG
+        Layer 3 files), and all upto a sampling rate of 44,1 KHz over 2
+        channels, using 8 or 16 bits per channel. The audio playback
+        interface is automatically setup for maximum performance (in respect
+        of the capabilities of the environment AND of the PC's audio equipment)
+        if you specify the "audio playback" constant as part of the included
+        modular extensions for the given application:<br>
+        <br>
+        Syntax:
+        <blockquote>
+        modular extensions = audioplayback;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        modular extensions = network plus audioplayback;<br>
+        (requesting more than one extension)
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        See examples 9 and 10 for in-depth informations and some practice.
+        </blockquote>
+        <br><br><li>PRINTER (modular extension)</li><br>
+        The printer is another peripheral that is considered non-vital and
+        thus treated as a modular extension. Generally speaking, the printer is
+        managed by the L.in.oleum environment as an auxiliary display: it's got
+        similar management and properties as the video display. The only
+        differences are that it can be larger or smaller than the actual video
+        display, and it can refer to another memory matrix for storing its contents
+        (called the <i>page buffer</i>). Oh, and the main difference is that the
+        printer's "display" is made of paper (duh!).<br>
+        <br>
+        Syntax:
+        <blockquote>
+        modular extensions = printer;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        modular extensions = printer plus audioplayback plus network;<br>
+        (requesting more than one extension)
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        See example 18 for in-depth informations and some practice.
+        </blockquote>
+        <br><br><li>NETWORK (modular extension)</li><br>
+        The most recently introduced modular extension (available since
+        version 1.13.4b) is the experimental network extension, using
+        an asynchronous implementation of a subset of commands following
+        Berkeley sockets specifications. Via Windows, the network gets
+        interfaced throught version 1.1 of the Windows Sockets API,
+        typically the file wsocks32.dll. If you include this extension,
+        the application will look for that DLL under Windows; according
+        to MSDN, version 1.1 of the API is shipped since Windows95.<br>
+        <br>
+        Syntax:
+        <blockquote>
+        modular extensions = network;
+        </blockquote>
+        <br>
+        Example:
+        <blockquote>
+        modular extensions = network;<br>
+        (requesting only that extension)
+        </blockquote>
+        <br>
+        Notes:
+        <blockquote>
+        See "network_node/node.txt" for a pratical example.<br>
+        See "network_node/notes.txt" for in-depth informations.<br>
+        The present extension does not (yet) support IPv6.
+        </blockquote>
+</blockquote>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

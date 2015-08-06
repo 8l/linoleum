@@ -1,0 +1,200 @@
+
+      ( *** LINOLEUM Example 3: The PLOT subroutine *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "03_the_plot_subroutine.TXT", WITH
+	   THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Plots a few multi-coloured dots, using a subroutine,
+	then waits for a keystroke like in the previous example. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { PLOTTY };
+	unit = 32;
+
+"constants"
+
+	(some frequently used colors)
+
+	RED	= FF0000h;
+	GREEN	= 00FF00h;
+	BLUE	= 0000FFh;
+	MAGENTA = FF00FFh;
+	YELLOW	= FFFF00h;
+	CYAN	= 00FFFFh;
+	BLACK	= 000000h;
+	WHITE	= FFFFFFh;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+	(If you have taken a look to the source code called "Testing
+	the Display", you'll know how to plot a single dot in the middle
+	of the video display, in any colours you want. We can make a
+	very useful subroutine out of that program. It's the most simple
+	and basic graphic tool: the Plot subroutine. It's called in the
+	following 5 lines. For explanations about the subroutine itself,
+	and to see its code, go to the bottom of this file.)
+
+	(Let's draw a multi-coloured constellation of dots)
+
+	[Display Origin] = Primary Display;
+
+	A = 50; B = 75; C = RED; => Plot;	(RED dot at 50;75)
+	A = 99; B = 71; C = GREEN; => Plot;	(GREEN dot at 99;71)
+	A = 123; B = 152; C = BLUE; => Plot;	(BLUE dot at 123;152)
+	A = 220; B = 60; C = WHITE; => Plot;	(WHITE dot at 220;60)
+	A = 180; B = 115; C = MAGENTA; => Plot; (MAGENTA dot at 180;115)
+
+	(Then show the video display memory)
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	(We already know what's the cycle below for...)
+
+    "wait keystroke"
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> wait keystroke;
+
+	(What follows is the end of the MAIN PROGRAM.
+	Subroutines like Plot have their own end tags,
+	and when subroutines are not placed in a library,
+	they are usually placed beyond the end of the main program,
+	so that they won't execute unless they are first called.
+	You see... saying "end" at a certain point of either the
+	main program or a subroutine, is like saying "stop here":
+	"end", itself, isn't a mark for a physical bound, it's just
+	an instruction to say "stop executing" this program or this
+	subroutine to the microprocessor. I mean: "end" tags may
+	appear in a program or a subroutine even more than once,
+	each time the program or the subroutine is to be quitted.)
+
+	end;
+
+	(And here comes the Plot subroutine: it works almost the same
+	way we did the white dot in the middle of the display, in the
+	previous example. But has some new and interesting features.
+	First, it's a subroutine, and can be called by the main program
+	as many times as you want, by only assigning the parameters and
+	calling its name after a "=>" command. Secondly, it's much more
+	"intelligent" than using repeated code, and you'll see why
+	by experiencing with more complex tasks.)
+
+	(But now let's meet some more precise terminology.
+	This subroutine needs three values to work.
+	They are the two (X;Y) coordinates and the COLOUR of the DOT.
+	These values are called PARAMETERS.
+	It's a good idea to list them along with the code, so that
+	we will remember how to use our subroutine, or for any others
+	who may need a similar routine. That's why the first lines
+	below the name of the subroutine are comments explaining, in
+	brief, which are the parameters and where they are to be
+	loaded (in this case, they're inside registers A, B and C))
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+	(The final end and fail tags are relative to the subroutine.
+	This subroutine may succeed on some cases, and fail to draw
+	the dot in some other cases. When it fails, it's because the
+	caller gave to the routine a couple of coordinates which are
+	OUTSIDE current display's bounds. The bounds are checked by
+	those two "comparison directives" at the beginning of the
+	routine, in such a way that the coordinates are treaten as
+	unsigned values and so it does not need to check for values
+	below zero. For more explanations about this little trick,
+	see what the manual says about binary numbers. Obviously,
+	if we avoid two more checks (is A less than zero? is B less
+	than zero?) we can speed up the routine, and that's what we
+	usually do when we want to optimize for maximum speed!
+	The rest of the subroutine is trivial: calculates a pointer
+	out of the coordinates, and puts the color inside the video
+	location corresponding to the pixel located at those coords.)
+
+	(Another thing you should notice is the name of the label:
+	"Plot Out of the screen" you may find it rather long. Well,
+	that's another consideration about LINOLEUM's subroutines.
+	LINOLEUM shares all variables and labels, no matter if they
+	are declared in a separated library or in the main program.
+	Technically LINOLEUM is not "object-oriented". This is
+	intentional, and it will always be the same, in the future.
+	This may result in unwanted duplications of the same name,
+	which will give out an error message when they're found by
+	the compiler. If you keep labels long, you should avoid it.
+	On the other side, there's no limit to names of variables,
+	and to the length of labels. So it's a good idea to keep
+	these names rather long, and also to include the name of
+	the subroutine (the only one which may be short so that
+	it's easier to call the subroutine) in each label and/or
+	variable name PERTAINING to the subroutine itself.
+	Myself, I found it's shorter but almost the same thing to
+	include an acronym of the subroutine. For example if you're
+	declaring a variable to be used with a subroutine called
+	"Load That Amazing File", you may call the variable holding
+	the file name (again, for example) "LTAF File Name".)
+
+	(May I finally let you notice an IMPORTANT thing in the line
+	which describes the subroutine? It reads "Reg B destroyed".
+	This is what a CONSCIENTIOUS programmer should do: he who
+	programmed the subroutine, knows how it works, and also he
+	knows which are the registers and variables - always shared
+	with the main program - that are AFFECTED by the subroutine.
+	You should always let the caller know about these things.
+	Saying register B is DESTROYED is a conventional way to say
+	the content of register B, once the routine has been called,
+	will be different from its INITIAL content. This would avoid
+	the programmer to use B again without first re-loading it!
+	If, instead, your subroutine doesn't change anything, or if
+	it takes care of saving all registers and variables, you can
+	claim another conventional sentence: "ALL REGS AND VARIABLES
+	ARE PRESERVED", so that the caller won't bother re-loading
+	anything after having made a call to the subroutine. Ok?)
+
+	(Talking of the standard LINOLEUM's libraries, they are all
+	using the same phylosophy: they may destroy all registers,
+	never preserving their values, but they will preserve any
+	input values passed to the subroutines throught variables.
+	That's because LINOLEUM's default libraries always use
+	variables to receive parameters.)

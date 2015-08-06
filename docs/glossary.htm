@@ -1,0 +1,365 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        Glossary<br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        GLOSSARY OF TERMS USED TO DESCRIBE THE L.IN.OLEUM ENVIRONMENT<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt>application</dt>
+                <dd>A program that does something useful... :o)</dd>
+        <br><br>
+        <dt>source code</dt>
+                <dd>It's a text file containing a sequence of
+                instructions and representing the way an application works,
+                in a human-readable notation, as opposed to the resulting
+                compiled version, or binary version, which is given in a
+                computer-readable notation. Specifically, the compiled version
+                of a L.IN.OLEUM program produced by this distribution of the
+                compiler's package is a PE-EXE, a Portable Executable, and its
+                target operating systems are any 32-bit versions of Microsoft
+                Windows (this includes 95, 98, ME, 2000, NT4+, XP). Parts of
+                the source code may be also considered any support files
+                linked to the executable via the "<a href = "stockfil.htm">stockfile</a>" (see).</dd>
+        <br><br>
+        <dt>compiler</dt>
+                <dd>A program that takes care of translating
+                the source code of a certain application to a
+                language made of binary digits (01100110001111000101...)
+                for the computer to understand.</dd>
+        <br><br>
+        <dt>CPU</dt>
+                <dd>Central Processing Unit,
+                also known as microprocessor.</dd>
+        <br><br>
+        <dt>bit</dt>
+                <dd>The minimum physical amount of memory.
+                A bit is a single binary digit and can assume
+                only two values: zero or one (on/off, active/inactive,
+                yes/no, and so on...)</dd>
+        <br><br>
+        <dt>unit</dt>
+                <dd>
+                1. number of bits held by the smallest involved CPU register.<br>
+                2. a single memory cell, capable of containing only one value.
+                </dd>
+        <br><br>
+        <dt>compiler unit</dt>
+                <dd>The exact amount of bits to be found in the smallest involved
+                CPU register for the compiler and its programs to work properly,
+                usually corresponding with the CPU's internal BUS itself.
+                Currently, the compiler unit is 32, meaning it works with
+                32-bit microprocessors. This distribution in particular, targets
+                Intel and compatible processors starting from the i80386.
+                </dd>
+        <br><br>
+        <dt>FLAT memory environment</dt>
+                <dd>The FLAT memory environment is a way to enumerate single
+                memory bytes progressively and starting from byte number 0.
+                All bytes are made up of 8 bits in a FLAT memory environment.
+                This method of managing memory does not apply "as it is" to
+                L.in.oleum, which uses a slightly different method explained
+                right below.</dd>
+        <br><br>
+        <dt>n-FLAT memory environment</dt>
+                <dd>The n-FLAT memory environment is actually an exclusive
+                feature of the L.in.oleum run-time environment. n-FLAT memory
+                is divided in units, not bytes; the size of a single unit may
+                vary accordingly to the size of the microprocessor's BUS.
+                Actually, L.in.oleum applications run in 32-bit n-FLAT models.
+                A change in the CPU unit is the only way to compell L.in.oleum
+                programmers to re-write a program. However, in most cases you
+                won't need re-writing it completely: some targetted modifies
+                would probably do the trick. Also see what the
+                <a href="warns_qr.htm">warnings</a> quick reference
+                says about message "Microprocessor unit is intended to be x",
+                for more details on such an evenience.</dd>
+        <br><br>
+        <dt>n-FLAT workspace (or simply the "workspace")</dt>
+                <dd>It's the area of the n-FLAT mapped memory where your program
+                rules. Your program owns the whole n-FLAT workspace, assigned
+                to it by the run-time module once the main program's entered.
+                The workspace size will exactly fit your program's settings
+                specified within the "variables" and "workspace" periods.
+                Also the workspace contains all initialized variables,
+                vectors and text strings, only from the "variables" period,
+                and the so-called "run-time module communication area",
+                which will be examined at the end of this manual.
+                The n-FLAT workspace is normally divided in TWO PARTS,
+                the first of which is called the "main workspace" or the
+                "initialized workspace". The second is called the "rest of
+                the workspace", or the "uninitialized workspace".</dd>
+        <br><br>
+        <dt>main workspace OR initialized workspace</dt>
+                <dd>The main workspace contains all the values assigned to
+                the variables (variables are symbols declared in the
+                "variables" period).</dd>
+        <br><br>
+        <dt>rest of the workspace OR uninitialized workspace</dt>
+                <dd>The rest of the workspace is formed by the total amount
+                of memory reserved for sequences of data declared in
+                the "workspace" period. All of the memory units in the
+                rest of the workspace are always containing a value of
+                ZERO when the application begins executing.</dd>
+        <br><br>
+        <dt>n-FLAT POINTER (formally POINTER, also known as ADDRESS)</dt>
+                <dd>It's the number of a memory unit in the n-FLAT memory environment.
+                For vectors, it indicates the first unit of the vector.
+                For strings, it indicates the string's first character.</dd>
+        <br><br>
+        <dt>symbol</dt>
+                <dd>Symbols are any groups of letters (names). The name of a
+                variable is a symbol. The name of a constant is also a symbol,
+                and even "code labels" are symbols. The compiler keeps an internal
+                table where it records all of the symbols: it's called the "symbols table".</dd>
+        <br><br>
+        <dt>constant</dt>
+                <dd>A constant is basically a pure number, or the result of
+                an expression involving other constants. It is fundamentally
+                a value associated with a sequence of letters. When the
+                compiler meets the sequence of letters (name) identifying
+                a certain constant, it uses the value associated with that
+                name. For example "Pi=3.14159f;" when found in the "constants"
+                period, tells the compiler to associate the name "Pi" with the
+                value 3.14159 espressed in floating-point notation.</dd>
+        <br><br>
+        <dt>linear expression</dt>
+                <dd>An expression formed by one or more values (or pointers)
+                connected by TAGS like "plus", "minus", "multiplied" etc...
+                For example, [PrimaryDisplay plus 58 minus 15] is a linear
+                expression meaning "take the pointer to PrimaryDisplay
+                (which would be a workspace area), add 58 to it, then
+                subtract 15". Linear expressions have no operators' precedence
+                rules: multiplications and divisions don't necessarily have
+                precedence over additions and subtractions, they are simply
+                executed left-to-right, in the same order they appear in the
+                expression, one after the other.</dd>
+        <br><br>
+        <dt>variable</dt>
+                <dd>Differently from constants, variables are small amounts of
+                the computer's memory which, at different times, may contain
+                different values. A variable is basically a sequence of letters
+                (name) associated with a certain number being the number of
+                the memory cell where the actual value of that variable is stored.</dd>
+        <br><br>
+        <dt>vector OR matrix</dt>
+                <dd>A vector is a sequence of memory units of given size
+                (where the size is the amount of units forming the vector).
+                Normally, vectors are associated to a pointer which indicates
+                the first unit of the vector. Matrixs are like vectors, and
+                are treaten in exactly the same way: only, matrixs are managed
+                by the application as if they had more than 1 dimension.
+                For example, a 2-dimensional matrix of 50x100 units can be
+                seen a grid where the first 50 units (units from 0 to 49)
+                represent the first ROW of the grid, the second 50 units
+                (units from 50 to 99) represent the second row of the grid,
+                and so on until last row (row 99). The said matrix would be
+                declared as a vector of 5000 units (being 50x100). The most
+                common matrix you will encounter is the VIDEO DISPLAY. The area
+                of video memory which is reserved by your application for
+                video output is nothing but a two-dimensional matrix. The number
+                of COLUMNS in that matrix is given by the horizontal resolution,
+                and the ROWS are given by the vertical resolution. By default,
+                L.in.oleum applications are assigned a video display of 256x192
+                pixels.</dd>
+        <br><br>
+        <dt>workspace area</dt>
+                <dd>A memory area located in the part of the computer's memory
+                that we call the workspace. The name "workspace area" normally refers
+                to an area formed by more than a single memory unit, and which can
+                be normally accessed by pointer (not "by value").</dd>
+        <br><br>
+        <dt>workspace area label</dt>
+                <dd>The alphanumeric name associated to a given workspace area,
+                and representing the pointer to that area. For example, if you have
+                an area called PrimaryDisplay and starting at location number 15602,
+                whenever the compiler meets the name PrimaryDisplay it knows the
+                name actually means number 15602. In this case, PrimaryDisplay is
+                a "workspace area label".</dd>
+        <br><br>
+        <dt>PHYSICAL POINTER (or LINEAR POINTER)</dt>
+                <dd>It's the number (address) of a memory byte, not a unit.
+                The executable code has to be organized in memory bytes
+                (byte-aligned, not unit-aligned) and thus, all code labels
+                are assigned a physical pointer. Also the memory origin of
+                your workspace, held in run-time environment register O,
+                is a physical memory pointer.</dd>
+        <br><br>
+        <dt>A, B, C, D, E</dt>
+                <dd>These are the five general-purpose registers.
+                They all have the same size and capabilities of a memory unit
+                (that is, a single variable), but they're much faster when
+                operating, because A, B, C, D and E represent a little amount
+                of memory which lays inside the CPU and is therefore strictly
+                integrated with the microprocessor's internal circuitry.
+                Registers are generally 2 to 3 times faster than variables
+                when performing basic ALU operations (integer additions and
+                subtractions, bitwise operations and bitwise shifts).
+                Registers can hold floating-point values, but they generally
+                don't perform FPU operations any faster than variables,
+                because they first need to be transferred to the FPU stack.
+                The FPU stack is ignored by L.in.oleum applications, and it's
+                managed automatically by the instructions patterns.</dd>
+        <br><br>
+        <dt>$</dt>
+                <dd>It's the stack pointer, and holds a value representing the
+                actual pointer to the top of the stack; $ can be used only
+                with a special subset of assignment instructions; its value
+                cannot be read or written like A/B/C/D/E, but is implicitly
+                modified by the four stack operations called "push on stack",
+                "pop from stack", "add to stack pointer" and its counterpart
+                "subtract from stack pointer". For all those four operations,
+                the stack pointer behaves as a normal register.</dd>
+        <br><br>
+        <dt>O</dt>
+                <dd>Is the origin pointer and holds the PHYSICAL ADDRESS to
+                effective address zero within applications' n-FLAT workspace.
+                O is an internal run-time register and cannot be mentioned in
+                any instructions, neither in reads, nor in writes.
+                O is implicitly used in all memory accesses from you program.
+                It is added to n-FLAT pointers to obtain a physical pointer
+                for the CPU to use. Your program can't see this operation,
+                which is performed by the CPU's internal address generator.
+                Its value is assigned by the run-time module before entering
+                the main program, and may change during normal execution
+                in reply to the dynamic allocation of some more memory
+                (there's a way to do that, but you'll know later).</dd>
+        <br><br>
+        <dt>X</dt>
+                <dd>Is the auxiliary register and is used within compatibility
+                patterns (inside the compiler and written in native assembly).
+                X is an internal run-time register and cannot be mentioned in
+                any instructions, neither in reads nor in writes, even because
+                its value keeps changing continuously and is unpredictable.
+                Like for O, feel free to completely ignore the existence of X.</dd>
+        <br><br>
+        <dt>instruction</dt>
+                <dd>Something to do. Assigning a value to a variable (i.e.
+                storing a value inside a variable), arithmetics' operations,
+                calling a subroutine... are all instructions.</dd>
+        <br><br>
+        <dt>symbolic instruction code</dt>
+                <dd>When you write an instruction in the program's source
+                code, you have to distinguish the various parts of the
+                instruction. Instructions are formed by a "symbolic instruction
+                code" and the "operands". For example, to sum two registers
+                you would use something like "A+B;". Well, the plus sign (+)
+                is the symbolic instruction code. A and B are the operands.
+                More specifically, A is the destination operand, where the
+                result of the addition will be stored, and B is the source
+                operand. Symbolic instruction codes can be formed by more
+                than a single sign. For instance, the most complex codes
+                are those of the "comparison directives", an example of
+                which is...<br><br>
+                ? A=0 -&gt; It Is Zero;<br><br>
+                ...that would jump to the code label called "It Is Zero"
+                only if register A is found to contain value zero.
+                In such an instruction, the symbolic code is given by
+                ?=-&gt; and the operands are A, 0 and "It Is Zero".</dd>
+        <br><br>
+        <dt>run-time module</dt>
+                <dd>Also indicated as RTM for short, the run-time module is
+                a tiny program (of 16 to 20 Kb in this here distribution)
+                which communicates with the operating system telling it
+                what your application wants to do. Also, the RTM literally
+                GIVES YOUR PROGRAM the ability to run. The RTM is physically
+                linked to your application's executable file (PROGRAM.EXE)
+                and forms the very first 16-20 Kb of that file. The RTM does
+                not need to be launched or stored separately: it runs
+                automatically while your application is being executed
+                (in facts, during the application's run time).</dd>
+        <br><br>
+        <dt>isokernel</dt>
+                <dd>The isokernel is that part of the run-time module that
+                interpretates the commands from your application. Your
+                application informs the run-time module about what's to do
+                by setting some variables in the run-time module's
+                communication area and then eventually calling the isokernel.</dd>
+        <br><br>
+        <dt>isokernel communication area</dt>
+                <dd>It is formed by about 400 units of the program's workspace.
+                Those units, almost all of which are labeled, contain values
+                that can be read by the isokernel, and are used by the application
+                to inform the isokernel of what to do and how to do it. For example,
+                when you want to resize your video display, you can call the isokernel
+                after setting some different values inside a couple of variables
+                giving the new size of the display:<br><br>
+                [Display Width] = 400;<br>
+                [Display Height] = 300;<br>
+                isocall;<br><br>
+                (and you can't say it's complicated!)<br>
+                ...which would setup the new display to be 400 pixels wide
+                and 300 pixels tall. Of course this also means your application
+                needs to provide at least 400x300 (120000) memory units in its
+                display matrix. Now, both Display Width and Display Height are
+                seen and managed as variables by your application, but they are
+                never declared in the application's source code. It's the compiler
+                that declares those variables for you.</dd>
+        <br><br>
+        <dt>isocall</dt>
+                <dd>The act of calling the isokernel.
+                An isocall can be performed by writing "isocall;" in the
+                program's source code. Technically, the "isocall;" instruction
+                is internally translated to "=>[IsoKernel];", where [IsoKernel]
+                is called the entry address of the IsoKernel's functions parser,
+                which will appear to your program as a normal subroutine.</dd>
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        Dynamic heap<br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        DYNAMIC HEAP MANAGEMENT<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        You might now, after reading the chapter about the
+        <a href="workspac.htm">workspace</a> period, that the application
+        owns an area of memory called the workspace, and that within that
+        area, workspace area labels define the position and size of smaller
+        "regions" of the workspace (the buffers), to be used for storing
+        informations about something, like the buffer where the contents
+        of a file are kept, or like the buffer you associate to the visible
+        display by passing its pointer into [DisplayOrigin], like a generic
+        array of program-specific data, and so on...<br><br>
+
+        But, in all those cases so far, the manual mentioned always fixed-size,
+        unmovable buffers. The pointer and size of one of those buffers within
+        the range of the application's whole workspace, were always the same,
+        for all the duration of the application's run-time, that is, for all
+        the time the application kept running.<br><br>
+
+        Well, there are, and they're not so unfrequent, cases where you may
+        want to have a buffer whose size could change, and fit exactly the
+        "object" that the buffer is supposed to contain. When, in short, you
+        can't know the exact size of the object while writing your source
+        code. Imagine, for instance, of developing a painting tool: such a
+        program has to mantain, in the most simple case, at least a buffer
+        where the image (that the user is editing) is kept. But how large
+        could that buffer be? Well, unless it's ok for you and your users to
+        limit the size of the image to a "largest possible area", you'd
+        probably have to choose the size of the buffer <i>while the program
+        runs</i>.<br><br>
+
+        There are three ways to solve this problem.<br><br>
+
+        First way: <i>resizing the workspace</i>.<br>
+        Changing the value of [RAMtop], and the making an isocall, resizes
+        the workspace to the requested amount of units (the value loaded into
+        the [RAMtop] control variable). There is a lower limit given by the
+        default ramtop, and theoretically no upper limit: resizing the
+        workspace this way allows attempting to allocate as much memory as
+        your application needs. The pratical upper limits are given, first,
+        by the amount of memory physically available in your system, and
+        secondly, by the extension of the address space of your processor.
+        With unit=32, the extension of the address space is, in units, about
+        512 million units, or 4 Gb. However, most probably another set of
+        limits would apply before that limit was reached and before your
+        physical memory could get entirely allocated by the application;
+        these other limits are in the form of memory fragmentation, hardware-
+        mapped buffers, amounts of memory reserved to the system and to other
+        applications, and more... anyway, in general you should be able to
+        reserve quite a large part of the memory for your application, if the
+        application requests it. The library
+        <a href="../main/lib/gen/reserve.txt">main/lib/gen/reserve.txt</a> shows
+        how to create blocks of memory using this technique, but the
+        disadvantages are quite clear: the blocks created this way aren't mapped
+        anywhere, your application only knows about their pointers, plus the
+        actual value of [RAMtop]. If you needed to discard one of the blocks
+        allocated at the beginning of the application's duties, before many
+        others were allocated later, you'd also need move back all the contents
+        of the blocks following the block to be discarded, and update all the
+        pointers to those same blocks. Then, you could subtract the amount of
+        units in the discarded block from [RAMtop]. Needless to say, this would
+        be quite slow, and the same would occur if you needed to resize one of
+        the blocks which is not the very last one that's been allocated. But,
+        in case of simple applications, not needing to discard or resize any
+        of the blocks, this could still be a cheap solution.<br><br>
+
+        Second way: <i>dynamic heap management</i>.<br>
+        Yup, in this case the area that was clean, and sequentially organized,
+        and that was called the workspace, really becomes a "heap", a less
+        clearly organized amount of memory, some parts of which may not be
+        reserved to hold objects, despite being parts of the actual workspace.
+        There's a library, written by Vladimir Klicic, that allows dynamic
+        management of a "heap space" built into the workspace. The heap space
+        is nothing but a normal memory block, identified by a workspace area
+        label; however, the said library
+        (<a href="../main/lib/vk/lock.txt">main/lib/vk/lock.txt</a>)
+        will take care, once you will have instructed the library about where
+        your heap space is and how large it is, of creating ("locking")
+        smaller blocks of memory within the heap. Those blocks can be then
+        resized or discarded ("freed") without causing the problems that were
+        limiting the above way. The only remaining significant disadvantage
+        is that, once the heap is allocated, by deciding how many units your
+        application will dedicate to it, its complessive size is supposed to
+        be always the same, so you won't be able to allocate more memory than
+        (heap fragmentation apart) the heap could provide. And after all you
+        can't start up an application with a lot of heap, say if you used some
+        100 megabytes of heap, because no matter how much of the heap the
+        application is effectively using at a given moment, the whole 100 Mb
+        would be unconditionally allocated when the application is started,
+        and freed all together when the same application is closed. But this
+        is good for the cases where your program needs rather small blocks of
+        memory, but then those blocks need to be resized or discarded often.<br>
+        Author's documentation about lock.txt is available as
+        <a href="../main/lib/vk/lockdoc.htm">main/lib/vk/lockdoc.htm</a>.<br><br>
+
+        Third way: <i>both things</i>.<br>
+        Making 1+1=2, what solves all the problems is <i>dynamic heap allocation
+        and management</i>. Implemented by merging the two above libraries, a
+        third library (written by Peterpaul Klein Haneveld) could at this point
+        use reserve.txt for allocating a single, but variable-sized, block of
+        memory, to be then considered as the heap space for lock.txt to use.
+        The heap space can be therefore initially allocated, by the main program's
+        source code, as a small block of memory (but as the very last block of
+        memory allocated by "reserve.txt", which is called by "dynaheap.txt", so
+        no blocks could follow it), and later its size could grow when the
+        application requests allocation of a block that exceeds the actual largest
+        available block of heap space. The library implementing this last method is
+        <a href="../main/lib/ppkh/dynaheap.txt">main/lib/ppkh/dynaheap.txt</a>.<br>
+        Author's documentation about dynaheap.txt is available as
+        <a href="../main/lib/ppkh/doc/dynaheap.html">main/lib/ppkh/doc/dynaheap.html</a>.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

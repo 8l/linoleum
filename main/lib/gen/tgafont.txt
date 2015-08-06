@@ -1,0 +1,190 @@
+(
+
+    Truevision TGA [tm] font files.
+    Text Manager for TARGA-24 truecolor fonts.
+    --------------------------------------------------------------------------
+    | Weighs:		828 bytes *
+    | Allocates:	 44 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	The TGA file format is a trade mark of Truevision, Inc.
+
+	TGA Text
+	    [TGAT Source Block]
+		pointer to a block of memory - inside a display layer -
+		where the font shape has been loaded.
+		Use Load TGA Picture to load up the font shape.
+		The font shape, you see, is just a picture holding
+		the shapes of all characters, organized in a matrix
+		of 16 columns and 8 rows - 128 shapes complessively.
+	    [TGAT Target Layer]
+		pointer to the display layer where to output text.
+	    [TGAT Source String]
+		pointer to first unit of source text string:
+		the text string must be zero-terminated.
+	    [TGAT Left Margin]
+		X coordinate of displayed text's upper left corner.
+	    [TGAT Top Margin]
+		Y coordinate of displayed text's upper left corner.
+	    [TGAT Effect]
+		Pointer to a subroutine to trace each single pixel
+		from the characters' shapes. Those routines are
+		services provided in the PixelFX library.
+		By default it points to the "service FX Raw"
+		subroutine, which just plots the pixels as they are.
+		See PixelFX to find out the other possible effects.
+
+	Font types:
+		There are two kinds of fonts considered here:
+		FIXED WIDTH or PROPORTIONAL.
+		Proportional fonts must have typeface informations
+		encoded in the source picture. Typeface limits are
+		encoded as two pixels whose color matches exactly
+		the Typeface Limits Pattern constant.
+		Actually it's bright magenta: FF00FFh.
+		Typeface limits are encoded inside the first scan-line
+		of each character's shape. The first dot marks left
+		border of the character, the second dot marks right
+		border. Borders are always included in shape.
+
+)
+
+"libraries"
+	pixelfx;
+
+"constants"
+	Typeface Limits Pattern = FF00FFh;
+
+"variables"
+	TGAT Source Block = 0;
+	TGAT Font Width = 8;
+	TGAT Font Body = 8;
+	TGAT Target Layer = 0;
+	TGAT Display Alignment = 256;
+	TGAT Display Height = 192;
+	TGAT Source String = 0;
+	TGAT Left Margin = 0;
+	TGAT Top Margin = 0;
+	TGAT InterChar Spacing = 1;
+	TGAT InterLine Spacing = 1f;
+	TGAT Effect = service FX Raw;
+
+"workspace"
+	TGAT Pixel = 1; TGAT Pixels Count = 1;
+	TGAT Scanline = 1; TGAT Scanlines Count = 1;
+	TGAT Current Top Margin = 1; TGAT Current Left Margin = 1;
+	TGAT Left Side Spacing = 1; TGAT Right Side Spacing = 1;
+	TGAT Effective Width = 1;
+
+	TGAT Source Pixel Pointer = 1;
+	TGAT Destination Pixel Pointer = 1;
+
+"programme"
+
+"TGA Text"
+(*)	? [TGAT Source Block] = 0 -> failed writing TGA text;
+	? [TGAT Target Layer] = 0 -> failed writing TGA text;
+	? [TGAT Source String] = 0 -> failed writing TGA text;
+(*)	[TGAT Current Top Margin] = [TGAT Top Margin];
+	[TGAT Current Left Margin] = [TGAT Left Margin];
+	A = [TGAT Source String];
+    "TGAT Characters Loop"
+	? [A] = 0 -> TGAT End Of String;
+	? [A] > 127 -> TGAT End Of String;
+	[TGAT Destination Pixel Pointer] = [TGAT Current Top Margin];
+	[TGAT Destination Pixel Pointer] * [TGAT Display Alignment];
+	[TGAT Destination Pixel Pointer] + [TGAT Current Left Margin];
+	[TGAT Destination Pixel Pointer] + [TGAT Target Layer];
+	A -->;
+		[TGAT Source Pixel Pointer] = [A];
+		[TGAT Source Pixel Pointer] > 4;
+		[TGAT Source Pixel Pointer] < 4;
+		[TGAT Source Pixel Pointer] * [TGAT Font Width];
+		[TGAT Source Pixel Pointer] * [TGAT Font Body];
+		A = [A]; A & Fh; A * [TGAT Font Width];
+		[TGAT Source Pixel Pointer] + A;
+		[TGAT Source Pixel Pointer] + [TGAT Source Block];
+		[TGAT Scanline] = [TGAT Current Top Margin];
+		[TGAT Scanlines Count] = [TGAT Font Body];
+			A = [TGAT Source Pixel Pointer];
+			[TGAT Left Side Spacing] = 0;
+			[TGAT Pixels Count] = [TGAT Font Width];
+		    "TGAT Scan First Scanline For Left Border"
+			? [A] = Typeface Limits Pattern -> TGAT Left Border Found;
+			[TGAT Left Side Spacing]+;
+			A+; [TGAT Pixels Count] ^ TGAT Scan First Scanline For Left Border;
+			[TGAT Left Side Spacing] = 0;
+			[TGAT Right Side Spacing] = 0;
+			-> TGAT Right Border Found or Left Border Not Found;
+		    "TGAT Left Border Found"
+			[TGAT Right Side Spacing] = [TGAT Pixels Count];
+			[TGAT Right Side Spacing]-;
+			A+;
+		    "TGAT Scan First Scanline For Right Border"
+			[TGAT Right Side Spacing]-;
+			? [A] = Typeface Limits Pattern -> TGAT Right Border Found or Left Border Not Found;
+			A+; [TGAT Pixels Count] ^ TGAT Scan First Scanline For Right Border;
+			[TGAT Right Side Spacing] = 0;
+	    "TGAT Right Border Found or Left Border Not Found"
+		A = [TGAT Font Width]; A < 4;
+		[TGAT Source Pixel Pointer] + A;
+		[TGAT Scanlines Count]-;
+	    "TGAT Scanlines Loop"
+		? [TGAT Scanline] >= [TGAT Display Height] -> TGAT Exit Scanlines Loop;
+		[TGAT Source Pixel Pointer] -->;
+		[TGAT Destination Pixel Pointer] -->;
+		? [TGAT Scanline] < 0 -> TGAT Skip Scanline;
+		[TGAT Pixel] = [TGAT Current Left Margin];
+		[TGAT Pixels Count] = [TGAT Font Width];
+		[TGAT Source Pixel Pointer] + [TGAT Left Side Spacing];
+		[TGAT Pixels Count] - [TGAT Left Side Spacing];
+		[TGAT Pixels Count] - [TGAT Right Side Spacing];
+		[TGAT Effective Width] = [TGAT Pixels Count];
+		    "TGAT Pixels Loop"
+			? [TGAT Pixel] < 0 -> TGAT Skip Pixel;
+			? [TGAT Pixel] >= [TGAT Display Alignment] -> TGAT Skip Scanline;
+			A = [TGAT Destination Pixel Pointer];
+			B = [TGAT Source Pixel Pointer]; B = [B];
+			=> [TGAT Effect];
+		    "TGAT Skip Pixel"
+			[TGAT Pixel]+;
+			[TGAT Source Pixel Pointer]+;
+			[TGAT Destination Pixel Pointer]+;
+			[TGAT Pixels Count] ^ TGAT Pixels Loop;
+	    "TGAT Skip Scanline"
+		<-- [TGAT Destination Pixel Pointer];
+		<-- [TGAT Source Pixel Pointer];
+		[TGAT Scanline]+;
+		A = [TGAT Font Width]; A < 4;
+		[TGAT Source Pixel Pointer] + A;
+		[TGAT Destination Pixel Pointer] + [TGAT Display Alignment];
+		[TGAT Scanlines Count] ^ TGAT Scanlines Loop;
+	    "TGAT Exit Scanlines Loop"
+	<-- A;
+	[TGAT Current Left Margin] + [TGAT Effective Width];
+	[TGAT Current Left Margin] + [TGAT InterChar Spacing];
+	A+; -> TGAT Characters Loop;
+    "TGAT End Of String"
+	end;
+
+"failed writing TGA text"
+	fail;

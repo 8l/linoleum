@@ -1,0 +1,65 @@
+
+
+
+
+	The default libraries given in "main/lib" of the compiler package "as is",
+	are limited to the libraries strictly needed for all the examples in the
+	"examples" folder to properly compile.
+
+					BE   AWARE   THAT
+
+	These libraries, save for those written by me (Alessandro Ghignola) MAY NOT
+	be up to date and the corresponding author will probably be providing more
+	recent, and eventually improved, versions on his/her home site. Also, the
+	author will probably be providing more libraries than the reduced set I may
+	have included in "main/lib" for the examples to use.
+
+	Libraries written by Alessandro Ghignola (and which are surely up to date)
+	Author's homepage: http://anywhere.i.am, http://anywherebb.com/linoleum.html
+	Author's contact: http://anywherebb.com/tellalex.html
+
+		gen/allowdd.txt		display dragging hook
+		gen/bits.txt		progressive bit streams manipulation
+		gen/bytes.txt		progressive byte streams manipulation
+		gen/dhc.txt		dynamic Huffman compressor/decompressor
+		gen/ekey.txt		enhanced keystrokes manager
+		gen/emptyfont.txt	font model, reflecting stdfont.txt format
+		gen/hotspot.txt		rectangular hotspots manager
+		gen/layers.txt		frame buffers manipulation
+		gen/lz.txt		variable Lempel-Ziv/LZ77 compr./decompr.
+		gen/pitagora.txt	3D redering engine based on triangles
+		gen/pixelfx.txt		pixel tracement effects, used by many routines
+		gen/random.txt		a Linoleum port of the Mersenne Twister pRNG
+		gen/rect.txt		gradiented rectangles filling subroutine
+		gen/region.txt		display's rectangular areas manipulation
+		gen/reserve.txt		basic dynamic memory allocation/deallocation
+		gen/stdfont.txt		standard ASCII bitmapped font support
+		gen/tga.txt		Truevision TARGA (tm) images loader
+		gen/tgafont.txt		TGA-bitmapped, proportional fonts support
+		gen/tgatile.txt		TGA region tiling subroutine
+
+		igui/defstyle.txt	iGUI's default skin and model ("Toffee" skin)
+		igui/igs.txt		iGUI skin exchanger (iGUI extension)
+		igui/igui.txt		iGUI main library
+		igui/vcons.txt		iGUI virtual console output (iGUI extension)
+
+	Libraries written by Peterpaul Klein Haneveld
+	Author's homepage: http://www.kleinhaneveld.tk
+	Author's contact: pp_kl_h@hotmail.com
+
+		ppkh/alpha.txt		PNG image loader helper
+		ppkh/bmem.txt		byte-based string manager
+		ppkh/bytes.txt		byte management library
+		ppkh/ctype.txt		routines for unit-based characters
+		ppkh/math.txt		mathematical routines
+		ppkh/png.txt		PNG image loader (and future saver)
+		ppkh/zlib.txt		ZLib decompressor (and future compressor)
+
+	Libraries written by Vladimir Klicic
+	Author's homepage: N/A
+	Author's contact: N/A
+
+		vk/lock.txt		dynamic heap management
+
+
+

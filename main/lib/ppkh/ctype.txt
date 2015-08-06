@@ -1,0 +1,286 @@
+(** &lib Ctype:
+ * This library contains routines for (unit-based) characters.
+ *
+ * &rem There are two sorts of routines:
+ * <li>character checks: These routines will check it the character is
+ * of a certain type, when it isn't, the fun fails.
+ * <li>character conversions: These routines will convert the character.
+ *
+ * &authors Peterpaul Klein Haneveld:pp_kl_h@hotmail.com
+ *
+ * &copyright 2002, 2003 by Peterpaul Klein Haneveld.
+ *
+ * &license LGPL:
+ * This library is free software; you can redistribute it and/or<BR>
+ * modify it under the terms of the GNU Lesser General Public<BR>
+ * License as published by the Free Software Foundation; either<BR>
+ * version 2.1 of the License, or (at your option) any later version.<p>
+ *
+ * This library is distributed in the hope that it will be useful,<BR>
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of<BR>
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU<BR>
+ * Lesser General Public License for more details.<p>
+ *
+ * You should have received a copy of the GNU Lesser General Public<BR>
+ * License along with This library; if not, write to the Free Software<BR>
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *)
+
+"constants"
+	STRINGTERMINATOR = 0;
+
+"workspace"
+	ctypeinput = 1;
+	ctyperesult = 1;
+
+"programme"
+(----------------------------------------------------------------------------)
+(checks)
+(----------------------------------------------------------------------------)
+(** &fun isalnum: This routine checks if @P1 is alphanumeric: {0..9 A..Z a..z}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isalnum"
+"service isalnum"
+(checks if [ctypeinput] is alphanumeric 0..9 A..Z a..z)
+	? [ctypeinput] <  30h -> isalnumno;	  (0)
+	? [ctypeinput] <= 39h -> isalnumyes;	  (9)
+	? [ctypeinput] <  41h -> isalnumno;	  (A)
+	? [ctypeinput] <= 5Ah -> isalnumyes;	  (Z)
+	? [ctypeinput] <  61h -> isalnumno;	  (a)
+	? [ctypeinput] >  7Ah -> isalnumno;	  (z)
+	"isalnumyes"
+	end;
+	"isalnumno"
+	fail;
+(
+)
+(----------------------------------------------------------------------------)
+(** &fun isalpha: This routine checks if @P1 is alphabetic: {A..Z a..z}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isalpha"
+"service isalpha"
+(checks if [ctypeinput] is alphabetic A..Z a..z)
+	? [ctypeinput] <  41h -> isalphano;	  (A)
+	? [ctypeinput] <= 5Ah -> isalphayes;	  (Z)
+	? [ctypeinput] <  61h -> isalphano;	  (a)
+	? [ctypeinput] >  7Ah -> isalphano;	  (z)
+	"isalphayes"
+	end;
+	"isalphano"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun isascii: This routine checks if @P1 is an ascii-character.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isascii"
+"service isascii"
+(checks if [ctypeinput] is an ascii-character)
+	? [ctypeinput] '>  7Fh -> isasciino;
+	end;
+	"isasciino"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun iscntrl: This routine checks if @P1 is a control-character.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"iscntrl"
+"service iscntrl"
+(checks if [ctypeinput] is a control-character, 0, 31, 127)
+	? [ctypeinput] =  00h -> iscntrlyes;
+	? [ctypeinput] =  1Fh -> iscntrlyes;
+	? [ctypeinput] =  7Fh -> iscntrlyes;
+	fail;
+	"iscntrlyes"
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun isdigit: This routine checks if @P1 is a digit, {0..9}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isdigit"
+"service isdigit"
+(checks if [ctypeinput] is a digit 0..9)
+	? [ctypeinput] <  30h -> isdigitno;	  (0)
+	? [ctypeinput] >  39h -> isdigitno;	  (9)
+	end;
+	"isdigitno"
+	fail;
+
+(
+\isdigit[input]\
+? \input < 30h -> fail;
+? \input > 39h -> fail;
+\\x;
+"fail"
+\\xx;
+\isdigit\
+)
+(----------------------------------------------------------------------------)
+(** &fun islower: This routine checks if @P1 is a lower case character, {a..z}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"islower"
+"service islower"
+(checks if [ctypeinput] is lower case a..z)
+	? [ctypeinput] <  61h -> islowerno;	  (a)
+	? [ctypeinput] >  7Ah -> islowerno;	  (z)
+	end;
+	"islowerno"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun isgraph: This routine checks if @P1 is a graphical character.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isgraph"
+"service isgraph"
+(checks if [ctypeinput] is graphical: 32 < [ctypeinput <= 126)
+	? [ctypeinput] <=  20h -> isgraphno;
+	? [ctypeinput] >  7Eh -> isgraphno;
+	end;
+	"isgraphno"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun isprint: This routine checks if @P1 is a printable character.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isprint"
+"service isprint"
+(checks if [ctypeinput] is printable: 32 <= [ctypeinput <= 126)
+(This is: isgraph OR space (32))
+	? [ctypeinput] < 20h -> isprintno;
+	? [ctypeinput] >  7Eh -> isprintno;
+	end;
+	"isprintno"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun ispunct: This routine checks if @P1 is a punctuation character.
+ * &rem This check is a combination of @Riscntrl and @Risspace.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"ispunct"
+"service ispunct"
+(checks if [ctypeinput] is punctuation character, iscntrl OR isspace)
+	=> iscntrl;
+	? ok -> ispunctyes;
+	=> isspace;
+	? ok -> ispunctyes;
+	fail;
+	"ispunctyes"
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun isspace: This routine checks if @P1 is an empty space character.
+ * &rem Empty spaces are: space, tab, cr, lf, vert.tab, ff.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isspace"
+"service isspace"
+(checks if [ctypeinput] is space, tab, cr, lf, vert.tab, ff)
+	? [ctypeinput] =  20h -> isspaceyes;	  (space)
+	? [ctypeinput] <  09h -> isspaceno;
+	? [ctypeinput] <= 0Dh -> isspaceyes;
+	"isspaceno"
+	fail;
+	"isspaceyes"
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun isupper: This routine checks if @P1 is an upper case character, {A..Z}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isupper"
+"service isupper"
+(checks if [ctypeinput] is upper case, A..Z)
+	? [ctypeinput] <  41h -> isupperno;	  (A)
+	? [ctypeinput] >  5Ah -> isupperno;	  (Z)
+	end;
+	"isupperno"
+	fail;
+
+(----------------------------------------------------------------------------)
+(** &fun isxdigit: This routine checks if @P1 is a hexadecimal character,
+ * {0..9 a..z A..F}.
+ * &param 1 in var [ctypeinput]: character to check
+ *)
+"isxdigit"
+"service isxdigit"
+(checks if [ctypeinput] is a hexadecimal character)
+	? [ctypeinput] <  30h -> isxdigitno;	  (0)
+	? [ctypeinput] <= 39h -> isxdigityes;	  (9)
+	? [ctypeinput] <  41h -> isxdigitno;	  (A)
+	? [ctypeinput] <= 46h -> isxdigityes;	  (F)
+	? [ctypeinput] <  61h -> isxdigitno;	  (a)
+	? [ctypeinput] >  66h -> isxdigitno;	  (f)
+	"isxdigityes"
+	end;
+	"isxdigitno"
+	fail;
+
+(----------------------------------------------------------------------------)
+(conversions)
+(----------------------------------------------------------------------------)
+(** &fun toascii: This routine converts @P1 to an ascii character.
+ * &param 1 in var [ctypeinput]: character to check,
+ *	  2 out var [ctyperesult]: result of conversion
+ *)
+"toascii"
+"service toascii"
+(converts [ctypeinput] to an ascii-char.)
+	[ctyperesult] = [ctypeinput];
+	[ctyperesult] & 7Fh;
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun tochar: This routine converts @P1 to a byte-character.
+ * &param 1 in var [ctypeinput]: character to check,
+ *	  2 out var [ctyperesult]: result of conversion
+ *)
+"tochar"
+"service tochar"
+(converts [ctypeinput] to a byte-character)
+	[ctyperesult] = [ctypeinput];
+	[ctyperesult] & FFh;
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun tolower: This routine converts @P1 to a lower-case character if
+ * it's an upper-case character.
+ * &param 1 in var [ctypeinput]: character to check,
+ *	  2 out var [ctyperesult]: result of conversion
+ *)
+"tolower"
+"service tolower"
+(converts [ctypeinput] to lower-case if isupper = true)
+	[ctyperesult] = [ctypeinput];
+	=> isupper;
+	? failed -> tolowerend;
+	[ctyperesult] + 20h;
+	"tolowerend"
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun toupper: This routine converts @P1 to an upper-case character if
+ * it's a lower-case character.
+ * &param 1 in var [ctypeinput]: character to check,
+ *	  2 out var [ctyperesult]: result of conversion
+ *)
+"toupper"
+"service toupper"
+(converts [ctypeinput] to upper-case if islower = true)
+	[ctyperesult] = [ctypeinput];
+	=> islower;
+	? failed -> toupperend;
+	[ctyperesult] - 20h;
+	"toupperend"
+	end;
+
+(----------------------------------------------------------------------------)
+

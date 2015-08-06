@@ -1,0 +1,433 @@
+
+      ( *** LINOLEUM Example 19: Lino Clock *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "19_linoclock.TXT", WITH THE RIGHT
+	   MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	It's a little, cute clock: shows current date and time as they
+	change, in the upper right corner of the screen. It may be a first
+	example of an "useful" program: it is placed in a position I've
+	chosen to try not disturbing windows' buttons and other things,
+	so it can overlay the desktop and show the time and date just like
+	many other "Clock" programs. I have it on right now... )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"libraries"
+	gen/allowdd; (this library is searched in the main/lib/gen folder)
+	gen/rect;    (this library is searched in the main/lib/gen folder)
+	myfont;      (this library is searched in THIS SOURCE CODE folder)
+
+"directors"
+
+	unit = 32;
+	program name = { LinoClock };
+	display width = 80;
+	display height = 40;
+	thread priority = VERY LOW PRIORITY;
+
+"constants"
+
+	DIGITS COLOR = FFFFFFh;
+
+	DIGIT CODE = 48; (ASCII code of the "0" digit, for conversions)
+	DISTANCE FROM RIGHT BORDER OF THE SCREEN = 80;
+	DISTANCE FROM TOP BORDER OF THE SCREEN = 20;
+
+"variables"
+
+	My global K = { LinoClock_Position };
+
+ vector BG Rectangle borders = 1; 1; 78; 38;
+ vector BG Rectangle gradients = 0.1f; 0.4f; 0.2f; 0.2f; 0.5f; 0.3f; 0.3f; 0.6f; 0.4f;
+
+	Write at X = 0;
+	Write at Y = 0;
+	Text color = 0;
+	Write text = 0;
+	Write with = 0;
+
+	Current character X = 0;
+	Current character Y = 0;
+
+	Offset to current character in string = 0;
+
+	Dot X = 0; Dot Y = 0; Stop X = 0; Stop Y = 0;
+	Current shape unit = 0; Dot Mask = 0;
+
+	Sync remainder = UNDEFINED;
+
+	Months = { JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC };
+
+	Date string = { ????????? };
+	Time string = { ??:??:??X };
+
+"workspace"
+
+	Data from my global K = 255;
+	Primary display = 80 mtp 40;
+
+"programme"
+
+    (see if this program was ever run before, and find where its window was)
+	[Global K Command] = K READ;
+	[Global K Name] = My global K;
+	[Global K Data] = Data from my global K;
+	isocall;
+	? failed -> linoclock was never launched before;
+	[Display X Position] = [Data from my global K plus 0];
+	[Display Y Position] = [Data from my global K plus 1];
+	isocall;
+	-> linoclock was launched before;
+
+    (moves the display to upper right corner: an interesting new thing, eh?)
+    "linoclock was never launched before"
+	[Display X Position] = [Display Physical Width];
+	[Display X Position] - [Display Width];
+	[Display X Position] - DISTANCE FROM RIGHT BORDER OF THE SCREEN;
+	[Display Y Position] = DISTANCE FROM TOP BORDER OF THE SCREEN;
+	isocall;
+
+    (sets the parameters for the video area and for the AllowDD library)
+    "linoclock was launched before"
+	[Display Origin] = Primary display;
+	[Dragging Pad] = vector BG Rectangle borders;
+
+    "next second"
+	[Rectangle Bounds] = vector BG Rectangle borders;
+	[Rectangle Gradients] = vector BG Rectangle gradients;
+	[Rectangle Target Layer] = Primary display;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	=> Rectangle;
+
+	[Timer Command] = READ TIME; isocall;
+	[Sync remainder] = [Second];
+
+	A = [Day]; A / 10; A + DIGIT CODE; [Date string plus 0] = A;
+	A = [Day]; A % 10; A + DIGIT CODE; [Date string plus 1] = A;
+
+	A = [Month]; A-; A * 3; A + Months;
+	[Date string plus 2] = [A plus 0];
+	[Date string plus 3] = [A plus 1];
+	[Date string plus 4] = [A plus 2];
+
+	A = [Year]; A / 1000; A + DIGIT CODE; [Date string plus 5] = A;
+	A = [Year]; A % 1000; A / 100; A + DIGIT CODE; [Date string plus 6] = A;
+	A = [Year]; A % 100; A / 10; A + DIGIT CODE; [Date string plus 7] = A;
+	A = [Year]; A % 10; A + DIGIT CODE; [Date string plus 8] = A;
+
+	[Write at X] = 4;
+	[Write at Y] = 4;
+	[Text color] = DIGITS COLOR;
+	[Write text] = Date string;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	B = [Hour]; B % 12;
+	? B > 0 -> Ok with hour;
+	B = 12; (00 becomes 12 in 12-hour clocks, and this is one)
+
+    "Ok with hour"
+	? [Hour] < 12 -> AM;
+	? [Hour] >= 12 -> PM;
+
+    "AM"
+	[Time string plus 8] = 65; (ASCII code of uppercase "A")
+	-> Ok with time;
+
+    "PM"
+	[Time string plus 8] = 80; (ASCII code of uppercase "P")
+	-> Ok with time;
+
+    "Ok with time"
+	A = B; A / 10; A + DIGIT CODE; [Time string plus 0] = A;
+	A = B; A % 10; A + DIGIT CODE; [Time string plus 1] = A;
+
+	A = [Minute]; A / 10; A + DIGIT CODE; [Time string plus 3] = A;
+	A = [Minute]; A % 10; A + DIGIT CODE; [Time string plus 4] = A;
+
+    (flipping second colon in time string to show clock's update ratio...
+     remember in ASCII 58 is the colon [:] and 32 is the blank space)
+	? [Time string plus 5] = 58 -> Colon ON;
+	[Time string plus 5] = 58; -> Colon OFF;
+    "Colon ON"
+	[Time string plus 5] = 32;
+    "Colon OFF"
+
+	A = [Second]; A / 10; A + DIGIT CODE; [Time string plus 6] = A;
+	A = [Second]; A % 10; A + DIGIT CODE; [Time string plus 7] = A;
+
+	[Write at X] = 4;
+	[Write at Y] = 21;
+	[Text color] = DIGITS COLOR;
+	[Write text] = Time string;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Display Command] = RETRACE; isocall;
+
+    "wait for next second"
+	[Pointer Command] = READ POINTER; isocall;
+	=> Allow Display Dragging;
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> no keypress;
+	? [Console Input] = 27 -> escape;
+    "no keypress"
+	[Process Command] = SLEEP; [Sleep Timeout] = 1000 div 25; isocall;
+	[Timer Command] = READ TIME; isocall;
+	? [Sync remainder] = [Second] -> wait for next second;
+	-> next second;
+
+    "escape"
+    (save the spot where the user moved the clock's window, upon quitting)
+	[Data from my global K plus 0] = [Display X Position];
+	[Data from my global K plus 1] = [Display Y Position];
+	[Global K Command] = K WRITE;
+	[Global K Name] = My global K;
+	[Global K Data] = Data from my global K;
+	isocall;
+	end;			(of MAIN PROGRAM)
+
+"Write TXT"
+  ( Function to write a text string at given coordinates.
+    [Write at X] = X coordinate of upper left corner of the text;
+    [Write at Y] = Y coordinate of upper left corner of the text;
+    [Text color] = color pattern for text string to be written;
+    [Write text] = pointer to a null-terminated text string;
+    [Write with] = pointer to a bit-mapped font. )
+	D = [Write text];
+	E = [Write with];
+	? D = 0 -> Failure writing text;
+	? [E] != FONT HEADER -> Failure writing text;
+	[Current character X] = [Write at X];
+	[Current character Y] = [Write at Y];
+	[Offset to current character in string] = 0;
+    "Loop for characters in string"
+	A = [Offset to current character in string];
+	A + [Write text];
+	A = [A];
+	? A = 0 -> End of text string;
+	? A < 32 -> Next character;
+	? A > 127 -> Next character;
+	B = A; B - 32; B / [E plus OFFSET FONT ALIGNMENT];
+	C = A; C - 32; C % [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] = B;
+	[Current shape unit] * [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] * [E plus OFFSET FONT BODY];
+	[Current shape unit] + C;
+	[Current shape unit] + [Write with];
+	[Current shape unit] + OFFSET FONT SHAPE;
+	[Dot Y] = [Current character Y];
+	[Stop Y] = [Current character Y];
+	[Stop Y] + [E plus OFFSET FONT BODY];
+    "Loop for scan lines in pointer shape"
+	[Dot X] = [Current character X];
+	[Stop X] = [Current character X];
+	[Stop X] + [E plus OFFSET FONT WIDTH];
+	[Dot Mask] = 80000000h;
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+    "Loop for pixels in pointer shape"
+	D = [Current shape unit];
+	? [D] - [Dot Mask] -> No dot in shape at this point;
+	A = [Dot X];
+	B = [Dot Y];
+	C = [Text color];
+	=> Plot;
+	A = [Dot X]; A + 2;
+	B = [Dot Y]; B + 2;
+	=> Plot Shadow;
+    "No dot in shape at this point"
+	[Dot Mask] @> 2;
+	[Dot X]+;
+	? [Dot X] < [Stop X] -> Loop for pixels in pointer shape;
+	[Current shape unit] + [E plus OFFSET FONT ALIGNMENT];
+	[Dot Y]+;
+	? [Dot Y] < [Stop Y] -> Loop for scan lines in pointer shape;
+	[Current character X] + [E plus OFFSET FONT WIDTH];
+	A = [Display Width];
+	? [Current character X] < A -> Next character;
+	[Current character X] = 0;
+	[Current character Y] + [E plus OFFSET FONT BODY];
+    "Next character"
+	[Offset to current character in string]+;
+	-> Loop for characters in string;
+    "End of text string"
+	end;
+    "Failure writing text"
+	fail;
+
+"Plot"
+    ( Draws a single dot.
+      Coordinates are checked.
+      All regs destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Plot Shadow"
+    ( Draws the shadow of a single dot,
+      (the famous "shadow of a dot" :),
+      by halving the brightness of the
+      background color. )
+    ( A = X coordinate; B = Y coordinate. )
+	? A '>= [Display Width] -> Shadow Out of the screen;
+	? B '>= [Display Height] -> Shadow Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] & FEFEFEh;
+	[B] > 1;
+	end;
+    "Shadow Out of the screen"
+	fail;
+
+( LinoClock is here to teach how to write a well-behaved POPUP program:
+
+	thread priority is set to minimum,
+	because such programs usually don't need much CPU power.
+
+Writing POPUP programs is generally funny: they can look nice, they don't
+waste unneeded machine resources and they're generally simple to code.
+You may begin a funny career writing small, non-encumbering popup utilities,
+like this one; lots of people, including myself, love popup things,
+as "live" decorations for the screen...
+
+Most of the program's runtime is spent in a pratically "void" loop,
+doing nothing more than checking if the user wants to quit by pressing
+the ESC key, and waiting for next second to update the time. Anyway,
+please note the following line:
+
+    [Process Command] = SLEEP; [Sleep Timeout] = 1000 div 25; isocall;
+
+...which delays each iteration of the loop by putting the program in a
+suspended state for the amount of milliseconds given by [sleep timeout]:
+Linoleum programs, by default, execute continuously, even though their
+"thread priority" setting influences their tendence to HOG the host's CPU
+time in spite of other background processes. Since GUI-driven multitasking
+systems - such as Windows and Linux - are normally spending most of their
+time in a "system idle loop", while applications are supposed to poll for
+events, Linoleum applications will "naturally" tend to drain away all of
+the CPU time remaining from higher priority applications, no matter which
+priority level you may have chosen, because Linoleum applications aren't
+event-driven, they don't poll for events, they just run continuously and
+controlling every single aspect of their execution. They do NEVER suspend
+unless the programmer wants them to: you know, full control is one of the
+most important aspects of Linoleum's phylosophy. So, when you're writing
+programs like this clock, or programs that will spend most of their time
+within loops, waiting for something to happen, you *might* allow the O.S.
+to take control back, by suspending your application's thread, and let
+other apps eventually resume execution. Specially if used in combination
+with a "very low priority" level, this kind of behaviour will cause other
+applications to respond more promptly, and also often result in less over-
+heating of the CPU, because many modern operating systems halt the CPU for
+small amounts of time while the "system idle loop" is in control. Now,
+many people, in effects, don't consider pleasant, and programmers don't
+consider "elegant", the fact that an application which is clearly doing
+nothing is using all of the CPU time to... do nothing. To conclude and try
+to give shorter and simpler explanations, use the SLEEP command to suspend
+the application for unnoticeable periods of time, *whenever* your program
+is waiting for user input or for an external event [e.g. the creation of
+a file within its folder]: your know, you'll need a LOOP to check wether
+the given event has occured, such as this clock waits for a the ESCAPE key
+to be pressed, and it's within THAT kind of loops that you might delay
+execution in favour of other duties concerning the system and/or other
+applications. However, be aware that when your program "sleeps", it is not
+guaranteed to resume execution exactly after the requested timeout has
+expired, depending on other applications' time slice, so this is not a way
+to accurately synchronize a loop, where accurate timing is needed.
+
+Another interesting topic, introduced here since Linoleum 1.13.6b, is the
+use of a "Global K" to hold the position of the clock's display, the two
+coordinates [Display X Position] and [Display Y Position]. A global K is
+a small segment of memory, merely 255 units of data, recorded in a central
+database, where 24 characters are taken by the name of the K itself, and the
+equivalent of 255 units can be freely used as a "notepad" for the
+application. Ideally, global K's are used to preserve small amounts
+of data, such as the program's configuration. Global K's take ALWAYS 255
+units of memory, and they must be read/written using appropriate buffers.
+The usefulness of global K's is extreme: they avoid the need for programs
+to save configuration files in their own folders, which'd make them lose
+their "natural" ability to work as stand-alone executable files. Plus, a
+global K can eventually be SHARED with other instances of the application,
+or even with other applications, if a group of applications agree on using
+the same conventional name for the commonly shared global K. This happens,
+in the Linoleum package, with the iGUI: the iGUI uses a global K which is
+called always in the same way, "iGUI_sleepy_windows_pos", and which is used
+to keep track of how many programs, being clients of the iGUI, have been
+iconized, and especially, WHERE their iconized windows are placed on the
+physical screen; this way, newely iconized windows can automatically avoid
+overlapping existing iconized windows. In particular, "iGUI_sleepy_windows
+_pos" is a temporary global K, which exists in the shared database only if
+one or more windows are actually present and iconized; when there are no
+more iconized windows, that global K doesn't contain anymore data and is
+automatically destroyed by the iGUI function called "Now Unslep". Where is
+the shared database of global K's? Somewhere in the system, in a position
+which depends on the particular platform. Under Win32, the database is a
+key of the "system registry", which can be monitored and accessed using the
+system's "RegEdit" utility. Specifically, Linoleum global K's are stored
+in the registry key: "HKEY_CURRENT_USER/Software/Linoleum_Shared".
+
+Another thing you can see in this final example is the use of one of the
+default libraries. Default libraries are text files, plain source code,
+placed in the "Main" folder. Differently from program-specific libraries
+such as the "myfont" library, they can be accessed from any programs.
+You can write your own default libraries, also, by just saving them into
+the "main/lib" folder along with the others...
+One library used here is "rect", which is a facility to trace gradiented
+rectangles, and to generally make shades of color. You see how library
+functions are called:
+
+	[Rectangle Bounds] = vector BG Rectangle borders;
+	[Rectangle Gradients] = vector BG Rectangle gradients;
+	[Rectangle Target Layer] = Primary display;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	=> Rectangle;
+
+that is, parameters are loaded, and the function is called. That's it.
+For what to load into the parameters, of course, you have to refer to
+the library itself.
+
+Another library is "AllowDD":
+to see what it means, try dragging the clock while it's running...
+
+Oh, and take a look to HOW VALUES ARE CONVERTED from binary to ASCII:
+there are no default libraries to perform such "easy" things, although
+something similar could be seen in the "vcons.txt" library used by the
+"network_node" program, but you CAN write your own libraries, for this and
+other purposes... never think that, if I didn't put a certain thing in the
+examples or in the libraries, it's because it can't be done... you CAN do
+anything, just it's your own duty to figure out how, using the knowledge
+you have learned throught this long travel, which finally came to an end. )

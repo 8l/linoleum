@@ -1,0 +1,669 @@
+(lock library-------------------------------------)
+
+(--------------------------------------------------
+
+------------Read the "lockdoc" file----------------
+
+Functions "end" or "fail". I advise you not to
+remove this functionality.
+
+Message [msg] can be retrieved from the last
+function called [func]. You may remove these if you
+want to, or retrieve through a register instead. It
+is always good to adapt the Linoleum library
+function call conventions to your own programming
+style.
+
+------------Read the "lockdoc" file----------------
+
+Original Copyright Vladimir Klicic on May 2002 AD.
+
+---------Also, read the "lockdoc" file-------------
+
+--------------------------------------------------)
+
+"constants"
+
+	func lock			= 00000000h;
+	func free			= 00000001h;
+	func resize			= 00000002h;
+	func set lock			= 00000003h;
+	func release lock		= 00000004h;
+	func resize lock		= 00000005h;
+
+	func success			= 00000000h;
+	func illegal request		= 00000001h;
+	func not enough memory		= 00000002h;
+	func fragmented			= 00000003h;
+	func empty			= 00000004h;
+	func not found			= 00000005h;
+	func stack hit			= 00000006h;
+
+"variables"
+
+	lock start = 0;
+	lock locked = 0;
+	lock free = 0;
+	lock total = 0;
+	lock exclusive top = 0;
+
+	resize search mode		= resize plain search;
+	resize copy mode		= bcopy;
+
+	sizefoundbefore = 0;
+	pointerfoundat = 0;
+
+	func = 0;
+	msg = 0;
+
+"programme"
+
+(lock----------------------------------------------
+IN:	A - amount units requested;
+OUT:	A - pointer to locked units
+FAIL:	A - trash;
+--------------------------------------------------)
+
+"lock"
+"malloc"
+"allocate"
+	[func] = func lock;
+	? [lock total] <= 0		-> msg empty;
+	? A <= 0			-> msg illegal request;
+	A + 2;
+	? A > [lock free]		-> msg not enough memory;
+	? [lock locked] = 0		-> lock first time;
+	B -->;
+	C -->;
+	D -->;
+	C = [lock exclusive top];
+	C - [lock locked];
+	B = [C];
+	B + [B];
+	D = C;
+	C - B;
+	? C <= 1			-> msg stack hit dcb;
+	C = [lock exclusive top];
+	C -;
+	B = [C];
+	B - [lock start];
+	B +;
+	? B >= A			-> lock first;
+	B = [C];
+	E -->;
+	C -;
+	B + [B];
+"lock next"
+	? C < D				-> lock last;
+	E = [C];
+	E - B;
+	? E >= A			-> lock before current;
+	B = [C];
+	B + [B];
+	C ^ lock next;
+"lock first time"
+	C -->;
+	B -->;
+	C = [lock exclusive top];
+	[lock free] - A;
+	C -;
+	A - 2;
+	B = [lock start];
+	[C] = [lock start];
+	[B] = A;
+	A = [lock start];
+	A +;
+	<-- B;
+	<-- C;
+	[lock locked] +;		-> msg success;
+"lock first"
+	[lock free] - A;
+	A - 2;
+	B = D;
+	A -->;
+	B -;
+	A = D;
+	C = [lock locked];		=> bcopy;
+	C = [lock exclusive top];
+	A = [lock start];
+	<-- [A];
+	C -;
+	A +;
+	<-- D;
+	[C] = [lock start];
+	[lock locked] +;
+	<-- C;
+	<-- B;				-> msg success;
+"lock last"
+	C = [D];
+	C + [C];
+	A +;
+	D - C;
+	? D < A				-> msg fragmented edcb;
+	D + C;
+	A - 3;
+	C +;
+	D -;
+	[C] = A;
+	[D] = C;
+	[lock free] - A;
+	[lock free] - 2;
+	A = C;
+	[lock locked] +;
+	A +;				-> msg success edcb;
+"lock before current"
+	[lock free] - A;
+	A - 2;
+	B = D;
+	C +;
+	A -->;
+	C -->;
+	A = D;
+	B -;
+	C - D;				=> bcopy;
+	<-- C;
+	A = C;
+	A = [A];
+	A + [A];
+	C -;
+	A +;
+	[C] = A;
+	<-- [A];
+	A +;
+	[lock locked] +;		-> msg success edcb;
+
+(free----------------------------------------------
+IN:	A - pointer to locked units vector;
+OUT:	A - unaltered;
+--------------------------------------------------)
+
+"free"
+"discard"
+	[func] = func free;
+	? [lock locked] = 0		-> msg empty;
+	A -->;
+	C -->;
+	D -->;
+	A -;
+	C = [lock exclusive top];
+	C - [lock locked];
+	D = C;
+"free next"
+	? [C] = A			-> free current;
+	C +;
+	? C < [lock exclusive top]	-> free next;
+	<-- D;
+	<-- C;
+	<-- A;				-> msg not found;
+"free current"
+	[lock free] + [A];
+	[lock free] + 2;
+	B -->;
+	A = D;
+	B = D;
+	C - A;
+	B +;				=> bcopy;
+	<-- B;
+	<-- D;
+	<-- C;
+	<-- A;
+	[lock locked] -;		-> msg success;
+
+(resize--------------------------------------------
+IN:	A - pointer,
+	B - new size;
+OUT:	A - pointer to locked units,
+	B - trash;
+FAIL:	A, B - trash;
+--------------------------------------------------)
+
+"resize"
+"realloc"
+"reallocate"
+	[func] = func resize;
+	C -->;
+	D -->;
+	E -->;				=> [resize search mode];
+	? failed			-> resize quit;
+	B -->;				=> resize lock confirm;
+	? E >= C			-> resize proceed;
+	C = E;
+"resize proceed"
+					=> [resize copy mode];
+	<-- A;
+	<-- E;
+	<-- D;
+	<-- C;
+	[msg] = func success;
+	end;
+
+(resize search-------------------------------------
+IN:	A - pointer,
+	B - new size;
+OUT:	A - old pointer,
+	B - new pointer,
+	C - remove,
+	D - target,
+	E - new size;
+FAIL:	A, B - trash;
+--------------------------------------------------)
+
+"resize search"
+"resize plain search"
+	D = [lock exclusive top];
+	C = [lock exclusive top];
+	D - [lock locked];
+	E = [lock start];
+	[sizefoundbefore] = 0;
+	[pointerfoundat] = 0;
+	C -;
+	B +;
+	E -;
+	A -;
+"resize search next"
+	? C < D				-> resize search not found;
+	E +-;
+	? [C] = A			-> resize search found ptr;
+	E + [C];
+	? E > B				-> resize search found size;
+	E = [C];
+	E + [E];
+	C ^ resize search next;
+"resize search found size"
+	[sizefoundbefore] = C;
+"resize search next ptr"
+	C -;
+	? C < D				-> resize search not found;
+	? [C] != A			-> resize search next ptr;
+"resize search found ptr"
+	[pointerfoundat] = C;
+	B -;
+	C = [C];
+	? [C] >= B			-> resize search eq ptr;
+	E = [lock free];
+	E + [C];
+	? E < B				-> resize search no mem;
+	C = [pointerfoundat];
+	C -;
+	? C < D				-> resize search put D in E;
+	E = [C];
+"resize search proceed 1"
+	C +;
+	E - [C];
+	? E > B				-> resize search eq ptr;
+	C +;
+	E -->;
+	? C >= [lock exclusive top]	-> resize search put lock start in E;
+	E = [C];
+	E + [E];
+	E +;
+"resize search proceed 2"
+	C -;
+	<-- A;
+	A + [C];
+	A - E;
+	? A > B				-> resize search ptr in E;
+	? [sizefoundbefore] != 0	-> resize search ptr before;
+	B +;
+"resize search next size"
+	E = [C];
+	E + [E];
+	C -;
+	E +-;
+	? C < D				-> resize search last;
+	E + [C];
+	? E <= B			-> resize search next size;
+	E - [C];
+	B -;
+	E +-;
+	D = C;
+	E -->;
+	D +;
+	E = B;
+	C = [pointerfoundat];
+	<-- B;
+	A = [C];
+	B + 2;
+	A +;
+	end;
+"resize search eq ptr"
+	D = [pointerfoundat];
+	E = B;
+	C = D;
+	A +;
+	B = A;
+	end;
+"resize search ptr in E"
+	E -->;
+	D = [pointerfoundat];
+	E = B;
+	C = D;
+	<-- B;
+	A = [D];
+	B +;
+	A +;
+	end;
+"resize search ptr before"
+	E = B;
+	B = [sizefoundbefore];
+	C = [pointerfoundat];
+	A = [C];
+	D = B;
+	A +;
+	B +;
+	? B >= [lock exclusive top]	-> resize search lock start in B;
+	B = [B];
+	B + [B];
+	B + 2;
+	end;
+"resize search lock start in B"
+	B = [lock start];
+	B +;
+	end;
+"resize search last"
+	E +-;
+	E +;
+	D - E;
+	? D < B				-> resize search frag;
+	E -->;
+	B -;
+	D + E;
+	C = [pointerfoundat];
+	E = B;
+	A = [D];
+	<-- B;
+	A +;
+	B +;
+	end;
+"resize search put lock start in E"
+	E = [lock start];		-> resize search proceed 2;
+"resize search put D in E"
+	E = D;				-> resize search proceed 1;
+"resize search frag"
+	[msg] = func fragmented;
+	fail;
+"resize search not found"
+	[msg] = func not found;
+	fail;
+"resize search no mem"
+	[msg] = func not enough memory;
+	fail;
+
+(resize lock confirm-------------------------------
+IN: 	A - old pointer,
+	B - new pointer,
+	C - remove,
+	D - target,
+	E - new size;
+OUT:	A - old pointer,
+	B - new pointer,
+	C - old size,
+	D - target,
+	E - new size;
+--------------------------------------------------)
+
+"resize lock confirm"
+	? C > D				-> resize lc A;
+	? C < D				-> resize lc B;
+"resize lc fix"
+	[D] = B;
+	[D] -;
+	C = [A minus 1];
+	[B minus 1] = E;
+	[lock free] - E;
+	[lock free] + C;
+	end;
+"resize lc A"
+	A -->;
+	A = C;
+	A -;
+"resize lc loop A"
+	[A] -->;
+	<-- [C];
+	A -;
+	C -;
+	? A >= D			-> resize lc loop A;
+	<-- A;				-> resize lc fix;
+"resize lc B"
+	A -->;
+	A = C;
+	A +;
+"resize lc loop B"
+	[A] -->;
+	<-- [C];
+	A +;
+	C +;
+	? A <= D			-> resize lc loop B;
+	<-- A;				-> resize lc fix;
+
+(set lock------------------------------------------
+IN: 	A - pointer to heap,
+	B - size requested,
+	C - locked already, 0 if new;
+OUT:	unaltered;
+--------------------------------------------------)
+
+"set lock"
+	[func] = func set lock;
+	? B < 3				-> msg illegal request;
+	B -->;
+	B '/ 2;
+	? C > B				-> msg illegal request B;
+	<-- B;
+	[lock start] = A;
+	[lock total] = B;
+	[lock locked] = C;
+	[lock exclusive top] = A;
+	[lock exclusive top] + B;
+	[lock free] = [lock total];
+	? C != 0			-> set lock count free;
+					-> msg success;
+"set lock count free"
+	A -->; C -->;
+	A = 0;
+	C +-;
+	C + [lock exclusive top];
+"set lock loop"
+	A + [C];
+	C +;
+	A + 2;
+	? C < [lock exclusive top]	-> set lock loop;
+	[lock free] - A;
+	<-- C; <-- A;			-> msg success;
+
+(release lock--------------------------------------
+IN:	nothing;
+OUT:	A - pointer to heap,
+	B - size requested,
+	C - locked already, 0 if new,
+FAIL:	unaltered;
+--------------------------------------------------)
+
+"release lock"
+	? [lock locked] = 0		-> msg empty;
+	[func] = func release lock;
+	A = [lock start];
+	B = [lock total];
+	C = [lock locked];
+	[lock start] = 0;
+	[lock exclusive top] = 0;
+	[lock total] = 0;
+	[lock locked] = 0;
+	[lock free] = 0;		-> msg success;
+
+(resize lock---------------------------------------
+IN:	A - size requested;
+OUT:	unaltered;
+--------------------------------------------------)
+
+"resize lock"
+	[func] = func resize lock;
+	? [lock total] = 0		-> msg illegal request;
+	? A = [lock total]		-> msg success;
+(	? A > [lock total]		-> resize lock put dif in D;)
+	? [lock locked] = 0		-> resize lock clean resize;
+	C -->; D -->; E -->;
+	D = A;
+	C = [lock exclusive top];
+	C - [lock locked];
+	D - [lock total];
+	E = [C];
+	E + [E];
+	C + D;
+	E +;
+	? E >= C			-> msg illegal request edc;
+()	? A > [lock total]		-> resize lock put dif in D;()
+"resize lock proceed"
+	A -->; B -->;
+	B = C;
+	C - D;
+	A = C;
+	C = [lock locked];		=> bcopy;
+	<-- B; <-- A;
+	[lock exclusive top] + D;
+	[lock total] + D;
+	[lock free] + D;		-> msg success edc;
+"resize lock put dif in D"
+	D = A;
+	D - [lock total];		-> resize lock proceed;
+"resize lock clean resize"
+	D = A;
+	D - [lock total];
+	[lock exclusive top] + D;
+	[lock total] + D;
+	[lock free] + D;		-> msg success;
+
+(error exit routines------------------------------)
+
+(--------------------------------------------------
+
+------------Read the "lockdoc" file----------------
+
+Should you wish to handle errors using your own
+routines, this is the place to do it. Handling the
+errors from within these exit points will improve
+your code readability and you won't need typing the
+good old "? failed ->" after each call. Unless you
+want to.
+
+------------Read the "lockdoc" file----------------
+
+--------------------------------------------------)
+
+"msg success"
+	[msg] = func success;
+	end;
+"msg illegal request"
+	[msg] = func illegal request;
+	fail;
+"msg not enough memory"
+	[msg] = func not enough memory;
+	fail;
+"msg fragmented"
+	[msg] = func fragmented;
+	fail;
+"msg empty"
+	[msg] = func empty;
+	fail;
+"msg not found"
+	[msg] = func not found;
+	fail;
+"msg stack hit"
+	[msg] = func stack hit;
+	fail;
+"resize quit"
+	<-- E;
+	<-- D;
+	<-- C;
+	fail;
+
+(error exit clean up routines---------------------)
+
+"msg stack hit dcb"
+<-- D; <-- C; <-- B;		-> msg stack hit;
+"msg fragmented edcb"
+<-- E; <-- D; <-- C; <-- B;	-> msg fragmented;
+"msg success edc"
+<-- E; <-- D; <-- C;		-> msg success;
+"msg success edcb"
+<-- E; <-- D; <-- C; <-- B;	-> msg success;
+"msg illegal request B"
+<-- B;				-> msg illegal request;
+"msg illegal request edc"
+<-- E; <-- D; <-- C;		-> msg illegal request;
+
+(string.c functions-------------------------------)
+
+(bset----------------------------------------------
+IN:	A - set to value,
+	B - from,
+	C - size;
+OUT:	A - set to value,
+	B - rubbish,
+	C - zero;
+--------------------------------------------------)
+
+"bset"
+	? C > 0			-> bset yes;
+	end;
+"bset next"
+	B +;
+"bset yes"
+	[B] = A;
+	C ^ bset next;
+"bset exit"
+	end;
+
+(bcopy---------------------------------------------
+IN:	A - source,
+	B - destination,
+	C - size;
+OUT:	A, B - rubbish,
+	C - zero;
+--------------------------------------------------)
+
+"bcopy"
+	? A > B				-> bcopy down;
+	? A < B				-> bcopy up;
+"bcopy exit"
+	end;
+
+(bcopy up------------------------------------------
+IN:	A - source,
+	B - destination,
+	C - size;
+OUT:	A, B - unaltered,
+	C - zero;
+--------------------------------------------------)
+
+"bcopy up"
+	? C <= 0			-> bcopy exit;
+	A + C;
+	B + C;
+"bcopy up next"
+	A -;
+	B -;
+	[A] -->;
+	<-- [B];
+	C ^ bcopy up next;
+	end;
+
+(bcopy down----------------------------------------
+IN:	A - source,
+	B - destination,
+	C - size;
+OUT:	A, B - rubbish,
+	C - zero
+--------------------------------------------------)
+
+"bcopy down"
+	? C > 0				-> bcopy down go;
+	end;
+"bcopy down next"
+	A +;
+	B +;
+"bcopy down go"
+	[A] -->;
+	<-- [B];
+	C ^ bcopy down next;
+	end;

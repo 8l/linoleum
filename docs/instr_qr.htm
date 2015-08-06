@@ -1,0 +1,2047 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        Instructions<br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        L.in.oleum Atomic Instructions Quick Reference<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<center>
+<table cellpadding = 2 cellspacing = 2 border = 0 align = "center">
+        <tr>
+        <td><a class = "inverse" title = "bitwise logical NOT" href = "#PATTERN1">&nbsp;!&nbsp;</a></td>
+        <td><a class = "inverse" title = "unconditioned jump" href = "#PATTERN2">&nbsp;-&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "call to subroutine" href = "#PATTERN3">&nbsp;=&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "pop from stack" href = "#PATTERN4">&nbsp;&lt;--&nbsp;</a></td>
+        <td><a class = "inverse" title = "add to stack pointer" href = "#PATTERN5">&nbsp;$+&nbsp;</a></td>
+        <td><a class = "inverse" title = "subtract from stack pointer" href = "#PATTERN6">&nbsp;$-&nbsp;</a></td>
+        <td><a class = "inverse" title = "sine" href = "#PATTERN7">&nbsp;~&nbsp;</a></td>
+        </tr>
+        <tr>
+        <td><a class = "inverse" title = "cosine" href = "#PATTERN8">&nbsp;~~&nbsp;</a></td>
+        <td><a class = "inverse" title = "square root" href = "#PATTERN9">&nbsp;/~&nbsp;</a></td>
+        <td><a class = "inverse" title = "push on stack" href = "#PATTERN10">&nbsp;--&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer negation" href = "#PATTERN11">&nbsp;+-&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point negation" href = "#PATTERN12">&nbsp;++--&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer increment" href = "#PATTERN13">&nbsp;+&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer decrement" href = "#PATTERN14">&nbsp;-&nbsp;</a></td>
+        </tr>
+        <tr>
+        <td><a class = "inverse" title = "integer absolute value" href = "#PATTERN15">&nbsp;||&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point absolute value" href = "#PATTERN16">&nbsp;|| ||&nbsp;</a></td>
+        <td><a class = "inverse" title = "assignment from application workspace to application workspace" href = "#PATTERN17">&nbsp;=&nbsp;</a></td>
+        <td><a class = "inverse" title = "assignment from stack space to application workspace" href = "#PATTERN21">&nbsp;=$:&nbsp;</a></td>
+        <td><a class = "inverse" title = "assignment from application workspace to stack space" href = "#PATTERN22">&nbsp;$:=&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise logical AND" href = "#PATTERN23">&nbsp;&amp;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise logical OR" href = "#PATTERN24">&nbsp;|&nbsp;</a></td>
+        </tr>
+        <tr>
+        <td><a class = "inverse" title = "bitwise logical XOR" href = "#PATTERN25">&nbsp;#&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise unsigned shift right" href = "#PATTERN26">&nbsp;&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise signed shift right" href = "#PATTERN27">&nbsp;&gt;&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise unsigned shift left" href = "#PATTERN28">&nbsp;&lt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise signed shift left" href = "#PATTERN29">&nbsp;&lt;&lt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise rotate right" href = "#PATTERN30">&nbsp;@&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "bitwise rotate left" href = "#PATTERN31">&nbsp;&lt;@&nbsp;</a></td>
+        </tr>
+        <tr>
+        <td><a class = "inverse" title = "integer addition" href = "#PATTERN32">&nbsp;+&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer subtraction" href = "#PATTERN33">&nbsp;-&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer unsigned multiplication" href = "#PATTERN34">&nbsp;'*&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer unsigned division" href = "#PATTERN35">&nbsp;'/&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer unsigned remainder" href = "#PATTERN36">&nbsp;'%&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer signed multiplication" href = "#PATTERN37">&nbsp;*&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer signed division" href = "#PATTERN38">&nbsp;/&nbsp;</a></td>
+        </tr>
+        <tr>
+        <td><a class = "inverse" title = "integer signed remainder" href = "#PATTERN39">&nbsp;%&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point addition" href = "#PATTERN40">&nbsp;++&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point subtraction" href = "#PATTERN41">&nbsp;--&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point multiplication" href = "#PATTERN42">&nbsp;**&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point division" href = "#PATTERN43">&nbsp;//&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point to integer conversion" href = "#PATTERN44">&nbsp;=,&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer to floating-point conversion" href = "#PATTERN45">&nbsp;,=&nbsp;</a></td>
+        </tr>
+</table>
+
+<hr size = 1 width = "100%" color = "white">
+
+<a href = "#BWCD">BITWISE COMPARISON DIRECTIVES</a><br>
+<a href = "#ICD">INTEGER COMPARISON DIRECTIVES</a><br>
+<a href = "#FPCD">FLOATING-POINT COMPARISON DIRECTIVES</a><br>
+<a href = "#PPD">PREPROCESSOR DIRECTIVES</a>
+
+<hr size = 1 width = "100%" color = "white">
+
+Advanced instructions implemented since v1.13.9b<br><br>
+
+<table cellpadding = 2 cellspacing = 2 border = 0 align = "center">
+        <tr>
+        <td><a class = "inverse" title = "integer unsigned split" href = "#PATTERN36A">&nbsp;'/%&nbsp;</a></td>
+        <td><a class = "inverse" title = "integer signed split" href = "#PATTERN39A">&nbsp;/%&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point partial remainder" href = "#PATTERN43A">&nbsp;%%&nbsp;</a></td>
+        <td><a class = "inverse" title = "floating-point partial arc tangent" href = "#PATTERN45A">&nbsp;^/&nbsp;</a></td>
+        <td><a class = "inverse" title = "exchange values" href = "#PATTERN45B">&nbsp;&lt;&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "no operation (nop)" href = "#PATTERN46">&nbsp;/-/&nbsp;</a></td>
+        <td><a class = "inverse" title = "push all registers" href = "#PATTERN47">&nbsp;----&gt;&nbsp;</a></td>
+        <td><a class = "inverse" title = "pop all registers" href = "#PATTERN48">&nbsp;&lt;----&nbsp;</a></td>
+        </tr>
+</table>
+
+<hr size = 1 width = "100%" color = "white">
+
+</center>
+
+<dl>
+        <dt>INSTRUCTIONS ORGANIZATION</dt>
+                <dd>Instructions are separated by a single
+                semicolon. The semicolon must be always placed
+                at the end of each instruction: no other placement
+                is allowed for that sign. All instructions must be
+                terminated by a semicolon, including the last
+                instruction in a program and including special
+                tags such as the <i>isocall</i> shortcut.</dd>
+        <br><br>
+        <dt>SYMBOLIC CODE</dt>
+                <dd>...or <i>symbolic instruction code</i>: all Linoleum
+                instructions are represented by one or more signs; signs
+                like the dash, the plus sign, the exclamation point, and
+                many others. One instruction's symbolic code is formed by
+                <i>ALL OF THE SIGNS</i> found before the terminal semicolon.</dd>
+        <br><br>
+        <dt>MONOLITHIC INSTRUCTIONS</dt>
+                <dd>Monolithic instructions are instructions having no operands,
+                whose syntax is therefore always the same. The ----&gt; and &lt;----
+                instructions, for instance, are monolithic, and another one is the
+                alternative to the "nop" tag: the /-/ instruction.</dd>
+        <br><br>
+        <dt>UNILATERAL INSTRUCTIONS</dt>
+                <dd>Unilateral intructions are instructions having only
+                one operand. They are divided in two other groups:
+                <i>prefixes</i> and <i>suffixes</i>.
+                Ideally, prefixes preceed the only operand, and
+                suffixes follow the operand. Then there are a couple of
+                special cases, the instructions to make absolute values,
+                which are called <i>wrap-around instructions</i>.</dd>
+        <br><br>
+        <dt>BILATERAL INSTRUCTIONS</dt>
+                <dd>Instructions having two operands, whose symbolic code
+                separates the operands. The first operand, the one to the left
+                of the symbolic code, is normally called the <i>destination
+                operand</i>, and the second operand is called the
+                <i>source operand</i>. However, there are a few cases where
+                both operands hold the result of the instruction, and could be
+                both considered destination operands: the typical example is
+                given by the /% instruction ("integer signed split"), but also
+                &lt;&gt; ("exchange values") works this way.</dd>
+        <br><br>
+        <dt>COMPARISON DIRECTIVES</dt>
+                <dd>They are the ONLY kind of instructions allowing for
+                three operands, but the last operand is always a code label.
+                Comparison directives are used to compare two values and
+                jump to a destination label if the result of the comparison
+                is true.</dd>
+        <br><br>
+        <dt>PREPROCESSED DIRECTIVES</dt>
+                <dd>Are special instructions which, in some way, don't
+                respect the normal syntax rules. They are the
+                <i>integer loop until zero</i>, a special comparison
+                directive having only two operands, the <i>jump if success</i>
+                and the <i>jump if failed</i>, another two special comparison
+                directives, this time having only one operand.</dd>
+        <br><br>
+        <dt>SHORTCUT TAGS</dt>
+                <dd>There are only five shortcut tags: <i>isocall</i>,
+                <i>nop</i>, <i>end</i> and <i>fail</i>, plus a sixth one,
+                <i>show registers</i>, which is a synonim of <i>fail</i> anyway.
+                Shortcut tags are text-only instructions having no visible symbolic
+                code: in reality, there are symbolic codes for them, but their
+                textual versions are easier to type and the compiler automatically
+                translates them to predefined symbolic codes.</dd>
+        <br><br>
+</dl>
+
+<br><br><br>
+<center>
+        INSTRUCTIONS IN DETAIL - OPERANDS LEGEND<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt>IMM</dt>
+                <dd>Immediate value, or constant.</dd>
+        <br><br>
+        <dt>LAB</dt>
+                <dd>Code label.</dd>
+        <br><br>
+        <dt>REG</dt>
+                <dd>Any of the five CPU registers mapped by A, B, C, D, E.</dd>
+        <br><br>
+        <dt>[VAR]</dt>
+                <dd>The content of a variable whose name is <i>VAR</i>.</dd>
+        <br><br>
+        <dt>[VAR+d]</dt>
+                <dd>The content of the memory unit pointed by the effective
+                address of variable <i>VAR</i>, plus the integer relative
+                displacement represented by &quot;d&quot;.
+                The <i>letter d</i> represents an integer constant value,
+                and <i>not</i> the value of register D.</dd>
+        <br><br>
+        <dt>[REG]</dt>
+                <dd>The content of the memory unit pointed by the actual
+                value of register <i>REG</i>, which can be one of the five
+                CPU registers mapped by A, B, C, D, E.</dd>
+        <br><br>
+        <dt>[REG+d]</dt>
+                <dd>The content of the memory unit pointed by the actual
+                value of register <i>REG</i> (any of A, B, C, D or E),
+                plus the relative displacement represented by &quot;d&quot;.
+                The <i>letter d</i> represents an integer constant value,
+                and <i>not</i> the value of register D.</dd>
+</dl>
+
+<br><br><br>
+<center>
+        INSTRUCTIONS IN DETAIL - INSTRUCTIONS DESCRIPTION<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+
+
+
+
+<a name = "PATTERN1"></a>
+<dt>BIT-WISE LOGICAL NOT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: exclamation point<br>
+        Official acronym: NOT<br>
+        Expanded acronym: logical NOT.<br>
+        Symbol: <span class="pattern">!</span>
+        Syntax: <span class="pattern">! OP1;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        complements all the bits of OP1,
+        zeroes become ones, ones become zeroes.
+        <br><br>
+        Note(s):
+        It won't perform the negation of an integer value, just complements
+        the bits. For performing two's complement, use the +- instruction.
+</dd><br><br>
+
+<a name = "PATTERN2"></a>
+<dt>UNCONDITIONED JUMP<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: minus, greater than<br>
+        Official acronym: JMP.r<br>
+        Expanded acronym: JuMP, relative<br>
+        Symbol: <span class="pattern">-&gt;</span>
+        Syntax: <span class="pattern">-&gt; OP1;</span><br>
+        Allowed operands (OP1): LAB, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Jumps to the location associated with specified label or to the
+        location contained in OP1, transferring execution to that location.
+</dd><br><br>
+
+<a name = "PATTERN3"></a>
+<dt>CALL TO SUBROUTINE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: equal, greater than<br>
+        Official acronym: JSR<br>
+        Expanded acronym: Jump to SubRoutine<br>
+        Symbol: <span class="pattern">=&gt;</span>
+        Syntax: <span class="pattern">=&gt; OP1;</span><br>
+        Allowed operands (OP1): LAB, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Stores next instruction's pointer to stack memory, and then
+        jumps to the location associated with specified label or to the
+        location contained in OP1, transferring execution to that location.
+        <br><br>
+        Note(s):
+        To return from a subroutine call, use the "end", "fail" or "leave" tags.
+</dd><br><br>
+
+<a name = "PATTERN4"></a>
+<dt>POP FROM STACK<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: less than, minus, minus<br>
+        Official acronym: POP<br>
+        Expanded acronym: POP from stack<br>
+        Symbol: <span class="pattern">&lt;--</span>
+        Syntax: <span class="pattern">&lt;-- OP1;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Extracts a value from the top of the stack and stores it into OP1.
+        After that, the "top of stack" pointer is increased by one unit.
+        <br><br>
+        Note(s):
+        Use the --&gt; (PUSH) instruction to save a single value to the stack.
+        Theoretically, you should always save a value before using &lt;-- and,
+        more precisely, for each push there should be a corresponding pop.
+</dd><br><br>
+
+<a name = "PATTERN5"></a>
+<dt>ADD TO STACK POINTER<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: dollar, plus<br>
+        Official acronym: ASP<br>
+        Expanded acronym: Add to Stack Pointer<br>
+        Symbol: <span class="pattern">$ +</span>
+        Syntax: <span class="pattern">$ + OP1;</span><br>
+        Allowed operands (OP1): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Adds value of/in OP1 to the actual &quot;top of stack&quot; pointer.
+        This instruction should be used only by expert programmers and is
+        potentially dangerous for application and system stability.
+</dd><br><br>
+
+<a name = "PATTERN6"></a>
+<dt>SUBTRACT FROM STACK POINTER<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: dollar, minus<br>
+        Official acronym: SSP<br>
+        Expanded acronym: Subtract from Stack Pointer<br>
+        Symbol: <span class="pattern">$ -</span>
+        Syntax: <span class="pattern">$ - OP1;</span><br>
+        Allowed operands (OP1): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Subtracts value of/in OP1 from the actual &quot;top of stack&quot; pointer.
+        This instruction should be used only by expert programmers and is
+        potentially dangerous for application and system stability.
+</dd><br><br>
+
+<a name = "PATTERN7"></a>
+<dt>FLOATING-POINT SINE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: tilde<br>
+        Official acronym: SIN<br>
+        Expanded acronym: SINe<br>
+        Symbol: <span class="pattern">~</span>
+        Syntax: <span class="pattern">~ OP1;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Floating-point exclusive function,
+        calculates sine of OP1 and stores the result back in OP1.
+        <br><br>
+        Note(s):
+        OP1 represents an angle, and it's given in RADIANS.
+</dd><br><br>
+
+<a name = "PATTERN8"></a>
+<dt>FLOATING-POINT COSINE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: tilde, tilde<br>
+        Official acronym: COS<br>
+        Expanded acronym: COSine<br>
+        Symbol: <span class="pattern">~~</span>
+        Syntax: <span class="pattern">~~ OP1;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Floating-point exclusive function,
+        calculates cosine of OP1 and stores the result back in OP1.
+        <br><br>
+        Note(s):
+        OP1 represents an angle, and it's given in RADIANS.
+</dd><br><br>
+
+<a name = "PATTERN9"></a>
+<dt>FLOATING-POINT SQUARE ROOT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, prefix<br>
+        Symbolic code: slash, tilde<br>
+        Official acronym: SQR<br>
+        Expanded acronym: SQuare Root<br>
+        Symbol: <span class="pattern">/~</span>
+        Syntax: <span class="pattern">/~ OP1;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Floating-point exclusive function,
+        calculates square root of OP1 and stores the result back in OP1.
+        <br><br>
+        Note(s):
+        OP1 must be positive.
+        If not, the funtion will give a result identified by a very special
+        internal FPU code called N.A.N (Not-A-Number), presumably representing
+        an imaginary number.
+</dd><br><br>
+
+<a name = "PATTERN10"></a>
+<dt>PUSH ON STACK<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, suffix<br>
+        Symbolic code: equal, equal, greater than<br>
+        Official acronym: PSH<br>
+        Expanded acronym: PuSH on stack<br>
+        Symbol: <span class="pattern">--&gt;</span>
+        Syntax: <span class="pattern">OP1--&gt;;</span><br>
+        Allowed operands (OP1): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Stores OP1 onto the stack, then decrements the &quot;top of the stack&quot;
+        pointer by one unit. Its counterpart is the &lt;-- (POP) instruction.
+        <br><br>
+        Note(s):
+        You MUST pop all the values out of the stack before ending your program:
+        if not, the system will certainly crash (you can bet). So remember to use
+        --&gt; and &lt;-- carefully: for each --&gt; there must be a corresponding &lt;--.
+</dd><br><br>
+
+<a name = "PATTERN11"></a>
+<dt>TWO's COMPLEMENT INTEGER NEGATION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, suffix<br>
+        Symbolic code: plus, minus<br>
+        Official acronym: NEG.i<br>
+        Expanded acronym: NEGate, integer<br>
+        Symbol: <span class="pattern">+-</span>
+        Syntax: <span class="pattern">OP1+-;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        According to the rule of two's complement, it first complements all
+        the bits in OP1 and finally adds one unit to the result. This way,
+        for instance, a value like 123 becomes minus 123.
+</dd><br><br>
+
+<a name = "PATTERN12"></a>
+<dt>FLOATING-POINT CHANGE SIGN (NEGATION)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, suffix<br>
+        Symbolic code: plus, plus, minus, minus<br>
+        Official acronym: NEG.f<br>
+        Expanded acronym: NEGate, float<br>
+        Symbol: <span class="pattern">++--</span>
+        Syntax: <span class="pattern">OP1++--;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Uses the <i>change sign</i> function of the built-in FPU to negate the value
+        of OP1. Positive values become negative and vice-versa.
+</dd><br><br>
+
+<a name = "PATTERN13"></a>
+<dt>INTEGER UNILATERAL ADDITION (INCREMENT)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, suffix<br>
+        Symbolic code: plus<br>
+        Official acronym: INC.i<br>
+        Expanded acronym: INCrement, integer<br>
+        Symbol: <span class="pattern">+</span>
+        Syntax: <span class="pattern">OP1+;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Increments the value of OP1 by one unit.
+        Faster on many processors than the INTEGER BILATERAL ADDITION, taking
+        place when you specify a second operand after the single plus sign.
+</dd><br><br>
+
+<a name = "PATTERN14"></a>
+<dt>INTEGER UNILATERAL SUBTRACTION (DECREMENT)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, suffix<br>
+        Symbolic code: minus<br>
+        Official acronym: DEC.i<br>
+        Expanded acronym: DECrement, integer<br>
+        Symbol: <span class="pattern">-</span>
+        Syntax: <span class="pattern">OP1-;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Decrements the value of OP1 by one unit.
+        Faster on many processors than the INTEGER BILATERAL SUBTRACTION,
+        used when you specify a second operand after the single minus sign.
+</dd><br><br>
+
+<a name = "PATTERN15"></a>
+<dt>TWO's COMPLEMENT INTEGER ABSOLUTE VALUE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, wrap-around instruction<br>
+        Symbolic code: vertical bar, vertical bar<br>
+        Official acronym: ABS.i<br>
+        Expanded acronym: ABSolute value, integer<br>
+        Symbol: <span class="pattern">||</span>
+        Syntax: <span class="pattern">|OP1|;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Tests most significant bit of OP1.
+        If the bit is set, performs an integer negation on OP1.
+        If the bit is not set, leaves the value of OP1 as it is.
+        Due to two's complement rules, most significant bit is the sign bit.
+        Thus, negative values become positive values, while positive values
+        are left as they are.
+</dd><br><br>
+
+<a name = "PATTERN16"></a>
+<dt>FLOATING-POINT ABSOLUTE VALUE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: unilateral instruction, wrap-around instruction<br>
+        Symbolic code: vertical bar, vertical bar, vertical bar, vertical bar<br>
+        Official acronym: ABS.f<br>
+        Expanded acronym: ABSolute value, float<br>
+        Symbol: <span class="pattern">||||</span>
+        Syntax: <span class="pattern">||OP1||;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Uses the <i>absolute value</i> function of the built-in FPU to find the
+        absolute value of OP1. Negative values become positive values,
+        while positive values are left as they are.
+</dd><br><br>
+
+<a name = "PATTERN17"></a>
+<dt>ASSIGNMENT FROM APPLICATION WORKSPACE TO APPLICATION WORKSPACE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: equal<br>
+        Official acronym: SET.r<br>
+        Expanded acronym: SET memory or register, relative<br>
+        Symbol: <span class="pattern">=</span>
+        Syntax: <span class="pattern">OP1 = OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Transfers value of OP2 (source operand) to OP1 (destination operand).
+</dd><br><br>
+
+<a name = "PATTERN21"></a>
+<dt>ASSIGNMENT FROM STACK SPACE TO APPLICATION WORKSPACE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: equal, dollar, colon<br>
+        Official acronym: GES<br>
+        Expanded acronym: GEt from Stack<br>
+        Symbol: <span class="pattern">=$:</span>
+        Syntax: <span class="pattern">OP1 = $:OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM (immediate integer displacement)
+        <br><br>
+        Description:
+        Transfers value of stack location pointed by the actual <i>top of stack</i>,
+        PLUS the immediate displacement OP2, to OP1. Contrarily to the next one, this
+        instruction is usually harmless and needs no particular warnings.
+</dd><br><br>
+
+<a name = "PATTERN22"></a>
+<dt>ASSIGNMENT FROM APPLICATION WORKSPACE TO STACK SPACE<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: dollar, colon, equal<br>
+        Official acronym: SES<br>
+        Expanded acronym: SEt on Stack<br>
+        Symbol: <span class="pattern">$:=</span>
+        Syntax: <span class="pattern">$:OP1 = OP2;</span><br>
+        Allowed operands (OP1): IMM (immediate integer displacement)
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Transfers value of OP2 to the stack location pointer by top of stack
+        PLUS the immediate displacement OP1. This instruction should be used
+        by expert programmers and is potentially dangerous for application
+        and system stability.
+</dd><br><br>
+
+<a name = "PATTERN23"></a>
+<dt>BIT-WISE LOGICAL AND<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: ampersand<br>
+        Official acronym: AND<br>
+        Expanded acronym: logical AND<br>
+        Symbol: <span class="pattern">&amp;</span>
+        Syntax: <span class="pattern">OP1 &amp; OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Performs a bit-wise logical AND on OP1, using OP2 as the binary mask.
+        According to binary logic, the result is stored back to OP1.
+        <br><br>
+        Table of effects:
+        The following table shows the effects of a logical AND for all
+        the combinations of bits which may be part of OP1 and OP2.
+        <br><br>
+        <table cellpadding = 2 cellspacing = 0 border = 1 bordercolor = "#AACCFF">
+                <tr><td>OP1</td><td>AND </td><td>OP2</td><td>RESULT</td></tr>
+                <tr><td> 1 </td><td>&amp</td><td> 1 </td><td> 1 </td></tr>
+                <tr><td> 1 </td><td>&amp</td><td> 0 </td><td> 0 </td></tr>
+                <tr><td> 0 </td><td>&amp</td><td> 1 </td><td> 0 </td></tr>
+                <tr><td> 0 </td><td>&amp</td><td> 0 </td><td> 0 </td></tr>
+        </table>
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To zero certain bits inside OP1.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A & FFFFFFF0h;<br>
+        Result of the example:<br>
+        the four least significant bits of register A are zeroed.
+        </li>
+        <br><br>
+        <li>
+        To align values to boundaries which are powers of two.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A & FFFFFFFCh;<br>
+        Result of the example:<br>
+        the value of register A is truncated to be a multiple of 4.
+        </li>
+        <br><br>
+        <li>
+        To perform fast arithmetics modulus (remainder).<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A & Fh;<br>
+        Result of the example:<br>
+        the value of register A becomes the remainder
+        of the division of its initial value by 16.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN24"></a>
+<dt>BIT-WISE LOGICAL OR (INCLUSIVE OR)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: vertical bar (pipe)<br>
+        Official acronym: OR<br>
+        Expanded acronym: logical OR<br>
+        Symbol: <span class="pattern">|</span>
+        Syntax: <span class="pattern">OP1 | OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Performs a bit-wise logical OR on OP1, using OP2 as the binary mask.
+        According to binary logic, the result is stored back to OP1.
+        <br><br>
+        Table of effects:
+        The following table shows the effects of a logical OR for all
+        the combinations of bits which may be part of OP1 and OP2.
+        <br><br>
+        <table cellpadding = 2 cellspacing = 0 border = 1 bordercolor = "#AACCFF">
+                <tr><td>OP1</td><td>OR </td><td>OP2</td><td>RESULT</td></tr>
+                <tr><td> 1 </td><td> | </td><td> 1 </td><td> 1 </td></tr>
+                <tr><td> 1 </td><td> | </td><td> 0 </td><td> 1 </td></tr>
+                <tr><td> 0 </td><td> | </td><td> 1 </td><td> 1 </td></tr>
+                <tr><td> 0 </td><td> | </td><td> 0 </td><td> 0 </td></tr>
+        </table>
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To merge some bit-fields from two or more values,
+        and to perform multiple checks on bits coming from two or more values
+        (by performing logical OR and then using a bit-wise TEST directive).<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A | B;<br>
+        Result of the example:<br>
+        all bits in register B which are set to 1 will cause the corresponding bits
+        in register A to become 1; if a certain bit in register A is already set
+        to 1, it remains the same.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN25"></a>
+<dt>BIT-WISE LOGICAL XOR (EXCLUSIVE OR)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: hash<br>
+        Official acronym: XOR<br>
+        Expanded acronym: logical eXclusive OR<br>
+        Symbol: <span class="pattern">#</span>
+        Syntax: <span class="pattern">OP1 # OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Performs a bit-wise logical eXclusive OR on OP1, using OP2 as the binary mask.
+        According to binary logic, the result is stored back to OP1.
+        <br><br>
+        Table of effects:
+        The following table shows the effects of a logical eXclusive OR for all
+        the combinations of bits which may be part of OP1 and OP2.
+        <br><br>
+        <table cellpadding = 2 cellspacing = 0 border = 1 bordercolor = "#AACCFF">
+                <tr><td>OP1</td><td>XOR</td><td>OP2</td><td>RESULT</td></tr>
+                <tr><td> 1 </td><td> # </td><td> 1 </td><td> 0 </td></tr>
+                <tr><td> 1 </td><td> # </td><td> 0 </td><td> 1 </td></tr>
+                <tr><td> 0 </td><td> # </td><td> 1 </td><td> 1 </td></tr>
+                <tr><td> 0 </td><td> # </td><td> 0 </td><td> 0 </td></tr>
+        </table>
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To check if a bitfield - enclosed in the same position within two
+        values - contains the same configuration of bits in both values.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A # B;<br>
+        Result of the example:<br>
+                all bits in register A, having the same configuration as the
+                corresponding bits in register B, are set to zero. All bits not
+                having the same configuration between A and B are set to one.
+        </li>
+        <br><br>
+        <li>
+        To complement single bits (like flags).<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A # 40h;<br>
+        Result of the example:<br>
+                bit number 6 (seventh bit, the first bit being bit number zero)
+                in register A is complemented. If it's zero, it's set to one,
+                and vice-versa.
+        </li>
+        <br><br>
+        <li>
+        As an alternate and usually more compact way to zero a value,
+        XORing a value with ITSELF means obtaining a result of zero.
+        To set all bits of register A to zero you could certainly use,
+        for instance, a simple instruction like &quot;A = 0;&quot; but it would take
+        up to 5 bytes of code. Instead, using &quot;A # A&quot; will do the same thing
+        and having the same speed, but will take ONLY 2 BYTES.
+        However, this technique works only with registers: you could XOR a variable
+        with itself, but you wouldn't reduce the space taken for setting that
+        variable to zero with a normal &quot;[variable] = 0&quot;.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A # A;<br>
+        Result of the example:<br>
+                all bits of register A are zeroed.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN26"></a>
+<dt>BIT-WISE UNSIGNED SHIFT RIGHT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: greater than<br>
+        Official acronym: SHR<br>
+        Expanded acronym: SHift bits Right<br>
+        Symbol: <span class="pattern">&gt;</span>
+        Syntax: <span class="pattern">OP1 &gt; OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Shifts all the bits in OP1 right by OP2 places, filling leftmost bits
+        with zeroes.
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To divide unsigned integer values by a power of two,
+        in an incredibly FAST way.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A &gt; 3;<br>
+        Result of the example:<br>
+                The value of A (providing it's integer and unsigned on entry)
+                is divided by <i>2 raised to the power of 3</i> (because OP2 is 3),
+                resulting in the same effect of &quot;A / 8;&quot; but it's much faster
+                than the true integer division (it's as much as 42 times faster on a
+                Pentium, for example).
+        </li>
+        </ul>
+        <br><br>
+        Note(s):
+        If you need to divide this way a SIGNED value, read on the next...
+</dd><br><br>
+
+<a name = "PATTERN27"></a>
+<dt>BIT-WISE SIGNED SHIFT RIGHT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: greater than, greater than<br>
+        Official acronym: SAR<br>
+        Expanded acronym: Shift Arithmetics Right<br>
+        Symbol: <span class="pattern">&gt;&gt;</span>
+        Syntax: <span class="pattern">OP1 &gt;&gt; OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Shifts all the bits in OP1 right by OP2 places, filling leftmost bits
+        by repeating the leftmost bit from OP1, so that the sign of OP1 is
+        not affected by the operation.
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To divide signed integer values by a power of two,
+        in an incredibly FAST way.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A &gt;&gt; 5;<br>
+        Result of the example:<br>
+                The value of A (providing it's integer on entry)
+                is divided by <i>2 raised to the power of 5</i> (because OP1 is 5),
+                resulting in the same effect of &quot;A / 32;&quot; but it's much faster
+                (it's exactly as fast as the above instruction, in respect to a true division).
+        </li>
+        </ul>
+        <br><br>
+        Note(s):
+        Let's remark a fact that may create confusion otherwise: you have to
+        use &gt;&gt; instead of &gt; when the value you're shifting right MAY BE a
+        negative integer number. If it's positive, however, it will behave
+        correctly. The &gt; instruction instead, can ONLY shift positive values.
+        <br><br>
+        WARNING: this &quot;trick&quot; won't give the correct result when the source
+        operand is minus 1. In this particular case, the correct result of an
+        integer division by 2 of value -1 should give zero, while shifting it
+        right by one place will STILL give -1.
+</dd><br><br>
+
+<a name = "PATTERN28"></a>
+<a name = "PATTERN29"></a>
+<dt>BIT-WISE SIGNED/UNSIGNED SHIFT LEFT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: less than<br>
+        <i>Synonim: less than, less than</i><br>
+        Official acronym: SHL<br>
+        Expanded acronym: SHift bits Left<br>
+        Symbol: <span class="pattern">&lt;</span>
+        Alternate symbol: <span class="pattern">&lt;&lt;</span>
+        Syntax: <span class="pattern">OP1 &lt; OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Shifts all the bits in OP1 left by OP2 places, filling rightmost bits
+        with zeroes.
+        <br><br>
+        <u>Suggested typical use(s):</u><br><br>
+        <ul>
+        <li>
+        To multiply signed and unsigned integer values by a power of two,
+        faster than a normal multiplication.<br>
+        Example:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A &lt; 4;<br>
+        Result of the example:<br>
+                The value of A (providing it's integer on entry)
+                is multiplied by <i>2 raised to the power of 4</i> (because OP2 is 4),
+                resulting in the same effect of &quot;A * 16;&quot; but faster (10 times
+                faster than a true integer multiplication on a Pentium).
+        </li>
+        </ul>
+        <br><br>
+        Note(s):
+        Differently from shifting right, such multiplications never affect
+        the sign of the operand, as long as the result of the multiplication
+        fits the integer range. The &lt;&lt; synonym is here just for completion,
+        but it translates to the same CPU instruction (SHL on Intel's 80x86/Pentium processors).
+</dd><br><br>
+
+<a name = "PATTERN30"></a>
+<dt>BIT-WISE ROTATE RIGHT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: at, greater than<br>
+        Official acronym: ROR<br>
+        Expanded acronym: ROtate bits Right<br>
+        Symbol: <span class="pattern">@&gt;</span>
+        Syntax: <span class="pattern">OP1 @&gt; OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Rotates all the bits in OP1 right by OP2 places:
+        right-most (less significant) bits re-enter the
+        unit's range as left-most (most significant) bits.
+        <br><br>
+        Typical use(s): bit-wise scansion, bitstring operations; scanning a
+        string of bits, which is a contiguous sequence of bits held in a
+        single unit, means normally setting a single bit in a "scanner"
+        register, where that single bit matches the starting bit of the
+        string to scan, then rotate that bit and test it against the bits
+        of the string, in a loop that will rotate the scanner left or right
+        1 bit per time. The said loop would end after the last bit of the
+        string has been scanned. Supposing the string to scan was 13 bits
+        long and began from bit number 28, a scheme of this mechanism follows
+        (an "iteration" is a single run of a loop)...
+    <pre>
+    bit                      3322222222221111111111
+    number (31 to 0) ------- 10987654321098765432109876543210
+
+first iteration
+    unit holding the string: 00011011101100010000000000000000
+    "scanner" register:      00010000000000000000000000000000
+                                |
+                                result of test: bit is SET
+
+(between each iteration, the scanner is rotated 1 bit right,
+ and a test could be performed using a bit-wise comparison
+ directive such as "? A + B -> ThisBitIsSet;" supposing the
+ unit holding the string is loaded in A and the scanner is
+ register B)
+
+second iteration
+    unit holding the string: 00011011101100010000000000000000
+    "scanner" register:      00001000000000000000000000000000
+                                 |
+                                result of test: bit is SET
+
+third iteration
+    unit holding the string: 00011011101100010000000000000000
+    "scanner" register:      00000100000000000000000000000000
+                                  |
+                                result of test: bit is CLEAR
+(...and so on...)
+
+last iteration
+    unit holding the string: 00011011101100010000000000000000
+    "scanner" register:      00000000000000010000000000000000
+                                            |
+                                result of test: bit is SET</pre>
+        Note that there is no pratical limitation compelling the scanner to
+        be a register, it may equally be a memory unit allocated somewhere,
+        but registers are <u>significantly</u> faster for such duties.
+        Especially in such loops, use of registers is highly recommended for
+        best performance.
+</dd><br><br>
+
+<a name = "PATTERN31"></a>
+<dt>BIT-WISE ROTATE LEFT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: less than, at<br>
+        Official acronym: ROL<br>
+        Expanded acronym: ROtate bits Left<br>
+        Symbol: <span class="pattern">&lt;@</span>
+        Syntax: <span class="pattern">OP1 &lt;@ OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Rotates all the bits in OP1 left by OP2 places:
+        left-most (most significant) bits re-enter the
+        unit's range as right-most (less significant) bits.
+        <br><br>
+        Typical use(s): bit-wise scansion, bitstring operations, range identification.
+        <br><br>
+        Huh? Range identification? Yes, where you have to find how much, as an integer range,
+        is the limit to the maximum value you could store in a sequence of bits. This value is
+        of course 2 raised to the number of bits, minus 1. Well, 2 raised to the number of bits
+        can be quickly performed as:
+        <blockquote>
+        A = 1;<br>
+        A &lt;@ 8;<br>
+        </blockquote>
+        ...which would set A to a value of 2 raised to the power of 8, that is, 256, which is the
+        maximum unsigned integer range of a group of 8 bits. This could be also done with a shift,
+        but the specific rotate operation turns useful when you have to calculate the range for
+        SIGNED values, which has to consider the presence of the sign bit. So you could do:
+        <blockquote>
+        A = SMALLEST SIGNED INTEGER;<br>
+        A &lt;@ 8;<br>
+        </blockquote>
+        ...where SMALLEST SIGNED INTEGER is a constant declared by the compiler, which equals to
+        80000000h when the compiler unit is 32 bits (80000000h = -2^31, because of two's complement).
+        The above sets A to 128, and it couldn't be done with a simple shift.
+</dd><br><br>
+
+<a name = "PATTERN32"></a>
+<dt>INTEGER ADDITION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: plus<br>
+        Official acronym: ADD.i<br>
+        Expanded acronym: ADD r/m to r/m, integer<br>
+        Symbol: <span class="pattern">+</span>
+        Syntax: <span class="pattern">OP1 + OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Adds the value of OP2 to the value of OP1. Both values must be of
+        integer type, otherwise this operation would lead to unpredictable
+        results. Also see the FLOATING-POINT ADDITION instruction.
+</dd><br><br>
+
+<a name = "PATTERN33"></a>
+<dt>INTEGER SUBTRACTION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: minus (hyphen)<br>
+        Official acronym: SUB.i<br>
+        Expanded acronym: SUBtract r/m from r/m, integer<br>
+        Symbol: <span class="pattern">-</span>
+        Syntax: <span class="pattern">OP1 - OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Subtracts the value of OP2 from the value of OP1. Both values must
+        be of integer type, otherwise this operation would lead to
+        unpredictable results. Also see the FLOATING-POINT SUBTRACTION
+        instruction.
+</dd><br><br>
+
+<a name = "PATTERN34"></a>
+<dt>INTEGER UNSIGNED MULTIPLICATION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: quote, asterisk<br>
+        Official acronym: MUL.n<br>
+        Expanded acronym: MULtiply r/m by r/m, neutral<br>
+        Symbol: <span class="pattern">'*</span>
+        Syntax: <span class="pattern">OP1 '* OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Multiplies the value of OP1 by the value of OP2. Both values must
+        be of integer and POSITIVE (natural or neutral) type, otherwise this
+        operation would lead to unpredictable results. Also see the INTEGER
+        SIGNED MULTIPLICATION and FLOATING-POINT MULTIPLICATION instructions.
+</dd><br><br>
+
+<a name = "PATTERN35"></a>
+<dt>INTEGER UNSIGNED DIVISION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: quote, slash<br>
+        Official acronym: DIV.n<br>
+        Expanded acronym: DIVide r/m by r/m, neutral<br>
+        Symbol: <span class="pattern">'/</span>
+        Syntax: <span class="pattern">OP1 '/ OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2. Both values must be
+        of integer and POSITIVE (natural or neutral) type, otherwise this
+        operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        Also see the INTEGER SIGNED DIVISION and FLOATING-POINT DIVISION instructions.
+</dd><br><br>
+
+<a name = "PATTERN36"></a>
+<dt>INTEGER UNSIGNED REMAINDER<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: quote, percent<br>
+        Official acronym: REM.n<br>
+        Expanded acronym: REMainder of r/m divided by r/m, neutral<br>
+        Symbol: <span class="pattern">'%</span>
+        Syntax: <span class="pattern">OP1 '% OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2, and stores the
+        remainder of that division inside OP1. Both values must be of
+        integer and POSITIVE (natural or neutral) type, otherwise this
+        operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        Also see the INTEGER SIGNED REMAINDER and the FLOATING-POINT PARTIAL REMAINDER instructions.
+</dd><br><br>
+
+<a name = "PATTERN36A"></a>
+<dt>INTEGER UNSIGNED SPLIT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: quote, slash, percent<br>
+        Official acronym: SPL.n<br>
+        Expanded acronym: SPLit quotient and remainder of r/m divided by r/m, neutral<br>
+        Symbol: <span class="pattern">'/%</span>
+        Syntax: <span class="pattern">OP1 '/% OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2, and stores the
+        RESULT of that division in OP1, while the REMAINDER of the same
+        division is stored in OP2.
+        Both values must be of integer and POSITIVE (natural or neutral) type,
+        otherwise this operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        See also the INTEGER SIGNED SPLIT instruction.
+        <br><br>Notes:<br><br>
+        <ul>
+        <li>
+        Introduced with L.in.oleum 1.13.9b, SPLIT is a very particular instruction,
+        mostly because it has <i>two destination operands</i>: both OP1 and OP2 are
+        overwritten by the execution of this instruction. The reason why "split" gets
+        useful is exclusively speed. When you compute an integer division, no matter if
+        you calculate it personally or you have a CPU doing it for you, the one who
+        performs the division ALWAYS gets two results: quotient and remainder. High-level
+        syntaxes, as well as L.in.oleum's common division and remainder instructions, in
+        effects FILTER out one of these results, to return only one. But assembly, and so
+        L.in.oleum, can "see" both results at the same time. Now, a division is a terribly
+        slow operation on a lot of processors, so doing it twice for getting first the
+        quotient, then the remainder, is definitely quite stupid. You can keep using '/ and '%
+        for performing normal divisions and remainders for which you don't need the other
+        result too, and this is still slightly faster than performing a split because the
+        compatibility patterns don't have to store two results. However, when you really
+        need to calculate both the quotient and the remainder of a division, you are
+        definitely <i>recommended</i> to use a split, because on almost all processors it
+        will turn out to be almost twice as fast as calculating first '/ and then '%.
+        </li><br><br>
+        <li>
+        This instruction has no floating-point version, because there is often no hardware-side
+        convenience in having a f-p version of it: for a f-p split you are supposed to calculate
+        first the result of the division with the // operator, then the partial remainder of the
+        same division with the %% operator.
+        </li><br><br>
+        <li>
+        Of course, being both destination operands, none of OP1 and OP2 can be an immediate
+        operand, so you can't write, say, A '/% 25, because the instruction needs a place (a
+        register or a variable) as OP2 to store the remainder. Obviously you're supposed to
+        load up the value 25 into a register or a variable, and then perform the split.
+        </li><br><br>
+        <li>
+        One final note: the compiler will give a warning when you make a split using the
+        same operand on both sides, ie. A '/% A, [myvar] '/% [myvar], etc... and claim this
+        is a nonsensical operation. In fact, the same operand cannot hold at the same time
+        the quotient and the remainder of the division of itself by itself. As a result for
+        such a weird instruction you'd get sometimes zero (the remainder) and sometimes one
+        (the quotient), depending on the compatibility pattern's implementation details.
+        You're so completely discouraged from relying on the result of such an instruction.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN37"></a>
+<dt>INTEGER SIGNED MULTIPLICATION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: asterisk<br>
+        Official acronym: MUL.i<br>
+        Expanded acronym: MULtiply r/m by r/m, integer<br>
+        Symbol: <span class="pattern">*</span>
+        Syntax: <span class="pattern">OP1 * OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Multiplies the value of OP1 by the value of OP2. Both values must
+        be of integer type (but negative values are allowed), otherwise this
+        operation would lead to unpredictable results. Also see the INTEGER
+        UNSIGNED MULTIPLICATION and the FLOATING-POINT MULTIPLICATION
+        instructions.
+</dd><br><br>
+
+<a name = "PATTERN38"></a>
+<dt>INTEGER SIGNED DIVISION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: slash<br>
+        Official acronym: DIV.i<br>
+        Expanded acronym: DIVide r/m by r/m, integer<br>
+        Symbol: <span class="pattern">/</span>
+        Syntax: <span class="pattern">OP1 / OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2. Both values must be
+        of integer type (but negative values are allowed), otherwise this
+        operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        Also see the INTEGER UNSIGNED DIVISION and FLOATING-POINT DIVISION instructions.
+</dd><br><br>
+
+<a name = "PATTERN39"></a>
+<dt>INTEGER SIGNED REMAINDER<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: percent<br>
+        Official acronym: REM.i<br>
+        Expanded acronym: REMainder of r/m divided by r/m, integer<br>
+        Symbol: <span class="pattern">%</span>
+        Syntax: <span class="pattern">OP1 % OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2, and stores the
+        remainder of that division inside OP1. Both values must be of
+        integer type (but negative values are allowed), otherwise this
+        operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        Also see the INTEGER UNSIGNED REMAINDER and the FLOATING-POINT PARTIAL REMAINDER instructions.
+</dd><br><br>
+
+<a name = "PATTERN39A"></a>
+<dt>INTEGER SIGNED SPLIT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: slash, percent<br>
+        Official acronym: SPL.i<br>
+        Expanded acronym: SPLit quotient and remainder of r/m divided by r/m, integer<br>
+        Symbol: <span class="pattern">/%</span>
+        Syntax: <span class="pattern">OP1 /% OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2, and stores the
+        RESULT of that division in OP1, while the REMAINDER of the same
+        division is stored in OP2.
+        Both values must be of integer type (but negative values are allowed),
+        otherwise this operation would lead to unpredictable results.
+        OP2 must <u>not be zero</u>, or a possible crash may occur, because
+        Intel processors treat a division by zero as an unrecoverable exception.
+        See also the INTEGER UNSIGNED SPLIT instruction.
+        <br><br>Notes:<br><br>
+        <ul>
+        <li>
+        Introduced with L.in.oleum 1.13.9b, SPLIT is a very particular instruction,
+        mostly because it has <i>two destination operands</i>: both OP1 and OP2 are
+        overwritten by the execution of this instruction. The reason why "split" gets
+        useful is exclusively speed. When you compute an integer division, no matter if
+        you calculate it personally or you have a CPU doing it for you, the one who
+        performs the division ALWAYS gets two results: quotient and remainder. High-level
+        syntaxes, as well as L.in.oleum's common division and remainder instructions, in
+        effects FILTER out one of these results, to return only one. But assembly, and so
+        L.in.oleum, can "see" both results at the same time. Now, a division is a terribly
+        slow operation on a lot of processors, so doing it twice for getting first the
+        quotient, then the remainder, is definitely quite stupid. You can keep using / and %
+        for performing normal divisions and remainders for which you don't need the other
+        result too, and this is still slightly faster than performing a split because the
+        compatibility patterns don't have to store two results. However, when you really
+        need to calculate both the quotient and the remainder of a division, you are
+        definitely <i>recommended</i> to use a split, because on almost all processors it
+        will turn out to be almost twice as fast as calculating first / and then %.
+        </li><br><br>
+        <li>
+        This instruction has no floating-point version, because there is often no hardware-side
+        convenience in having a f-p version of it: for a f-p split you are supposed to calculate
+        first the result of the division with the // operator, then the partial remainder of the
+        same division with the %% operator.
+        </li><br><br>
+        <li>
+        Of course, being both destination operands, none of OP1 and OP2 can be an immediate
+        operand, so you can't write, say, A /% 25, because the instruction needs a place (a
+        register or a variable) as OP2 to store the remainder. Obviously you're supposed to
+        load up the value 25 into a register or a variable, and then perform the split.
+        </li><br><br>
+        <li>
+        One final note: the compiler will give a warning when you make a split using the
+        same operand on both sides, ie. A /% A, [myvar] /% [myvar], etc... and claim this
+        is a nonsensical operation. In fact, the same operand cannot hold at the same time
+        the quotient and the remainder of the division of itself by itself. As a result for
+        such a weird instruction you'd get sometimes zero (the remainder) and sometimes one
+        (the quotient), depending on the compatibility pattern's implementation details.
+        You're so completely discouraged from relying on the result of such an instruction.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN40"></a>
+<dt>FLOATING-POINT ADDITION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: plus, plus<br>
+        Official acronym: ADD.f<br>
+        Expanded acronym: ADD r/m to r/m, floating-point<br>
+        Symbol: <span class="pattern">++</span>
+        Syntax: <span class="pattern">OP1 ++ OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Adds the value of OP2 to the value of OP1. Both values must be of
+        floating-point type, otherwise this operation would lead to
+        unpredictable results. Also see the INTEGER ADDITION instruction.
+</dd><br><br>
+
+<a name = "PATTERN41"></a>
+<dt>FLOATING-POINT SUBTRACTION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: minus, minus<br>
+        Official acronym: SUB.f<br>
+        Expanded acronym: SUBtract r/m from r/m, floating-point<br>
+        Symbol: <span class="pattern">--</span>
+        Syntax: <span class="pattern">OP1 -- OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Subtracts the value of OP2 from the value of OP1. Both values must
+        be of floating-point type, otherwise this operation would lead to
+        unpredictable results. Also see the INTEGER SUBTRACTION instruction.
+</dd><br><br>
+
+<a name = "PATTERN42"></a>
+<dt>FLOATING-POINT MULTIPLICATION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: asterisk, asterisk<br>
+        Official acronym: MUL.f<br>
+        Expanded acronym: MULtiply r/m by r/m, floating-point<br>
+        Symbol: <span class="pattern">**</span>
+        Syntax: <span class="pattern">OP1 ** OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Multiplies the value of OP1 by the value of OP2. Both values must
+        be of floating-point type, otherwise this operation would lead to
+        unpredictable results. Also see INTEGER UNSIGNED MULTIPLICATION
+        and INTEGER SIGNED MULTIPLICATION instructions.
+</dd><br><br>
+
+<a name = "PATTERN43"></a>
+<dt>FLOATING-POINT DIVISION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: slash, slash<br>
+        Official acronym: DIV.f<br>
+        Expanded acronym: DIVide r/m by r/m, floating-point<br>
+        Symbol: <span class="pattern">//</span>
+        Syntax: <span class="pattern">OP1 // OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Divides the value of OP1 by the value of OP2. Both values must
+        be of floating-point type, otherwise this operation would lead to
+        unpredictable results. Also see INTEGER UNSIGNED DIVISION and the
+        INTEGER SIGNED DIVISION instructions.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>
+        Dividing by zero will give, as a result, the internal representation
+        of an infinite value, accordingly to what one would expect from it.
+        &quot;Infinity&quot; translates to the greatest (or the smallest,
+        depending on the sign) possible integer number when converted to integer.
+        </li><br><br>
+        <li>
+        Dividing zero by zero: I didn't find any documents about this,
+        but I have tried on my AMD Athlon. It gives -NAN (minus Not A Number).
+        +/-NAN, when translated to integer, behave like +/-INFINITY.
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN43A"></a>
+<dt>FLOATING-POINT PARTIAL REMAINDER<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: percent, percent<br>
+        Official acronym: REM.f<br>
+        Expanded acronym: partial REMinder of r/m divided by r/m, floating-point<br>
+        Symbol: <span class="pattern">%%</span>
+        Syntax: <span class="pattern">OP1 %% OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Calculates the partial remainder (throught optimized serial subtractions)
+        of OP1 divided by the value of OP2. Both values must be of floating-point
+        type, otherwise this operation would lead to unpredictable results. Also
+        see INTEGER UNSIGNED REMAINDER and the INTEGER SIGNED REMAINDER instructions.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>This instruction was not present in versions of L.in.oleum prior to 1.13.9b.</li><br><br>
+        <li>On i387 and later/compatibles, uses the FPREM built-in coprocessor instruction.</li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN44"></a>
+<dt>FLOATING-POINT TO SIGNED INTEGER CONVERSION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: equal, comma<br>
+        Official acronym: FTI<br>
+        Expanded acronym: Floating-point To Integer conversion<br>
+        Symbol: <span class="pattern">=,</span>
+        Syntax: <span class="pattern">OP1 =, OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Converts the value of OP2 (of floating-point type) to a signed
+        integer value, and stores the result inside OP1. The operation may
+        overflow the range of an integer memory unit or register: in this
+        case the value is re-normalized as the lowest or greatest integer
+        allowed by the CPU unit (depending on the sign of OP2).
+        <br><br>
+        A tip to help you memorize the syntax:
+        the floating-point operator always lays on the side of the comma.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>The conversion is always performed by truncating the fractional part of the
+        source operand. Another way to say this is that it converts "towards zero".
+        I hope the several following examples will give an idea, the mechanism is most
+        probably the simplest ever possible for such conversions, and it's implemented
+        like so to avoid interfering with the program-specific, eventual rounding methods,
+        which are left at programmers' discretion. The i387+ implementation uses the
+        FLD/FISTP sequence, establishing the said rounding method by setting both bits
+        number 10 and 11 in the RC field of the coprocessor's control word prior to
+        launching the application's code thread, so that the mechanism is entirely
+        controlled by the hardware thought all the run-time.<br><br>
+        10.1 becomes 10<br>
+        20.5 becomes 20<br>
+        30.9 becomes 30<br>
+        0.55 becomes 0<br>
+        -0.6 becomes 0<br>
+        -1.3 becomes -1<br>
+        -7.7 becomes -7<br>
+        +infinite becomes GREATEST SIGNED INTEGER<br>
+        -infinite becomes SMALLEST SIGNED INTEGER
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN45"></a>
+<dt>SIGNED INTEGER TO FLOATING-POINT CONVERSION<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: comma, equal<br>
+        Official acronym: ITF<br>
+        Expanded acronym: Integer To Floating-point conversion<br>
+        Symbol: <span class="pattern">,=</span>
+        Syntax: <span class="pattern">OP1 ,= OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Converts the value of OP2 (of signed integer type) to a
+        floating-point value, and stores the result inside OP1.
+        <br><br>
+        A tip to help you memorize the syntax:
+        the floating-point operator always lays on the side of the comma.
+</dd><br><br>
+
+<a name = "PATTERN45A"></a>
+<dt>FLOATING-POINT PARTIAL ARC TANGENT<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: caret, slash<br>
+        Official acronym: ATN.f<br>
+        Expanded acronym: partial Arc TaNgent<br>
+        Symbol: <span class="pattern">^/</span>
+        Syntax: <span class="pattern">OP1 ^/ OP2;</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]<br>
+        Allowed operands (OP2): IMM, REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        Floating-point exclusive function, on i387+ this uses built-in instruction FPATAN to
+        calculate the partial arc tangent of OP1/OP2 (ideally X and Y of a two-dimensional
+        vector based at 0;0) and stores the result back in OP1.
+        <br><br>
+        WARNING:
+        one of my assembly manuals (W.H. Murray, C.H. Pappas: The Assembler for the 80286/80386)
+        claims the function is limited to the very first octant, and therefore OP1 and OP2 may
+        respect the following conditions: zero &lt; OP2 &lt;= OP1 &lt; infinity, otherwise the
+        result may be incorrect and/or the application may crash by a floating-point unhandled
+        exception. But then I've searched the internet for cases and found no trace of this
+        limitation in code snippets and descriptions of the FPATAN instruction. Also the limit
+        seems not to apply on my AMD. Further informations from the web claim that the i387 FPU
+        effectively performs full rectangular-to-polar coordinates conversion from any dots at X;Y,
+        no matter if those coordinates are out of the first octant, not even if out of the first
+        quadrant. The coordinates seem to be handled perfectly except for the case where X=0 and Y=0
+        and where the arctan is mathematically supposed to be undefined (so NAN, Not-A-Number), but
+        at least my AMD returns zero instead of NAN. I suspect the limitation mentioned in that book
+        has something to do with 80287 FPUs, which in this case would be uninfluent for what concerns
+        the L.in.oleum 32-bit environment, because the actual 32-bit environment needs at least an
+        i386DX (DX meant "with built-in FPU") to run at all.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>This instruction was not present in versions of L.in.oleum prior to 1.13.9b.</li><br><br>
+        <li>OP1 after the calculation holds a result that represents the angle (given in radians and
+        ranging between zero and PI/4 if the first octant limit applies, between -PI and +PI if the
+        limit does not apply) that exists between the X axis and the straight line that crosses the
+        point at X;Y.</li><br><br>
+        <li>Should you find a place where the limit applies, the following subroutine (pseudo-code)
+        would fix the problem by "manually" checking for quadrants' and octants' boundaries:
+<pre>
+SUB ARCTANGENT (X, Y as FLOAT)
+
+    REMARK QUADRANTS ARE AS FOLLOWS:
+
+                 |
+             2   |   1
+                 |
+           ------&middot;------
+                 |
+             3   |   4
+                 |
+
+    END REMARK
+
+    REMARK OCTANTS ARE AS FOLLOWS:
+
+               3 | 2
+              \  |  /
+            4  \ | /  1
+                \|/
+           ------&middot;------
+                /|\
+            5  / | \  8
+              /  |  \
+               6 | 7
+
+    END REMARK
+
+    if Y = 0 then
+      float C = 0
+      goto sign check
+    end if
+
+    if X = 0 then
+      float C = PI/2
+      goto sign check
+    end if
+
+    float A = |X|
+    float B = |Y|
+
+    if A &lt;= B then
+      float C = arctan (A/B) ; 1st OCTANT
+    else
+      float C = PI/2 - arctan (B/A) ; 2nd OCTANT
+
+  sign check:
+    if X &lt; 0 then C = PI - C ; 2nd QUADRANT
+    if Y &lt; 0 then C = - C ; 3rd AND 4th QUADRANTS
+
+    RETURN C
+
+END SUB</pre>
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN45B"></a>
+<dt>EXCHANGE VALUES<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: bilateral instruction<br>
+        Symbolic code: less than, greater than<br>
+        Official acronym: XCH<br>
+        Expanded acronym: eXCHange value of r/m with r/m<br>
+        Symbol: <span class="pattern">&lt;&gt;</span>
+        Syntax: <span class="pattern">OP1 &lt;&gt; OP2</span><br>
+        Allowed operands (OP1): REG, [VAR], [VAR+d], [REG], [REG+d]<br>
+        Allowed operands (OP2): REG, [VAR], [VAR+d], [REG], [REG+d]
+        <br><br>
+        Description:
+        exchanges the value of OP1 with the value of OP2. In many cases
+        this is significantly faster than a "push x, push y, pop x, pop y"
+        sequence, and as well faster than using an auxiliary register or
+        variable to save a value while exchanging. Also, this instruction
+        is more compact than the two mentioned alternatives.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>This instruction was not present in versions of L.in.oleum prior to 1.13.9b.</li><br><br>
+        <li>Both OP1 and OP2 can be memory operands, it's not limited to registers, and apart from
+        immediate values, all combinations of operand types are possible. Memory-to-memory exchanges
+        are performed with combinations of a push-pop sequence and the use of the X register (EBP),
+        which on time trials resulted to be a couple clocks faster than the simple push-push-pop-pop
+        sequence. However, exchanging memory locations might be avoided whenever possible if speed
+        counts a lot: considering average memory delays, registers exchange some 10 times faster.</li>
+        </li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN46"></a>
+<dt>NO OPERATION (NOP)<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: monolithic instruction (no operands)<br>
+        Symbolic code: slash, minus, slash<br>
+        Official acronym: NOP<br>
+        Expanded acronym: No OPeration<br>
+        Symbol: <span class="pattern">/-/</span>
+        Syntax: <span class="pattern">/-/</span>
+        <br><br>
+        Description:
+        see <a href="#PPD">preprocessor directives</a>.
+</dd><br><br>
+
+<a name = "PATTERN47"></a>
+<dt>PUSH ALL REGISTERS<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: monolithic instruction (no operands)<br>
+        Symbolic code: minus, minus, minus, minus, greater than<br>
+        Official acronym: PSH.a<br>
+        Expanded acronym: PuSH all registers<br>
+        Symbol: <span class="pattern">----&gt;</span>
+        Syntax: <span class="pattern">----&gt;</span>
+        <br><br>
+        Description:
+        pushes all registers onto the stack (<i>beware</i> that this includes the
+        system-specific registers such as the workspace origin pointer [EDI], the
+        stack pointer [ESP], and the auxiliary register [EBP]). Often convenient,
+        in terms of speed, when pushing more than THREE registers onto the stack,
+        and <i>only when</i> saving/restoring all the 5 general-purpose registers
+        A, B, C, D and E has no consequence for the code following the given
+        push all/pop all sequence. <i>The ONLY way to properly extract the packet
+        of registers from the stack is using the following POP ALL REGISTERS
+        instruction.</i> You <u>MUST NOT</u> assume that a sequence like:
+   <pre>        ----&gt;;
+        (...some code here...)
+        &lt;-- E;
+        &lt;-- D;
+        &lt;-- C;
+        &lt;-- B;
+        &lt;-- A;</pre>
+        ...would correctly restore all the registers saved with a ----&gt;
+        instruction, because ----&gt; will often refer to a special opcode of
+        the CPU that saves all of a thread's environment registers (PUSHAD on
+        i386 and compatibles), therefore saving registers that your application
+        cannot pop back out of the stack one by one. The amount of units taken
+        on the stack memory by a ----&gt; instruction will VARY along with the
+        CPU for which the CPU pack has been translated, so you cannot even assume
+        that adding a fixed amount to the stack pointer would correctly discard
+        all the values saved there by the PUSH ALL REGISTERS instruction.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>This instruction was not present in versions of L.in.oleum prior to 1.13.9b.</li><br><br>
+        <li>This instruction may not be associated with an effective, and faster, CPU opcode on
+        some CPUs, because not all CPUs may implement an opcode to save all registers to the
+        stack together: in such cases the instruction would be emulated by repeately saving the
+        5 general-purpose registers AND the sixth auxiliary register (X) onto the stack with single
+        pushes, but that would of course grant no speed advantage in respect to the real built-in opcode.</li>
+        </ul>
+</dd><br><br>
+
+<a name = "PATTERN48"></a>
+<dt>POP ALL REGISTERS<hr size = 1 width = "100%" color = "white"></dt>
+<dd>
+        Class: monolithic instruction (no operands)<br>
+        Symbolic code: less than, minus, minus, minus, minus<br>
+        Official acronym: POP.a<br>
+        Expanded acronym: POP all registers<br>
+        Symbol: <span class="pattern">&lt;----</span>
+        Syntax: <span class="pattern">&lt;----</span>
+        <br><br>
+        Description:
+        pops all registers from the stack (<i>beware</i> that this includes the
+        system-specific registers such as the workspace origin pointer [EDI], the
+        stack pointer [ESP], and the auxiliary register [EBP]).
+        <i>This is the ONLY correct way to properly extract the packet
+        of registers from the stack saved by a PUSH ALL REGISTERS instruction.</i>
+        You <u>MUST NOT</u> assume that a sequence like:
+   <pre>        A --&gt;;
+        B --&gt;;
+        C --&gt;;
+        D --&gt;;
+        E --&gt;;
+        (...some code here...)
+        &lt;----;</pre>
+        ...would correctly restore all the registers, because &lt;---- will often
+        refer to a special opcode of the CPU that restores all of a thread's
+        environment registers (POPAD on i386 and compatibles), therefore saving
+        registers that your application cannot push into the stack one by one.
+        The amount of units freed from the stack memory by a &lt;---- instruction
+        will VARY along with the CPU for which the CPU pack has been translated,
+        so you cannot even assume that subtracting a fixed amount to the stack pointer
+        would correctly simulate a push of all the values saved by the specific
+        PUSH ALL REGISTERS instruction.
+        <br><br>
+        Note(s):
+        <br><br>
+        <ul>
+        <li>This instruction was not present in versions of L.in.oleum prior to 1.13.9b.</li><br><br>
+        <li>This instruction may not be associated with an effective, and faster, CPU opcode on
+        some CPUs, because not all CPUs may implement an opcode to restore all registers from the
+        stack together: in such cases the instruction would be emulated by repeately restoring the
+        5 general-purpose registers AND the sixth auxiliary register (X) from the stack with single
+        pops, but that would of course grant no speed advantage in respect to the real built-in opcode.</li>
+        </ul>
+</dd><br><br>
+
+</dl>
+
+<a name = "BWCD"></a>
+
+<br><br><br>
+<center>
+        BIT-WISE COMPARISON DIRECTIVES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 - OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Performs a bit-wise test on OP1 using OP2 as the binary mask.
+                If <u>none</u> of the bits which are set to 1 in OP2 are also set to 1 in OP1,
+                the condition is true and the program jumps to OP3 (a code label).
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 + OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Performs a bit-wise test on OP1 using OP2 as the binary mask.
+                If <u>any</u> of the bits which are set to 1 in OP2 are also set to 1 in OP1,
+                the condition is true and the program jumps to OP3.
+                </dd>
+</dl>
+
+<a name = "ICD"></a>
+
+<br><br><br>
+<center>
+        INTEGER COMPARISON DIRECTIVES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 = OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>integer values</u>:
+                if OP1 equals OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 != OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>integer values</u>:
+                if OP1 doesn't equal OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 &gt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>signed integer values</u>:
+                if OP1 is greater than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 &lt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>signed integer values</u>:
+                if OP1 is less than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 &gt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>signed integer values</u>:
+                if OP1 is greater than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 &lt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>signed integer values</u>:
+                if OP1 is less than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 '&gt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>unsigned integer values</u>:
+                if OP1 is greater than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 '&lt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>unsigned integer values</u>:
+                if OP1 is less than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 '&gt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>unsigned integer values</u>:
+                if OP1 is greater than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? OP1 '&lt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>unsigned integer values</u>:
+                if OP1 is less than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+</dl>
+
+<a name = "FPCD"></a>
+
+<br><br><br>
+<center>
+        FLOATING-POINT COMPARISON DIRECTIVES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 = OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 equals OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 != OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 doesn't equal OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 &gt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 is greater than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 &lt; OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 is less than OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 &gt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 is greater than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ?? OP1 &lt;= OP2 -&gt; OP3;
+        </font><b></dt><br><br>
+                <dd>
+                Compares the values of OP1 and OP2 as <u>floating-point values</u>:
+                if OP1 is less than or equal to OP2
+                the condition is true and the program jumps to OP3.
+                </dd>
+</dl>
+
+<a name = "PPD"></a>
+
+<br><br><br>
+<center>
+        PREPROCESSOR DIRECTIVES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        nop;
+        </font><b></dt><br><br>
+                <dd>
+                No OPeration. Introduced with L.in.oleum v1.13.9b, but of course natively
+                present on pratically all processors, NOP is an instruction that does
+                absolutely nothing. It has no parameters (duh!) so it doesn't need a
+                symbolic code. It has been considered especially for multiscalar optimizations
+                where you could need such an instruction for pipelines' alignment, otherwise
+                being pratically useless, but also pratically harmless on processors where
+                such specific optimizations don't take effect. I was undecided wether this
+                should have been classified as a TAG or an instruction, anyway, the compiler
+                handles it like a tag, ie. in the same way it handles "isocall", but then it
+                IS an effective instruction and it has a binary pattern, so here it is. People
+                who are not interested in processor-specific optimizations may simply ignore "nop",
+                I doubt it could have any other uses in L.in.oleum source code. P.S. "nop" internally
+                translates to the symbolic code /-/ (slash, minus, slash), writing that instead of
+                nop results in the same instruction, but you're supposed to use the "nop" tag anyway,
+                for better clearence.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? ok -&gt; LABEL;
+        </font><b></dt><br><br>
+                <dd>
+                If the subroutine that has been called <u>just before this instruction</u>
+                returned to the caller using an &quot;end&quot; tag, the program jumps
+                to LABEL. Note that &quot;ok&quot; must be written in lowercase.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        ? failed -&gt; LABEL;
+        </font><b></dt><br><br>
+                <dd>
+                If the subroutine that has been called <u>just before this instruction</u>
+                returned to the caller using a &quot;fail&quot; tag, the program jumps
+                to LABEL. Note that &quot;failed&quot; must be written in lowercase.
+                </dd>
+        <br><br>
+        <dt><font face = "terminal, arial, helvetica"></b>
+        OP1 ^ LABEL;
+        </font><b></dt><br><br>
+                <dd>
+                It's called the <i>integer loop until zero</i>.<br>
+                &nbsp;&nbsp;&nbsp;1) The value of OP1 is decremented by 1 unit.<br>
+                &nbsp;&nbsp;&nbsp;2) The value of OP1 is compared with zero.<br>
+                &nbsp;&nbsp;&nbsp;3) If OP1 doesn't equal zero, jumps to LABEL.<br>
+                This way the instructions enclosed between LABEL and this directive
+                are executed in a loop for a certain number of times: the number of
+                <i>iterations</i>, that is, the number of times the loop will be
+                executed, is given by the initial value of OP1. Commonly, OP1 (a variable
+                or a register) is assigned to the requested number of iterations before
+                entering the loop, that means before &quot;LABEL&quot;. An example:<br><br>
+                <blockquote><font face = "terminal, arial, helvetica"></b>
+                        &nbsp;&nbsp;&nbsp;A = 15;<br>
+                        &nbsp;&nbsp;&nbsp;B = ZERO;<br>
+                        &quot;MY LOOP&quot;<br>
+                        &nbsp;&nbsp;&nbsp;B + 2;<br>
+                        &nbsp;&nbsp;&nbsp;A ^ MY LOOP;
+                </font><b></blockquote>
+                In the above example, register A is assigned to 15, and it will be used
+                as the number of iterations to perform. Register B is assigned to zero,
+                which can be written as &quot;0&quot; (without the quotes) or as a
+                constant name, ZERO, typed in uppercase. The compiler knows the constant
+                called ZERO to mean an integer value of zero. Within the loop, the only
+                instruction is &quot;B + 2;&quot;, which means register B is incremented
+                by 2 units for each iteration. Since the iterations are 15, at the end
+                of the loop the value of B will have increased of 30 units. And since B
+                is set to zero before the loop begins, in the end B equals 30.<br><br>
+                <i>One last important note: never enter such a loop with a value of
+                zero for the operand </i>(which is register A in the example),
+                <i>because if A is decremented when it's zero, it becomes an immense
+                integer value, and the loop would be executed a huge number of times.</i>
+                </dd>
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

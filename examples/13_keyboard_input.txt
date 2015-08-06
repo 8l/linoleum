@@ -1,0 +1,302 @@
+
+      ( *** LINOLEUM Example 13: Keyboard input *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "13_keyboard_input.TXT", WITH THE
+	   RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Writes on the screen what the user types on the keyboard,
+	also allowing pressing "backspace" to delete last character.
+	To quit, press ESCAPE. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"libraries"
+	myfont;
+
+       (This is the first example of a LIBRARY: the file "myfont.txt"
+	can be used without writing everything about the font again,
+	leaving the main program's source code smaller and more clearly
+	understandable. Of course, before compiling this program you
+	have to make sure the "myfont.txt" library is in the same folder.
+	An alternative for placing general-purpose libraries is the
+	compiler's "main/lib" directory.)
+
+"directors"
+
+	program name = { Keyboard_Input };
+	unit = 32;
+
+"constants"
+
+	WHITE = FFFFFFh;
+	PURE BLUE = 0000FFh;
+	DARK GREEN = 008000h;
+	DARK RED = 800000h;
+
+	EDGE WIDTH = 4;
+	EDGE HEIGHT = 4;
+
+"variables"
+
+	BG color = WHITE;
+
+	Write at X = 0;
+	Write at Y = 0;
+	Text color = 0;
+	Write text = 0;
+	Write with = 0;
+
+	Current character X = 0;
+	Current character Y = 0;
+
+	Offset to current character in string = 0;
+
+	Dot X = 0; Dot Y = 0; Stop X = 0; Stop Y = 0;
+	Current shape unit = 0; Dot Mask = 0;
+
+	Title text	= { Type_some_text_-_ESC_to_quit. };
+	Separator	= { \us\us\us\us\us\us\us\us\us\us\us\us\us\us\us\us
+				\us\us\us\us\us\us\us\us\us\us\us\us\us\us\us };
+
+	(BTW - do you remember what \us was? the manual told yout about it:
+	it's the way to insert an "underscore" sign in a text string,
+	since the real underscore is used to mark a blank space.)
+
+	User text length = 0;
+
+"workspace"
+
+	Video = 256 mtp 192; (like Primary Display = 49152, to be clear)
+	User text = 1000; (will hold what the user types)
+
+"programme"
+
+	[Display Origin] = Video;
+
+	[User text] = 0; (place terminator at beginning of user text,
+			it wouldn't be really needed because it's all
+			zero, being a workspace area vector, but just
+			to avoid surprises in case, in future, we'd
+			need to use this program as just a subroutine,
+			after some other operations which may have
+			filled "User text" already. it's like taking
+			a note about the fact that it needs a null,
+			or zero, temination code, to make it a void
+			text string)
+
+    "rewrite text"
+	=> Clear the display with BG color;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH;
+	[Text color] = DARK GREEN;
+	[Write text] = Title text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH plus 5;
+	[Text color] = DARK RED;
+	[Write text] = Separator;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Write at X] = EDGE WIDTH;
+	[Write at Y] = EDGE WIDTH plus 25;
+	[Text color] = PURE BLUE;
+	[Write text] = User text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+    "wait for key and read it when ready"
+	[Console Command] = GET CONSOLE INPUT; isocall;
+	? failed -> wait for key and read it when ready;
+
+	? [Console Input] = 8 -> backspace;
+	? [Console Input] = 27 -> escape;
+	? [Console Input] < 32 -> unrecognized key;
+	? [Console Input] > 127 -> unrecognized key;
+
+    "normal key"
+	A = [User text length]; (currently points to end of string)
+	[A plus User text] = [Console Input]; (add a character over the terminator)
+	[A plus User text plus 1] = 0; (add another terminator, the new one)
+	[User text length]+; (increment pointer to end of the string)
+	-> rewrite text;
+
+    "backspace"
+	? [User text length] = 0 -> wait for key and read it when ready;
+	[User text length]-; (decrease pointer to end of string)
+	A = [User text length]; (get pointer in A)
+	[A plus User text] = 0; (put a terminator over last character)
+	-> rewrite text; (at this point, we have removed last character)
+
+    "unrecognized key"
+	[Console Input] = 63; (63 is the ASCII code of the question mark - ?)
+	-> normal key;
+
+    "escape"
+	end;			(of MAIN PROGRAM)
+
+"Write TXT"
+  ( Function to write a text string at given coordinates.
+    [Write at X] = X coordinate of upper left corner of the text;
+    [Write at Y] = Y coordinate of upper left corner of the text;
+    [Text color] = color pattern for text string to be written;
+    [Write text] = pointer to a null-terminated text string;
+    [Write with] = pointer to a bit-mapped font. )
+	D = [Write text];
+	E = [Write with];
+	? D = 0 -> Failure writing text;
+	? [E] != FONT HEADER -> Failure writing text;
+	[Current character X] = [Write at X];
+	[Current character Y] = [Write at Y];
+	[Offset to current character in string] = 0;
+    "Loop for characters in string"
+	A = [Offset to current character in string];
+	A + [Write text];
+	A = [A];
+	? A = 0 -> End of text string;
+	? A < 32 -> Next character;
+	? A > 127 -> Next character;
+	B = A; B - 32; B / [E plus OFFSET FONT ALIGNMENT];
+	C = A; C - 32; C % [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] = B;
+	[Current shape unit] * [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] * [E plus OFFSET FONT BODY];
+	[Current shape unit] + C;
+	[Current shape unit] + [Write with];
+	[Current shape unit] + OFFSET FONT SHAPE;
+	[Dot Y] = [Current character Y];
+	[Stop Y] = [Current character Y];
+	[Stop Y] + [E plus OFFSET FONT BODY];
+    "Loop for scan lines in pointer shape"
+	[Dot X] = [Current character X];
+	[Stop X] = [Current character X];
+	[Stop X] + [E plus OFFSET FONT WIDTH];
+	[Dot Mask] = 80000000h;
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+    "Loop for pixels in pointer shape"
+	D = [Current shape unit];
+	? [D] - [Dot Mask] -> No dot in shape at this point;
+	A = [Dot X];
+	B = [Dot Y];
+	C = [Text color];
+	=> Plot;
+    "No dot in shape at this point"
+	[Dot Mask] @> 2;
+	[Dot X]+;
+	? [Dot X] < [Stop X] -> Loop for pixels in pointer shape;
+	[Current shape unit] + [E plus OFFSET FONT ALIGNMENT];
+	[Dot Y]+;
+	? [Dot Y] < [Stop Y] -> Loop for scan lines in pointer shape;
+	[Current character X] + [E plus OFFSET FONT WIDTH];
+	A = [Display Width]; A - EDGE WIDTH;
+	? [Current character X] < A -> Next character;
+	[Current character X] = EDGE WIDTH;
+	[Current character Y] + [E plus OFFSET FONT BODY];
+    "Next character"
+	[Offset to current character in string]+;
+	-> Loop for characters in string;
+    "End of text string"
+	end;
+    "Failure writing text"
+	fail;
+
+"Plot"
+    ( Draws a single dot.
+      Two display types supported: 16 and 32 bit.
+      Coordinates are checked. All regs destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Clear the display with BG color"
+	A = [Display Origin];
+	B = [Display Width];
+	B * [Display Height];
+	C = [BG color];
+    "Loop to clear all of it"
+	[A] = C; A+;
+	B ^ Loop to clear all of it;
+	end;
+
+( This is the most simple use of the keyboard. [Console Input] is the variable
+that holds the ASCII code of last keystroke. It's updated only after calling
+to the IsoKernel after having set [Console Command] to GET CONSOLE INPUT. )
+
+( Using this way to read the keyboard, you obtain automatic translation of
+the keyboard's hardware scan-codes to plain ASCII code in the standard range,
+being characters from 1 to 127. You can also see, in this example, some useful
+ASCII codes which are perfectly standard: 8 is BACKSPACE, 32 is the SPACE BAR,
+13 is the CARRIAGE RETURN, 9 is TABULATION and 27 is ESCAPE, which is used to
+quit the application in this case. )
+
+( Reading keystrokes throught [Console Input], however, has a drawback.
+You cannot acknowledge keystrokes having non-standard ASCII codes.
+Examples are the cursor arrows, Page UP, Page Down, Insert, Delete, Home,
+Shift keys, Control keys, and so on...
+Well, a SUBSET of those non-standard keys has been made standard by a new code
+table called the LUCK (Linoleum Universal Console Keycode) table. Currently,
+the LUCK table allows translating "L/R Shift", "L/R Control", cursor arrows,
+and other more common keys. Complessively there are 98 keycodes. Actually you
+can find as much as 103 keys on a modern keyboard (not to speak of multimedia
+functional keyboards). So you can imagine 98 codes are not enough to intercept
+all of the possible keystrokes. I know, but LUCK is intended to be standard,
+and that's why it's a minimal subset in relation to physical keyboards.
+In a nutshell, it's rather improbable that a certain keyboard should not have
+the keys mentioned in the LUCK table, which are also the most useful ones.
+Yet there are no versions of Lino for the Apple Macintosh. I know those
+computers have "Apple" keys and other special function keys, just like my
+good old Amiga had "Amiga" keys, but they can be intended as equivalents of
+ALTs and CTRLs, so that's how they'll be mapped. I *hate* those non-standard
+keyboard layouts, and deliberately ignored them, along with "Windows" keys.
+In effects, I hate "Windows" keys so much that I removed them with a
+screwdriver from all of my keyboards, so to show how they SUCK. Call me
+paranoid, but that's the way I think about non-standard things. )
+
+( Also the LUCK table contains duplications of letters A to Z, numbers 0 to 9,
+and numeric pad numbers 0 to 9. This is not a waste of codes: using the LUCK
+table you can track the keyboard in real-time. Rather than being informed about
+a certain key that HAS BEEN "tapped", you can get to know about the fact that a
+key is ACTUALLY HELD DOWN. This is obviously very useful in keyboard-driven
+interfaces and videogames, as you can imagine, because no keystroke's affected
+by "typematic" repeat rates, and a virtually unlimited number of keys could be
+pressed all together! )
+
+( Next example will explain how the LUCK table works. )

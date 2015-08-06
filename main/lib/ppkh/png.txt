@@ -1,0 +1,1805 @@
+(PNG.txt: PNG load/save
+
+For bugs, additions or remarks, mail me at:
+pp_kl_h@hotmail.com
+
+Authors website:
+http://home.hetnet.nl/~ptkleinhaneveld
+
+License LGPL
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or [at your option] any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+USA
+
+(C) 2003 by Peterpaul Klein Haneveld.
+)
+
+"libraries"
+	alpha;
+	zlib;
+
+	bmem;
+	math;
+
+"constants"
+	PNG first unit		= 474e5089h;
+	PNG second unit 	= 0a1a0a0dh;
+
+	PNG safe to copy	= 0000 0000 0000 0000 0000 0000 0010 0000b;
+	PNG not valid		= 0000 0000 0000 0000 0010 0000 0000 0000b;
+	PNG private		= 0000 0000 0010 0000 0000 0000 0000 0000b;
+	PNG not critical	= 0010 0000 0000 0000 0000 0000 0000 0000b;
+
+	PNG IHDR		= 49484452h;
+	PNG PLTE		= 504c5445h;
+	PNG IEND		= 49454e44h;
+	PNG IDAT		= 49444154h;
+	PNG tRNS		= 74524e53h;
+	PNG gAMA		= 67414d41h;
+	PNG tEXt		= 74455874h;
+	PNG zTXt		= 7a545874h;
+(----------------------------------------------------------------------------)
+	(Miscellaneous)
+(----------------------------------------------------------------------------)
+	PNG bKGD		= 424b4744h;
+	PNG hIST		= 68495354h;
+	PNG pHYs		= 70485973h;
+	PNG sPLT		= 73504c54h;
+	PNG tIME		= 74494d45h;
+(----------------------------------------------------------------------------)
+	(Text)
+(----------------------------------------------------------------------------)
+	PNG iTXt		= 69545874h;
+(----------------------------------------------------------------------------)
+	(Ancilary)
+(----------------------------------------------------------------------------)
+	PNG cHRM		= 6348524dh;
+	PNG iCCP		= 69434350h;
+	PNG sBIT		= 73424954h;
+	PNG sRGB		= 73524742h;
+(----------------------------------------------------------------------------)
+
+	PNG Memory Error	= 0;
+
+"variables"
+	(input parameters)
+	PNG target layer	= UNDEFINED;
+	PNG display alignment	= UNDEFINED;
+	PNG picture data	= UNDEFINED;
+	PNG picture left	= UNDEFINED;
+	PNG picture top 	= UNDEFINED;
+	PNG display width	= UNDEFINED;
+	PNG display height	= UNDEFINED;
+	PNG effect		= UNDEFINED;
+
+	(output parameters)
+	PNG recommended effect	= UNDEFINED;
+	PNG error		= UNDEFINED;
+
+	vector PNG chunk types	=
+				PNG IHDR;
+				PNG PLTE;
+				PNG IEND;
+				PNG IDAT;
+				PNG tRNS;
+				PNG cHRM;
+				PNG gAMA;
+				PNG iCCP;
+				PNG sBIT;
+				PNG sRGB;
+				PNG tEXt;
+				PNG zTXt;
+				PNG iTXt;
+				PNG bKGD;
+				PNG hIST;
+				PNG pHYs;
+				PNG sPLT;
+				PNG tIME;
+				NULL;
+
+	vector PNG chunk routines =
+				service PNG process IHDR;
+				service PNG process PLTE;
+				service PNG process IEND;
+				service PNG process IDAT;
+				service PNG process tRNS;
+				service PNG process cHRM;
+				service PNG process gAMA;
+				service PNG process iCCP;
+				service PNG process sBIT;
+				service PNG process sRGB;
+				service PNG process tEXt;
+				service PNG process zTXt;
+				service PNG process iTXt;
+				service PNG process bKGD;
+				service PNG process hIST;
+				service PNG process pHYs;
+				service PNG process sPLT;
+				service PNG process tIME;
+				PNG unknown chunk;
+
+	(global parameters)
+	vector starting row	= 0; 0; 4; 0; 2; 0; 1;
+	vector starting col	= 0; 4; 0; 2; 0; 1; 0;
+	vector row increment	= 8; 8; 8; 4; 4; 2; 2;
+	vector col increment	= 8; 8; 4; 4; 2; 2; 1;
+	vector block height	= 8; 8; 4; 4; 2; 2; 1;
+	vector block width	= 8; 4; 4; 2; 2; 1; 1;
+
+	vector PNG pixel filter decode routines =
+		PNG unfilter none;
+		PNG unfilter sub;
+		PNG unfilter up;
+		PNG unfilter average;
+		PNG unfilter paeth;
+		
+	vector PNG pixel visit routines =
+		PNG pvr greyscale;
+		null;
+		PNG pvr truecolor;
+		PNG pvr indexed;
+		PNG pvr greyscale and alpha;
+		null;
+		PNG pvr truecolor and alpha;
+
+	PNG String Chunk Type = { **** };
+
+	(PNG.txt)
+	PNG String PNG		= { PNG:_ };
+	PNG String Chunk	= { _chunk. };
+	PNG String colonspace	= { :_ };
+	PNG String crlf 	= { \cr\lf };
+	PNG String Error	= { PNG_ERROR:_ };
+	PNG String Warning	= { PNG_Warning:_ };
+	PNG String Fatal	= { PNG_FATAL:_ };
+	PNG String No PNG Data	= { Data_is_no_PNG_data. };
+	PNG String Invalid PNG Data = { PNG_data_contains_errors. };
+	PNG String Unknown Chunk = { Unknown_chunk. };
+
+
+	(IHDR.txt)
+	PNG String Invalid Colour Type =
+		{ Invalid_Colour_Type. };
+	PNG String Invalid Bit Depth =
+		{ Invalid_Bit_Depth. };
+	PNG String Unsupported Compression Method =
+		{ Unsupported_Compression_Method. };
+	PNG String Unsupported Filter Method =
+		{ Unsupported_Filter_Method. };
+	PNG String Unsupported Interlace Method =
+		{ Unsupported_Interlace_Method. };
+	PNG String Invalid Chunk Order =
+		{ Invalid_Chunk_Order. };
+	PNG String Invalid IHDR Chunk Length =
+		{ Invalid_IHDR_Chunk_Length. };
+	PNG String Invalid Image Dimension =
+		{ Invalid_Image_Dimension. };
+	PNG String Unsupported Chunk =
+		{ Unsupported_Chunk. };
+
+	vector PNG frames per pixel	= 1; 0; 3; 1; 2; 0; 4;
+
+	vector PNG basic effect 	=
+		service FX Raw;
+		service FX Null;
+		service FX Raw;
+		service FX Raw;
+		service FX Alpha;
+		service FX Null;
+		service FX Alpha;
+
+	vector PNG superimpose effect	=
+		service FX Superimpose;
+		service FX Null;
+		service FX Superimpose;
+		service FX Alpha;
+		service FX Alpha;
+		service FX Null;
+		service FX Alpha;
+
+	vector PNG tRNS handlers	=
+		service tRNS type 0;
+		service tRNS invalid;
+		service tRNS type 2;
+		service tRNS type 3;
+		service tRNS invalid;
+		service tRNS invalid;
+		service tRNS invalid;
+
+	PNG Gamma display exponent = 2.222222222f;
+	PNG Gamma user exponent = 1.0f;
+
+	PNG keyword length	= UNDEFINED; (in bytes, not in bits)
+	PNG text length 	= UNDEFINED; (in bytes, not in bits)
+	PNG keyword start	= NULL; (for bytes.txt, not for bits.txt)
+	PNG text start		= NULL; (for bytes.txt, not for bits.txt)
+	PNG text strobj 	= NULL;
+
+"workspace"
+	PNG chunk ptr		= 1;
+	PNG chunk length	= 1;	(number of bytes in data section of the chunk)
+	PNG chunk type		= 1;	(4 byte value specifying the type of the chunk)
+	PNG chunk data		= 1;	(bit pointer to first bit in the data section, relative to [PNG Picture Data])
+	PNG chunk crc		= 1;	(CRC of data)
+	PNG Chunk Cnt		= 1;	(Counter of handled chunks.)
+
+	PNG Next Chunk		= 1;	(bit pointer to first bit of the next chunk)
+	PNG chunk routine	= 1;	(service routine for handling the current chunk)
+
+	PNG stop processing	= 1;
+
+	PNG interlace row	= 1;
+	PNG interlace col	= 1;
+
+	vector visit bounds	= 4;
+
+	PNG pixel previous line = 1; (pointer to line with filtered values.)
+	PNG pixel current line	= 1; (pointer to line with filtered values.)
+	PNG pixel stream	= 1; (pointer to vector containing unfiltered data.)
+	PNG pixel stream pointer= 1; (bitnumber of next pixel on input stream.)
+	PNG pixel current ptr	= 1; (bitnumber of next pixel on filtered stream.)
+	PNG pixel filter	= 1; (byte filter-type to perform on input data.)
+	PNG pixel first line	= 1; (boolean value, set to true when starting with
+					new image.)
+	PNG pixel current filtered ptr = 1; (bitnumber of next byte to unfilter.)
+	PNG pixel		= 1;
+
+	PNG filter paeth a	= 1;
+	PNG filter paeth b	= 1;
+	PNG filter paeth c	= 1;
+	PNG filter paeth p	= 1;
+	PNG filter paeth result = 1;
+
+	(parameters for "PNG Return Text")
+	PNG Note	= 1;
+	PNG Say Text	= 1;
+	PNG Say Integer = 1;
+
+	PNG image width 		= 1;
+	PNG image height		= 1;
+	PNG bit depth			= 1;
+	PNG colour type 		= 1;
+	PNG compression method		= 1;
+	PNG filter method		= 1;
+	PNG interlace method		= 1;
+
+	PNG bits per pixel		= 1;
+	PNG bytes per pixel		= 1;
+	PNG bytes per scanline		= 1;
+
+	PNG Compressed Image		= 1;
+	PNG compressed image size	= 1;	(size of image in bytes)
+
+	PNG Image			= 1;
+	PNG image size			= 1;	(size of image in bytes)
+
+	PNG palette size		= 1;
+	(where to store the palette)
+	vector PNG palette		= 256;
+	vector PNG palette alpha	= 256;
+
+	PNG Gamma		= 1;
+	PNG Gamma scale 	= 1;
+	PNG Gamma Decoding Component = 1;
+
+	PNG Gamma sample red	= 1;
+	PNG Gamma sample green	= 1;
+	PNG Gamma sample blue	= 1;
+	PNG Gamma sample alpha	= 1;
+
+	PNG Palette Alpha	= 1;
+
+	PNG text buffer len	= 1;
+	vector text buffer	= 65536;
+
+"programme"
+(----------------------------------------------------------------------------)
+(
+"Load PNG Picture"
+This is the routine which loads a PNG image into a video buffer. The
+interface, by which i mean the main input variables, is the same as
+the TGA-library from the main linoleum package. However, PNG is a
+more complicated and extended format as TGA, so there are some
+additions. Therefore read the comments at the input and output
+variables.
+
+This routine could be used just as TGA images are used, to directly
+load images into the main video layer. But, this will be very slow.
+The data of the image first has to be decompressed, filtered and
+adjusted to the right format, before a pixel can be shown to the
+screen. My suggestion is that PNG images first must be loaded into
+a separate image buffer. The display width of this buffer has the
+same width as the width of the image. Then load the image with the
+Image-library into the main video layer.
+
+IN:	[PNG Target Layer]	= pointer to vector holding video layer
+	[PNG Display Alignment] = width of video layer in pixels
+	[PNG Picture Data]	= pointer to vector holding PNG file
+	[PNG Picture Left]	= x-coordinate of image
+	[PNG Picture Top]	= y-coordinate of image
+	[PNG Display Width]	= right bounds of image region
+	[PNG Display Height]	= bottom bounds of image region
+	[PNG Effect]		= the pixel effect to draw with
+		NOTE:	When [PNG Effect] equals ZERO, the library will
+			determine itself which effect to use. To display
+			according to the saved data.
+	[PNG Say Text]		= service routine which can be used to return
+				[error-]information to the user. When set to
+				ZERO, nothing will be returned.
+	[PNG Say Integer]	= service routine which can be used to return
+				an [unsigned] integer to the user. When set to
+				ZERO, nothing will be returned.
+OUT:	[PNG Recommended Effect]= the pixel effect which is recommended to use.
+	[PNG image width]	= width in pixels
+	[PNG image height]	= height in pixels
+	[PNG bit depth] 	= bit depth per frame
+	[PNG colour type]
+	[PNG compression method]
+	[PNG filter method]
+	[PNG interlace method]
+)
+"Load PNG Picture"
+	(Check if file is PNG Data.)
+	a = [PNG Picture Data];
+	? [a plus 0] != PNG first unit -> Load PNG Picture No PNG Data;
+	? [a plus 1] != PNG second unit -> Load PNG Picture No PNG Data;
+
+	(File is PNG Data; initialize.)
+	[PNG Next Chunk] = 64; (points to first chunk.)
+	[PNG stop processing]		= NO;
+	[PNG compressed image size]	= 0;
+	[PNG Chunk Cnt] 		= 0;
+
+	[PNG Compressed Image]		= NULL;
+	[PNG Image]			= NULL;
+
+	"PNG process next chunk"
+		=> PNG Process chunk;
+		? failed -> Load PNG Picture No Valid PNG Data;
+
+		(increase chunk counter, and check if last chunk.)
+		[PNG Chunk Cnt]+;
+		? [PNG stop processing] = NO -> PNG process next chunk;
+
+	(create object to hold image data)
+	a = [PNG bytes per scanline];
+	a +;
+	a * [PNG Image Height];
+	? [PNG Interlace method] != 1 -> PNG Image Size Ok;
+	a * 6;
+	"PNG Image Size Ok"
+	a > 2; (a / 4;)
+	a+;
+	=> lock;
+	? ok -> Load PNG Picture Image Ok;
+		[PNG error] = PNG Memory Error;
+		a = [PNG Compressed Image]; => free;
+		[PNG Compressed Image] = NULL;
+		-> PNG Raise Error;
+	"Load PNG Picture Image Ok"
+	[PNG Image] = a;
+
+	(decompress image data)
+	[zlib stream] = [PNG compressed image];
+	[zlib stream ptr] = 0;
+	[zlib output] = [PNG image];
+	[zlib output ptr] = 0;
+	=> zlib decompress;
+	[PNG image size] = [zlib output ptr];
+	[PNG image size] > 3; (size in bytes)
+
+	? [PNG effect] != NULL -> Load PNG Picture FX Ok;
+	[PNG effect] = [PNG recommended effect];
+	"Load PNG Picture FX Ok"
+	("Load PNG Picture Now")
+	(draw image)
+	? [PNG interlace method] = 1 -> Load PNG Picture interlace;
+	=> PNG no interlace;
+	? failed -> Load PNG Picture error while interlacing;
+	-> Load PNG Picture end;
+	"Load PNG Picture interlace"
+	=> PNG interlace;
+	? ok -> Load PNG Picture end;
+		"Load PNG Picture error while interlacing"
+		[PNG error] = PNG Memory Error;
+		a = [PNG Compressed Image]; => free;
+		[PNG Compressed Image] = NULL;
+		a = [PNG Image]; => free;
+		[PNG Image] = NULL;
+		-> PNG Raise Error;
+	"Load PNG Picture end"
+	a = [PNG Compressed Image]; => free;
+	[PNG Compressed Image] = NULL;
+
+	a = [PNG Image]; => free;
+	[PNG Image] = NULL;
+	end;
+(----------------------------------------------------------------------------)
+"Read PNG Header"
+(This routine checks if the data is valid PNG data, and it reads the header
+chunk of the data.
+This routine needs the following information
+	[PNG Picture Data]	= pointer to first unit of data
+This routine returns the following information:
+	[PNG image width]	= width in pixels
+	[PNG image height]	= height in pixels
+	[PNG bit depth] 	= bit depth per frame
+	[PNG colour type]
+	[PNG compression method]
+	[PNG filter method]
+	[PNG interlace method]
+)
+	(Check if file is PNG Data.)
+	a = [PNG Picture Data];
+
+	? [a plus 0] != PNG first unit -> Load PNG Picture No PNG Data;
+	? [a plus 1] != PNG second unit -> Load PNG Picture No PNG Data;
+	(File is PNG Data; initialize.)
+	[PNG Next Chunk] = 64; (points to first chunk.)
+	[PNG stop processing]		= NO;
+	[PNG compressed image size]	= 0;
+	[PNG Chunk Cnt] 		= 0;
+
+	[PNG Compressed Image]		= NULL;
+	[PNG Image]			= NULL;
+	=> PNG Process chunk;
+	? failed -> Load PNG Picture No Valid PNG Data;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+(----------------------------------------------------------------------------)
+(---				Subroutines				  ---)
+(----------------------------------------------------------------------------)
+"PNG Process chunk"
+		[PNG chunk ptr] 	= [PNG Next Chunk];
+		[bit stream pointer]	= [PNG Picture Data];
+		[starting bit number]	= [PNG chunk ptr];
+		[bit field size]	= 32;
+
+		(get chunk length)
+		=> get bit field;
+		a = [bit field content];
+		=> toggle endian;
+		[PNG chunk length]	= a;
+		[starting bit number]	+ [bit field size];
+
+		(get chunk type)
+		=> get bit field;
+		a = [bit field content];
+		=> toggle endian;
+		[PNG chunk type]	= a;
+		[starting bit number]	+ [bit field size];
+
+		(check if type exists)
+		b # b; (b = 0;)
+		"PNG process chunk loop"
+			? [b relating vector PNG chunk types] = NULL
+				-> PNG process chunk loop end;
+			? [b relating vector PNG chunk types] = [PNG chunk type]
+				-> PNG process chunk loop end;
+			b+;
+			-> PNG process chunk loop;
+
+		"PNG process chunk loop end"
+		(save routine to call for chunk)
+		[PNG chunk routine] = [b relating vector PNG chunk routines];
+
+		"PNG process chunk check length"
+		? [PNG chunk length] > 0 -> PNG process chunk has data;
+		(set data)
+		[PNG chunk data]	= NULL;
+		-> PNG Process chunk get crc;
+
+		"PNG process chunk has data"
+		[PNG chunk data]	= [starting bit number];
+
+		b = [PNG chunk length];
+		b < 3; (b * 8;)
+		[starting bit number]	+ b;
+
+		"PNG Process chunk get crc"
+		(get crc)
+		[bit field size]	= 32;
+		=> get bit field;
+		a = [bit field content];
+		=> toggle endian;
+		[PNG chunk crc] 	= a;
+		[starting bit number]	+ [bit field size];
+
+		(set pointer to next chunk)
+		[PNG Next Chunk]	= [starting bit number];
+
+		(call corresponding chunk routine)
+		-> [PNG chunk routine];
+(----------------------------------------------------------------------------)
+
+
+(----------------------------------------------------------------------------)
+"toggle endian"
+(IN:	a = unit to toggle
+OUT:	a = result
+	all other regs unchanged.)
+	b-->; c-->; d-->;
+	a-->; a-->; a-->;
+	d<--; c<--; b<--;
+	a < 24;
+	d > 24;
+	c & 00ff0000h;
+	b & 0000ff00h;
+	a | d;
+	c > 8;
+	b < 8;
+	a | c;
+	a | b;
+	d<--; c<--; b<--;
+	end;
+(----------------------------------------------------------------------------)
+
+
+(----------------------------------------------------------------------------)
+"PNG interlace"
+	=> PNG pixel initialize;
+	? failed -> PNG Raise Error;
+	a # a; (a = pass = 0;)
+	"PNG interlace loop"
+		[PNG interlace row] = [a relating vector starting row];
+		? [PNG interlace row] >= [PNG image height] -> PNG interlace loop 2 end;
+		a-->;
+		=> PNG pixel read filter type;
+		a<--;
+		[PNG pixel first line] = TRUE;
+		-> PNG interlace loop 2 start;
+		"PNG interlace loop 2"
+			a-->;
+			=> PNG pixel read filter type;
+			a<--;
+			"PNG interlace loop 2 start"
+			[PNG interlace col] = [a relating vector starting col];
+			? [PNG interlace col] >= [PNG image width] -> PNG interlace loop 3 end;
+			"PNG interlace loop 3"
+				a-->;
+
+(
+				(visit(row, col,
+					min(block_heigh[pass], height - row),
+					min(block_width[pass], width - col));)
+				[vector visit bounds plus 0] = [PNG interlace col];
+				[vector visit bounds plus 1] = [PNG interlace row];
+
+				(calculate right bounds)
+				b = [PNG image width];
+				b - [PNG interlace col];
+				c = [a relating vector block width];
+				? b > c -> PNG interlace loop 3 take block width;
+					[vector visit bounds plus 2] = b;
+					-> PNG interlace loop 3 finish right;
+				"PNG interlace loop 3 take block width"
+					[vector visit bounds plus 2] = c;
+				"PNG interlace loop 3 finish right"
+				[vector visit bounds plus 2] + [vector visit bounds plus 0];
+				[vector visit bounds plus 2] -;
+
+				(calculate bottom bounds)
+				b = [PNG image height];
+				b - [PNG interlace row];
+				c = [a relating vector block height];
+				? b > c -> PNG interlace loop 3 take block height;
+					[vector visit bounds plus 3] = b;
+					-> PNG interlace loop 3 finish bottom;
+				"PNG interlace loop 3 take block height"
+					[vector visit bounds plus 3] = c;
+				"PNG interlace loop 3 finish bottom"
+				[vector visit bounds plus 3] + [vector visit bounds plus 1];
+				[vector visit bounds plus 3] -;
+)
+
+				(call the visit function)
+				=> PNG interlace visit;
+
+				a<--;
+				[PNG interlace col] + [a relating vector col increment];
+				? [PNG interlace col] < [PNG image width] -> PNG interlace loop 3;
+			"PNG interlace loop 3 end"
+			[PNG interlace row] + [a relating vector row increment];
+			? [PNG interlace row] < [PNG image height] -> PNG interlace loop 2;
+		"PNG interlace loop 2 end"
+		a +;
+		? a < 7 -> PNG interlace loop;
+	=> PNG pixel free;		  
+	end;
+(----------------------------------------------------------------------------)
+(void visit[int row, int column, int height, int width]:
+Obtains the next transmitted pixel and paints a rectangle of the specified
+height and width, whose upper-left corner is at the specified row and column,
+using the colour indicated by the pixel.)
+(IN:	the values of 'vector visit bounds' should be set, this is done by the
+	PNG interlace routine.
+OUT:	nothing)
+"PNG interlace visit"
+	(first get the pixel color)
+	=> PNG pixel visit;
+
+	(check vertical bounds)
+	a = [PNG Interlace Row];
+	a + [PNG picture top];
+	? a < 0 -> PNG interlace visit end;
+	? a >= [PNG Display Height] -> PNG interlace visit end;
+
+	(check horizontal bounds)
+	b = [PNG Interlace Col];
+	b + [PNG picture left];
+	? b < 0 -> PNG interlace visit end;
+	? b >= [PNG Display Width] -> PNG interlace visit end;
+
+	(write pixel to target)
+	a * [PNG display alignment];
+	a + b;
+	a + [PNG target layer];
+	b = [PNG pixel];
+	=> [PNG Effect];
+	"PNG interlace visit end"
+	end;
+(----------------------------------------------------------------------------)
+
+
+(----------------------------------------------------------------------------)
+"PNG no interlace"
+	=> PNG pixel initialize;
+	? failed -> PNG Raise Error;
+	=> PNG pixel read filter type;
+	[PNG pixel first line] = TRUE;
+
+	[PNG Interlace Row] = 0;
+
+	b = [PNG image height];
+	b-->;
+	-> loop 1 start;
+	"loop 1"
+		b-->;
+		=> PNG pixel read filter type;
+		[PNG Interlace Row] +;
+		"loop 1 start"
+		[PNG Interlace Col] = 0;
+		c = [PNG image width];
+		"loop 2"
+			c-->;
+			=> PNG interlace visit;
+			c<--;
+			[PNG Interlace Col] +;
+			c ^ loop 2;
+		a + [PNG display alignment];
+		b<--;
+		a - [PNG image width];
+		b ^ loop 1;
+	=> PNG pixel free;
+	end;
+(----------------------------------------------------------------------------)
+"PNG pixel initialize"
+	(lock object)
+	a = [png bytes per scanline];
+	a / bytes per unit;
+	a +;
+	[PNG error] = PNG Memory Error;
+	=> lock;
+	? failed -> PNG Raise Error;
+	[PNG pixel previous line]	= a;
+
+	(lock object)
+	a = [a minus 1];
+	=> lock;
+	? ok -> PNG pixel initialize ok;
+		[PNG error] = PNG Memory Error;
+		a = [PNG pixel previous line]; => free;
+		-> PNG Raise Error;
+	"PNG pixel initialize ok"
+	[PNG pixel current line]	= a;
+	[PNG pixel stream]		= [PNG image];
+	[PNG pixel stream pointer]	= 0;
+	end;
+(----------------------------------------------------------------------------)
+"PNG pixel free"
+	a = [PNG pixel previous line];
+	=> free;
+	a = [PNG pixel current line];
+	=> free;
+	end;
+(----------------------------------------------------------------------------)
+"PNG pixel read filter type"
+
+	(read filter type from input stream)
+	a = [PNG pixel stream pointer];
+	? a = 0 -> PNG pixel read filter type begin;
+	a -;
+	a > 3;
+	a +;
+	a < 3;
+	[PNG pixel stream pointer] = a;
+	"PNG pixel read filter type begin"
+	[bit stream pointer] = [PNG pixel stream];
+	[starting bit number] = a;
+	[bit field size] = 8;
+	=> get bit field;
+	[PNG pixel stream pointer] + 8;
+	[PNG pixel filter] = [bit field content];
+
+	(switch current and previous line)
+	[PNG Pixel Current Line]-->;
+	[PNG Pixel Previous Line]-->;
+	[PNG Pixel Current Line]<--;
+	[PNG Pixel Previous Line]<--;
+
+	[PNG pixel current ptr] = 0;
+	[PNG pixel first line] = false;
+	[PNG pixel current filtered ptr] = 0;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG pixel visit"
+	(returns the next pixel)
+	(I. check if enough filtered info available.)
+	a = [PNG pixel current ptr];
+	a + [PNG bits per pixel];
+	"PNG pixel visit check filter"
+	? a <= [PNG pixel current filtered ptr] -> PNG pixel visit read pixel;
+	(filter next byte, untill enough info on input.)
+	a-->;
+	a = [PNG pixel filter];
+	=> [a plus vector PNG pixel filter decode routines];
+	a<--;
+	-> PNG pixel visit check filter;
+
+	"PNG pixel visit read pixel"
+	[bit stream pointer] = [PNG pixel current line];
+	[bit field size] = [PNG bit depth];
+	[starting bit number] = [PNG pixel current ptr];
+	a = [PNG colour type];
+	=> [a plus vector PNG pixel visit routines];
+	[PNG pixel current ptr] + [PNG bits per pixel];
+	=> apply Gamma to pixel;
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr check frame"
+	? [PNG bit depth] < 16 -> PNG pvr check frame ok;
+	b = 32; (unit size)
+	b - [PNG bit depth];
+	a < b;
+	=> toggle endian;
+	"PNG pvr check frame ok"
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr greyscale"
+	=> PNG pixel read;
+	a = [bit field content];
+	=> PNG pvr check frame;
+	a ,= a;
+	[PNG Gamma sample red] = a;
+	[PNG Gamma sample green] = a;
+	[PNG Gamma sample blue] = a;
+	[PNG Gamma sample alpha] = 0f;
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr truecolor"
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample red] ,= a;
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample green] ,= a;
+	=> PNG pixel read;
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample blue] ,= a;
+	[PNG Gamma sample alpha] = 0f;
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr indexed"
+	=> PNG pixel read;
+	a = [bit field content];
+	=> get palette color;
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr greyscale and alpha"
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	a ,= a;
+	[PNG Gamma sample red] = a;
+	[PNG Gamma sample green] = a;
+	[PNG Gamma sample blue] = a;
+	=> PNG pixel read;
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample alpha] ,= a;
+	end;
+
+(----------------------------------------------------------------------------)
+	"PNG pvr truecolor and alpha"
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample red] ,= a;
+
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample green] ,= a;
+
+	=> PNG pixel read;
+	[starting bit number] + [bit field size];
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample blue] ,= a;
+
+	=> PNG pixel read;
+	a = [bit field content];
+	=> PNG pvr check frame;
+	[PNG Gamma sample alpha] ,= a;
+	end;
+
+
+
+
+(----------------------------------------------------------------------------)
+"PNG unfilter none"
+	a = [PNG pixel stream];
+	b = [PNG pixel stream pointer]; b > 3;
+	=> get byte;
+	a = [PNG pixel current line];
+	b = [PNG pixel current filtered ptr]; b > 3;
+	=> set byte;
+	[PNG pixel stream pointer]+8;
+	[PNG pixel current filtered ptr]+8;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG unfilter sub"
+	=> PNG pixel filter get a;
+	c-->; d<--;
+	a = [PNG pixel stream];
+	b = [PNG pixel stream pointer]; b > 3;
+	=> get byte;
+	c + d;
+	c & ffh;
+	a = [PNG pixel current line];
+	b = [PNG pixel current filtered ptr]; b > 3;
+	=> set byte;
+	[PNG pixel stream pointer]+8;
+	[PNG pixel current filtered ptr]+8;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG unfilter up"
+	=> PNG pixel filter get b;
+	c-->; d<--;
+	a = [PNG pixel stream];
+	b = [PNG pixel stream pointer]; b > 3;
+	=> get byte;
+	c + d;
+	c & ffh;
+	a = [PNG pixel current line];
+	b = [PNG pixel current filtered ptr]; b > 3;
+	=> set byte;
+	[PNG pixel stream pointer]+8;
+	[PNG pixel current filtered ptr]+8;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG unfilter average"
+	=> PNG pixel filter get a;
+	c-->; d<--;
+	=> PNG pixel filter get b;
+	c + d;
+	c > 1;
+	c-->; d<--;
+	a = [PNG pixel stream];
+	b = [PNG pixel stream pointer]; b > 3;
+	=> get byte;
+	c + d;
+	c & ffh;
+	a = [PNG pixel current line];
+	b = [PNG pixel current filtered ptr]; b > 3;
+	=> set byte;
+	[PNG pixel stream pointer]+8;
+	[PNG pixel current filtered ptr]+8;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG unfilter paeth"
+	=> PNG pixel filter get a;
+	[PNG filter paeth a] = c;
+	=> PNG pixel filter get b;
+	[PNG filter paeth b] = c;
+	=> PNG pixel filter get c;
+	[PNG filter paeth c] = c;
+	=> PNG paeth predictor;
+	a = [PNG pixel stream];
+	b = [PNG pixel stream pointer]; b > 3;
+	=> get byte;
+	c + [PNG filter paeth result];
+	c & ffh;
+	a = [PNG pixel current line];
+	b = [PNG pixel current filtered ptr]; b > 3;
+	=> set byte;
+	[PNG pixel stream pointer]+8;
+	[PNG pixel current filtered ptr]+8;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG paeth predictor"
+(IN:	[PNG filter paeth a]
+	[PNG filter paeth b]
+	[PNG filter paeth c]
+OUT:	[PNG filter paeth result])
+	a-->; b-->; c-->; d-->; e-->;
+	[PNG filter paeth p] = [PNG filter paeth a];
+	[PNG filter paeth p] + [PNG filter paeth b];
+	[PNG filter paeth p] - [PNG filter paeth c];
+	a = [PNG filter paeth p];
+	b = [PNG filter paeth p];
+	c = [PNG filter paeth p];
+	a - [PNG filter paeth a]; |a|;
+	b - [PNG filter paeth b]; |b|;
+	c - [PNG filter paeth c]; |c|;
+	? a > b -> PNG paeth predictor r1;
+	? a > c -> PNG paeth predictor c;
+	[PNG filter paeth result] = [PNG filter paeth a];
+	e<--; d<--; c<--; b<--; a<--;
+	end;
+	"PNG paeth predictor r1"
+	? b > c -> PNG paeth predictor c;
+	[PNG filter paeth result] = [PNG filter paeth b];
+	e<--; d<--; c<--; b<--; a<--;
+	end;
+	"PNG paeth predictor c"
+	[PNG filter paeth result] = [PNG filter paeth c];
+	e<--; d<--; c<--; b<--; a<--;
+	end;
+
+(----------------------------------------------------------------------------)
+"PNG pixel filter get a"
+	b = [PNG pixel current filtered ptr];
+	b > 3;
+	b - [PNG bytes per pixel];
+	? b < 0 -> PNG pixel filter take zero;
+	a = [PNG pixel current line];
+	-> get byte;
+
+(----------------------------------------------------------------------------)
+"PNG pixel filter get b"
+	? [PNG pixel first line] = TRUE -> PNG pixel filter take zero;
+	b = [PNG pixel current filtered ptr];
+	b > 3;
+	? b < 0 -> PNG pixel filter take zero;
+	a = [PNG pixel previous line];
+	-> get byte;
+
+(----------------------------------------------------------------------------)
+"PNG pixel filter get c"
+	? [PNG pixel first line] = TRUE -> PNG pixel filter take zero;
+	b = [PNG pixel current filtered ptr];
+	b > 3;
+	b - [PNG bytes per pixel];
+	? b < 0 -> PNG pixel filter take zero;
+	a = [PNG pixel previous line];
+	-> get byte;
+
+(----------------------------------------------------------------------------)
+"PNG pixel filter take zero"
+	c # c; (c = 0;)
+	end;
+
+	
+(----------------------------------------------------------------------------)
+"PNG pixel read"
+	? [PNG bit depth] >= 8 -> get bit field;
+	[bit field size] = 8;
+	[starting bit number]-->;
+	[starting bit number] > 3;
+	[starting bit number] < 3;
+	=> get bit field;
+	a = [bit field content];
+	b<--;
+	b & 111b; (b % 8;)
+	c = 8;
+	c - b;
+	c - [PNG bit depth];
+	a > c;
+	b = 1;
+	b < [PNG bit depth];
+	b-;
+	a & b;
+	[bit field content] = a;
+	end;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"PNG Return Text"
+	(This routine can be used to return information back to the user,
+	like console output.)
+(	[PNG Note] = pointer to string to show to the user.
+	[PNG Say Text] = service routine which handles [PNG Note].)
+	? [PNG Say Text] = NULL -> PNG Return Text End;
+	[bit stream pointer]-->;
+	[bit field size]-->;
+	[starting bit number]-->;
+	a-->; b-->; c-->; d-->; e-->;
+	=> [PNG Say Text];
+	e<--; d<--; c<--; b<--; a<--;
+	[starting bit number]<--;
+	[bit field size]<--;
+	[bit stream pointer]<--;
+	"PNG Return Text End"
+	end;
+(----------------------------------------------------------------------------)
+"PNG Return Integer"
+	(This routine can be used to return information back to the user,
+	like console output.)
+(	[PNG Note] = integer to show to the user.
+	[PNG Say Integer] = service routine which handles [PNG Note].)
+	? [PNG Say Integer] = NULL -> PNG Return Integer End;
+	[bit stream pointer]-->;
+	[bit field size]-->;
+	[starting bit number]-->;
+	a-->; b-->; c-->; d-->; e-->;
+	=> [PNG Say Integer];
+	e<--; d<--; c<--; b<--; a<--;
+	[starting bit number]<--;
+	[bit field size]<--;
+	[bit stream pointer]<--;
+	"PNG Return Integer End"
+	end;
+(----------------------------------------------------------------------------)
+"PNG Write Chunk Type"
+	a-->; b-->; c-->; d-->;
+	a = [PNG chunk type];
+	b = [PNG chunk type];
+	c = [PNG chunk type];
+	d = [PNG chunk type];
+
+	a > 0;
+	b > 8;
+	c > 16;
+	d > 24;
+
+	a & ffh;
+	b & ffh;
+	c & ffh;
+	d & ffh;
+
+	[PNG String Chunk Type plus 3] = a;
+	[PNG String Chunk Type plus 2] = b;
+	[PNG String Chunk Type plus 1] = c;
+	[PNG String Chunk Type plus 0] = d;
+
+	d<--; c<--; b<--; a<--;
+
+	[PNG Note] = PNG String Chunk Type; => PNG Return Text;
+	[PNG Note] = PNG String colonspace; => PNG Return Text;
+	end;
+(----------------------------------------------------------------------------)
+(--- PNG.txt Error Handlers ---)
+(----------------------------------------------------------------------------)
+	"PNG unknown chunk"
+	(first check if chunk is critical)
+	? [PNG Chunk Type] + PNG Not Critical -> PNG unknown chunk Warning;
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Unknown Chunk; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG unknown chunk Warning"
+	[PNG Note] = PNG String Warning; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Unknown Chunk; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	end;
+
+	"Load PNG Picture No PNG Data"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	[PNG Note] = PNG String No PNG Data; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"Load PNG Picture No Valid PNG Data"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	[PNG Note] = PNG String Invalid PNG Data; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	
+	? [PNG Compressed Image] = NULL -> PNG LPPNVPD End;
+	a = [PNG Compressed Image]; => free;
+	[PNG Compressed Image] = NULL;
+	"PNG LPPNVPD End"
+	fail;
+(----------------------------------------------------------------------------)
+(--- IHDR.txt Error Handlers ---)
+(----------------------------------------------------------------------------)
+	"PNG Fatal Invalid Colour Type"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Invalid Colour Type; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Invalid Bit Depth"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Invalid Bit Depth; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Unsupported Compression Method"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Unsupported Compression Method; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Unsupported Filter Method"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Unsupported Filter Method; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Unsupported Interlace Method"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Unsupported Interlace Method; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Invalid Chunk Order"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Invalid Chunk Order; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Invalid Chunk Length"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Invalid IHDR Chunk Length; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+
+	"PNG Fatal Invalid Image Dimension"
+	[PNG Note] = PNG String Fatal; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	[PNG Note] = PNG String Invalid Image Dimension; => PNG Return Text;
+	[PNG Note] = PNG String crlf; => PNG Return Text;
+	fail;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+	"PNG Error Invalid Chunk"
+	(This is meant for non fatal errors.)
+	[PNG Note] = PNG String Error; => PNG Return Text;
+	=> PNG Write Chunk Type;
+	end;
+
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"service PNG process IHDR"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= bit stream pointer
+	[PNG Picture Data]	 = pointer to bit stream)
+	? [PNG Chunk Cnt] != 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] != 13 -> PNG Fatal Invalid Chunk Length; (Length has to be 13.)
+	(Ok, valid IHDR chunk.)
+	[bit stream pointer]	= [PNG Picture Data];
+	[starting bit number]	= [PNG chunk data];
+	[bit field size]	= 32;
+	=> get bit field;
+	a = [bit field content];
+	=> toggle endian;
+	[PNG image width]	  = a;
+	[starting bit number]	+ [bit field size];
+	? [PNG image width] = 0 -> PNG Fatal Invalid Image Dimension;
+
+	=> get bit field;
+	a = [bit field content];
+	=> toggle endian;
+	[PNG image height]	  = a;
+	[starting bit number]	+ [bit field size];
+	? [PNG image height] = 0 -> PNG Fatal Invalid Image Dimension;
+
+	[bit field size]	= 8;
+	=> get bit field;
+	[starting bit number]	+ [bit field size];
+	[PNG bit depth] 	= [bit field content];
+	? [PNG bit depth] > 16 -> PNG Fatal Invalid Bit Depth;
+	? [PNG bit depth] = 1 -> PNG IHDR Read Colour Type;
+	? [PNG bit depth] + 1 -> PNG Fatal Invalid Bit Depth;
+
+	"PNG IHDR Read Colour Type"
+
+	=> get bit field;
+	[starting bit number]	+ [bit field size];
+	[PNG colour type]	= [bit field content];
+	a = [PNG colour type];
+	a = [a plus vector PNG frames per pixel];
+	? a > 6 -> PNG Fatal Invalid Colour Type;
+	? a = 0 -> PNG Fatal Invalid Colour Type;
+
+	=> get bit field;
+	[starting bit number]	+ [bit field size];
+	[PNG compression method]= [bit field content];
+	? [PNG compression method] != 0 -> PNG Fatal Unsupported Compression Method;
+
+	=> get bit field;
+	[starting bit number]	+ [bit field size];
+	[PNG filter method]	= [bit field content];
+	? [PNG filter method] != 0 -> PNG Fatal Unsupported Filter Method;
+
+	=> get bit field;
+	[starting bit number]	+ [bit field size];
+	[PNG interlace method]	= [bit field content];
+	? [PNG interlace method] '> 1 -> PNG Fatal Unsupported Interlace Method;
+
+	a = [PNG colour type];
+	[PNG bits per pixel] = [PNG bit depth];
+	[PNG bits per pixel] * [a plus vector PNG frames per pixel];
+
+	[PNG bytes per pixel] = [PNG bits per pixel];
+	[PNG bytes per pixel] -;
+	[PNG bytes per pixel] > 3;
+	[PNG bytes per pixel] +;
+
+	[PNG bytes per scanline] = [PNG bits per pixel];
+	[PNG bytes per scanline] * [PNG image width];
+	[PNG bytes per scanline] -;
+	[PNG bytes per scanline] > 3;
+	[PNG bytes per scanline] +;
+
+	[PNG recommended effect] = [a plus vector PNG Basic Effect];
+
+	(calculate Gamma scale value)
+	[PNG Gamma Decoding Component] = 1f;
+	a = 1;
+	a < [PNG bit depth];
+	a -;
+	a ,= a;
+	[PNG Gamma scale] = 1f;
+	[PNG Gamma scale] // a;
+
+	[PNG Palette Alpha] = NO;
+	end;
+(----------------------------------------------------------------------------)
+"service PNG process PLTE"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;
+	[bit stream pointer]	= [PNG Picture Data];
+	[bit field size]	= 24;
+	[starting bit number]	= [PNG chunk data];
+	a = [PNG chunk length];
+	a-->; b<--;
+	b % 3;
+	? b != 0 -> PNG Fatal Invalid Chunk Length;
+	a / 3;
+	[PNG palette size] = a;
+	b = vector PNG palette;
+	"s PNG process PLTE loop"
+		a-->; b-->;
+		=> get bit field;
+		[starting bit number] + [bit field size];
+		b<--; a<--;
+		[b] = [bit field content];
+		b+;
+		a^s PNG process PLTE loop;
+	"s PNG process PLTE end"
+	end;
+
+(----------------------------------------------------------------------------)
+"get palette color"
+(IN:	a = index of color)
+	? a < [PNG palette size] -> get palette color now;
+	b = NULL;
+	fail;
+
+	"get palette color now"
+	b = [a relating vector PNG palette];
+	c = b;
+	c & ffh;
+	[PNG Gamma sample red] ,= c;
+
+	c = b;
+	c > 8;
+	c & ffh;
+	[PNG Gamma sample green] ,= c;
+
+	c = b;
+	c > 16;
+	c & ffh;
+	[PNG Gamma sample blue] ,= c;
+
+	? [PNG Palette Alpha] = NO -> get palette color no alpha;
+	[PNG Gamma sample alpha] ,= [a relating vector PNG palette alpha];
+	-> get palette color alpha end;
+	"get palette color no alpha"
+	[PNG Gamma sample alpha] = 0f;
+	"get palette color alpha end"
+	[PNG Gamma scale] = 1f div 255;
+	end;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"service PNG process IEND"
+	[PNG stop processing] = YES;
+	end;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"service PNG process IDAT"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;
+	(check if object exists)
+	? [PNG Compressed Image] != NULL -> sPNG process IDAT resize;
+	(lock object)
+	a = [PNG Chunk Length];
+	a-;
+	a / bytesperunit;
+	a+;
+	[PNG error] = PNG Memory Error;
+	=> lock;
+	? failed -> PNG Raise Error;
+	[PNG Compressed Image] = a;
+	-> sPNG process IDAT copy;
+
+	"sPNG process IDAT resize"
+	a = [PNG Compressed Image];
+	b = [PNG Chunk Length];
+	b-;
+	b / bytesperunit;
+	b+;
+	b + [a minus 1];
+	[PNG error] = PNG Memory Error;
+	=> resize;
+	? failed -> PNG Raise Error;
+	[PNG Compressed Image] = a;
+(	 -> sPNG process IDAT copy;)
+
+	"sPNG process IDAT copy"
+	(copy contents of chunk to 'PNG image data')
+	a = [PNG Picture Data];
+	b = [PNG chunk data];
+	b > 3; (b / 8;)
+	c = [PNG chunk length];
+	d = [PNG compressed image];
+	e = [PNG compressed image size];
+	=> bmemcpy;
+	[PNG compressed image size] + [PNG chunk length];
+	end;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"service PNG process tRNS"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;
+
+	a = [PNG Colour Type];
+	[PNG recommended effect] = [a plus vector PNG Superimpose Effect];
+	=> [a plus vector PNG tRNS handlers];
+	end;
+
+(----------------------------------------------------------------------------)
+"service tRNS type 0"
+	[bit stream pointer] = [PNG Picture Data];
+	[starting bit number] = [PNG Chunk Data];
+	[bit field size] = 8;
+	=> get bit field;
+	a = [bit field content];
+	a-->; b<--;
+	a-->; c<--;
+	b<8;
+	c<16;
+	a|b;
+	a|c;
+	[FX Transparent Color] = a;
+	end;
+
+(----------------------------------------------------------------------------)
+"service tRNS type 2"
+	[bit stream pointer] = [PNG Picture Data];
+	[starting bit number] = [PNG Chunk Data];
+	[bit field size] = 8;
+	=> get bit field;
+	[starting bit number] + 16;
+	[bit field content] < 16;
+	[FX Transparent Color] = [bit field content];
+	=> get bit field;
+	[starting bit number] + 16;
+	[bit field content] < 8;
+	[FX Transparent Color] | [bit field content];
+	=> get bit field;
+	[starting bit number] + 16;
+	[FX Transparent Color] | [bit field content];
+	end;
+
+(----------------------------------------------------------------------------)
+"service tRNS type 3"
+	[bit stream pointer] = [PNG Picture Data];
+	[starting bit number] = [PNG Chunk Data];
+	[bit field size] = 8;
+	[PNG Palette Alpha] = YES;
+
+	a = vector PNG palette alpha;
+	b = [PNG palette size];
+	"s tRNS type 3 loop"
+	a-->; b-->;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	b<--; a<--;
+	[a] = [bit field content];
+	a+;
+	b^s tRNS type 3 loop;
+	end;
+
+(----------------------------------------------------------------------------)
+"service tRNS invalid"
+	end;
+
+
+(----------------------------------------------------------------------------)
+"service PNG process gAMA"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;
+	(read Gamma value)
+	[bit stream pointer] = [PNG Picture Data];
+	[starting bit number] = [PNG chunk data];
+	[bit field size] = 32;
+	=> get bit field;
+	a = [bit field content];
+	=> toggle endian;
+	a ,= a;
+	[PNG Gamma] = 100 000f;
+	[PNG Gamma] // a;
+
+	a // 100 000f;
+	a ** [PNG Gamma display exponent];
+
+	b = [PNG Gamma user exponent];
+	b // a;
+	[PNG Gamma Decoding Component] = b;
+	end;
+
+
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"apply Gamma to pixel"
+(This routine assumes that the samples are already in the sample vars.)
+	[PNG Gamma sample red] ** [PNG Gamma scale];
+	[PNG Gamma sample green] ** [PNG Gamma scale];
+	[PNG Gamma sample blue] ** [PNG Gamma scale];
+	[PNG Gamma sample alpha] ** [PNG Gamma scale];
+
+	a = [PNG Gamma Decoding Component];
+	a ** 100 000f;
+	a ++ 0.5f;
+	a =, a;
+	? a = 100 000 -> agtp no gamma;
+	(handle red)
+	a = [PNG Gamma sample red];
+	b = [PNG Gamma Decoding Component];
+	[math precision] = 10;
+	"agtp red ok"
+	a ** 255f;
+	a ++ 0.5f;
+	a =, a;
+	? a >= 0 -> agtp red bottom checked;
+	a = 0; "agtp red bottom checked"
+	? a <= 255 -> agtp red top checked;
+	a = 255; "agtp red top checked"
+	[PNG pixel] = a;
+	[PNG pixel] < 16;
+
+	(handle green)
+	a = [PNG Gamma sample green];
+	b = [PNG Gamma Decoding Component];
+	=> float exp float;
+	a ** 255f;
+	a ++ 0.5f;
+	a =, a;
+	? a >= 0 -> agtp green bottom checked;
+	a = 0; "agtp green bottom checked"
+	? a <= 255 -> agtp green top checked;
+	a = 255; "agtp green top checked"
+	a < 8;
+	[PNG pixel] | a;
+
+	(handle blue)
+	a = [PNG Gamma sample blue];
+	b = [PNG Gamma Decoding Component];
+	=> float exp float;
+	a ** 255f;
+	a ++ 0.5f;
+	a =, a;
+	? a >= 0 -> agtp blue bottom checked;
+	a = 0; "agtp blue bottom checked"
+	? a <= 255 -> agtp blue top checked;
+	a = 255; "agtp blue top checked"
+	[PNG pixel] | a;
+
+	"agtp handle alpha"
+	(handle alpha)
+	a = [PNG Gamma sample alpha];
+	a ** 255f;
+	a ++ 0.5f;
+	a =, a;
+	? a >= 0 -> agtp alpha bottom checked;
+	a = 0; "agtp alpha bottom checked"
+	? a <= 255 -> agtp alpha top checked;
+	a = 255; "agtp alpha top checked"
+	a < 24;
+	[PNG pixel] | a;
+	end;
+
+	"agtp no gamma"
+	(handle red)
+	a = [PNG Gamma sample red];
+	a ** 255f;
+	a ++ 0.5f;
+	a =, a;
+(	 ? a >= 0 -> agtp ng red bottom checked;
+	a = 0; "agtp ng red bottom checked"
+	? a <= 255 -> agtp ng red top checked;
+	a = 255; "agtp ng red top checked")
+
+	(handle green)
+	b = [PNG Gamma sample green];
+	b ** 255f;
+	b ++ 0.5f;
+	b =, b;
+(	 ? b >= 0 -> agtp ng green bottom checked;
+	b = 0; "agtp ng green bottom checked"
+	? b <= 255 -> agtp ng green top checked;
+	b = 255; "agtp ng green top checked")
+
+	(handle blue)
+	c = [PNG Gamma sample blue];
+	c ** 255f;
+	c ++ 0.5f;
+	c =, c;
+(	 ? c >= 0 -> agtp ng blue bottom checked;
+	c = 0; "agtp ng blue bottom checked"
+	? c <= 255 -> agtp ng blue top checked;
+	c = 255; "agtp ng blue top checked")
+
+	a < 16;
+	b < 8;
+	a | c;
+	a | b;
+	[PNG Pixel] = a;
+
+	-> agtp handle alpha;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"service PNG process tEXt"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;  
+
+	a = [PNG Picture Data];
+	b = [PNG chunk data];
+	b > 3; (a / 8;)
+	(determine the lengths of the keyword and the text.)
+	[PNG keyword start]	= b;
+	d = [PNG chunk length];
+	d + b;
+	e # e; (e = 0;)
+	=> bmemchr start;
+	? failed -> s PNG process tEXt fail;
+	[PNG text start]	= b;
+	[PNG text start]	+;
+	[PNG keyword length]	= b;
+	[PNG keyword length]	- [PNG keyword start];
+	[PNG text length]	= [PNG chunk length];
+	[PNG text length]	- [PNG keyword length];
+	[PNG text length]	-;
+
+	a = [PNG Picture Data];
+	b = [PNG Keyword Start];
+	d = [PNG Keyword Length];
+	e = vector text buffer;
+	=> bmemtostr;
+	[PNG Note] = vector text buffer; => PNG Return Text;
+	[PNG Note] = PNG string crlf; => PNG Return Text;
+
+	a = [PNG Picture Data];
+	b = [PNG Text Start];
+	d = [PNG Text Length];
+	e = vector text buffer;
+	=> bmemtostr;
+	[PNG Note] = vector text buffer; => PNG Return Text;
+	[PNG Note] = PNG string crlf; => PNG Return Text;
+	end;
+	
+	"s PNG process tEXt fail"
+	fail;
+(----------------------------------------------------------------------------)
+"service PNG process zTXt"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	? [PNG Chunk Cnt] = 0 -> PNG Fatal Invalid Chunk Order; (IHDR has to be first chunk.)
+	? [PNG chunk length] <= 0 -> PNG Fatal Invalid Chunk Length;
+	(determine the lengths of the keyword and the text.)
+	a = [PNG Picture Data];
+	b = [PNG chunk data];
+	b > 3; (b / 8;)
+	[PNG keyword start]	= b;
+	d = [PNG chunk length];
+	d + b;
+	e # e; (e = 0;)
+	=> bmemchr start;
+	? failed -> PNG Error Invalid Chunk;
+	[PNG text start]	= b;
+	[PNG text start]	+;
+	[PNG keyword length]	= b;
+	[PNG keyword length]	- [PNG keyword start];
+	[PNG text length]	= [PNG chunk length];
+	[PNG text length]	- [PNG keyword length];
+	[PNG text length]	-;
+
+	a = [PNG Picture Data];
+	b = [PNG Keyword Start];
+	d = [PNG Keyword Length];
+	e = vector text buffer;
+	=> bmemtostr;
+	[PNG Note] = vector text buffer; => PNG Return Text;
+	[PNG Note] = PNG string crlf; => PNG Return Text;
+
+	[zlib stream]		= [PNG Picture Data];
+	[zlib stream ptr]	= [PNG text start];
+	[zlib stream ptr]	+;
+	[zlib stream ptr]	< 3;
+	[zlib output]		= vector text buffer;
+	[zlib output ptr]	= 0;
+	=> zlib decompress;
+	[zlib output ptr] > 3;
+	[PNG text buffer len] = [zlib output ptr];
+
+	a = [PNG text buffer len];
+	[PNG error] = PNG Memory Error;
+	=> lock;
+	? failed -> PNG Raise Error;
+	[PNG text strobj] = a;
+
+	a = vector text buffer;
+	b # b; (b = 0;)
+	d = [PNG text buffer len];
+	e = [PNG text strobj];
+	=> bmemtostr;
+	[PNG Note] = [PNG text strobj]; => PNG Return Text;
+	[PNG Note] = PNG string crlf; => PNG Return Text;
+
+	a = [PNG text strobj];
+	=> free;
+	end;
+
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+	(Miscellaneous)
+(----------------------------------------------------------------------------)
+"service PNG process bKGD"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG data stream]	= pointer to bit stream)
+
+	-> PNG unknown chunk;
+
+
+"service PNG process hIST"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG data stream]	= pointer to bit stream)
+
+	-> PNG unknown chunk;
+	
+
+"service PNG process pHYs"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG data stream]	= pointer to bit stream)
+
+	-> PNG unknown chunk;
+
+
+"service PNG process sPLT"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG data stream]	= pointer to bit stream)
+
+	-> PNG unknown chunk;
+
+
+"service PNG process tIME"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG data stream]	= pointer to bit stream)
+
+	-> PNG unknown chunk;
+(----------------------------------------------------------------------------)
+
+
+(----------------------------------------------------------------------------)
+	(Text)
+(----------------------------------------------------------------------------)
+"service PNG process iTXt"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	-> PNG unknown chunk;
+(----------------------------------------------------------------------------)
+
+
+(----------------------------------------------------------------------------)
+	(Ancilary)
+(----------------------------------------------------------------------------)
+"service PNG process cHRM"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	-> PNG unknown chunk;
+
+
+"service PNG process iCCP"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	-> PNG unknown chunk;
+
+
+"service PNG process sBIT"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	-> PNG unknown chunk;
+
+
+"service PNG process sRGB"
+(IN:	[PNG chunk length]	= number of bytes in data section
+	[PNG chunk data]	= pointer to first bit in bit stream
+	[PNG Picture Data]	 = pointer to bit stream)
+	-> PNG unknown chunk;
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+"PNG Raise Error"
+	fail;

@@ -1,0 +1,176 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        stockfile<br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "stockfile" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This period follows "libraries", if "libraries" is used.<br>
+        This period preceeds "directors".<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+L.in.oleum applications might not have external support files. I mean: when
+you're writing a program that uses a certain image as a background for
+its display, you have to consider the file containing the image may not
+be there along with the application, because L.in.oleum applications can,
+and should, be made of ONLY A SINGLE FILE. Of course they may CREATE
+additional files to store user's data and manage their own archives, but
+the applications themselves might always be functional for the user
+<u>as a single executable file</u>.
+Techincally, these are called STAND-ALONE applications.
+
+<br><br>
+So, what if you need that picture in the background anyway?
+The "stockfile" period is here exactly to hold any external files that
+wouldn't normally be part of the main executable: the compiler is able to
+make a single file out of all the additional files your application may
+need. If you want the compiler to ADD a certain file to the final executable
+file (PROGRAM.EXE), you must specify the name of the file to be added
+inside the "stockfile" period.
+
+<br><br>
+Here's an example:
+
+<blockquote>
+"stockfile"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgnd;
+</blockquote>
+
+Supposing the background image you wanted to use is called "backgnd"
+(and having any extensions, because the extension doesn't count for
+the compiler), you would be ready to access it from your application.
+Specifically, an example of a little program accessing that file would
+be the following one... the example supposes the image file is formed
+by raw data (just the colors of the pixels displaced in a matrix), that
+the image is 500 pixels wide and 400 pixels tall, and that each pixel
+in the image takes exactly one memory unit (32 bits per pixel).
+The example reads the data from the stockfile at the position
+corresponding to the file we linked ([File Position]=backgnd;).
+Data is read and placed inside a matrix (or vector, or array, or whatever
+you may like calling a linear sequence of memory units), declared in the
+"workspace" period and having an appropriate size. Then the matrix is
+immediately sent to the video RAM ([Display Command]=RETRACE;) and after
+that the application waits for a key to be pressed
+([Console Command]=GET CONSOLE INPUT;).
+
+<blockquote>
+        "stockfile"
+                <blockquote>
+                backgnd;<br>
+                </blockquote>
+
+        "directors"
+                <blockquote>
+                unit = 32;<br>
+                display width = 500;<br>
+                display height = 400;
+                </blockquote>
+
+        "workspace"
+                <blockquote>
+                Image data = 500 multiplied 400;
+                </blockquote>
+
+        "programme"
+                <blockquote>
+
+                (reads the image data)<br>
+                [File Name] = STOCKFILE;<br>
+                [File Position] = backgnd;<br>
+                [File Command] = READ;<br>
+                [Block Pointer] = Image data;<br>
+                [Block Size] = Size of backgnd;<br>
+                isocall;<br><br>
+
+                (displays the image)<br>
+                [Display Origin] = Image data;<br>
+                [Display Command] = RETRACE;<br>
+                isocall;<br><br>
+
+                (waits for a key)<br>
+            "wait that key"<br>
+                [Console Command] = GET CONSOLE INPUT;<br>
+                isocall;<br>
+                ? failed -> wait that key;<br><br>
+
+                (quits the program)<br>
+                end;
+                </blockquote>
+</blockquote>
+
+You can see there's a couple of constants which seem not to be
+declared by the program, but they are used anyway. The two
+constants are "backgnd" and "Size of backgnd". They are NOT
+declared by the main program; they are automatically declared
+by the compiler to mark the position and size of that file
+along the whole stock file. The stock file can contain more
+than a file, of course, and its maximum size is 512 Megaunits,
+which at present time means 2 Gigabytes.
+
+<br><br>
+To conclude, remember all the files specified in the "stockfile" period
+will be physically linked to the resulting application and will enlarge
+the executable file. Now, understanding how the above program would work
+is not possible until you've read most of the rest of this guide. When you
+have some comprehension of the above program, seeing how the tools I wrote
+work will certainly help you more than another million words (try to take a
+look at "linoinstaller" in the examples' folder, which loads the L.in.oleum
+logo as its window's background).
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

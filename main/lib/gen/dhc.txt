@@ -1,0 +1,704 @@
+(
+
+    DYNAMIC HUFFMAN COMPRESSOR / DECOMPRESSOR
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:	       2236 bytes *
+    | Allocates:      39100 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      This is a "pure" implementation of the DHC algorythm, also known as
+    Adaptive Huffman Compression. It is pure because it isn't embedded in any
+    more sophisticated packaging methods: it barely processes a datagram and
+    produces a compressed packet. These compressed packets don't even include
+    the original size of the datagram, saving which along with the packet is
+    the calling program's duty. Of course, in this same library there's the
+    corresponding decompression routine.
+      Both the compressor and the decompressor can be fine tuned to work with
+    datagrams which are not aligned on an 8-bit boundary, or which word size
+    is below or equal to 8 bits. The implementation takes care of execution
+    speed rather than low memory usage. However, it might be a pretty useful
+    library: it's short, simple, and could be often used to achieve additional
+    compression of random datagrams that have eventually already been packed
+    in some other more specific way.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+
+	Synopsis for DHC:
+
+    <step 1 - loading input parameters>
+	[dhc datagram] = pointer to bitstream to be compressed;
+	[dhc take bit] = n. of the 1st bit of the datagram to start from;
+	[dhc wordsize] = size in bits of a word in the data;
+	[dhc wordfill] = how many void bits may separate words in the data;
+	[dhc datasize] = number of words of the data;
+	[dhc rlatency] = huffman tree regeneration latency;
+    <step 2 - loading output parameters>
+	[dhc data out] = pointer to bitstream to host the compressed packet;
+	[dhc give bit] = n. of 1st bit of above bitstream to start writing to;
+	[dhc size out] = total size in bits of the bitstream provided above;
+    <step 3 - calling compressor, retrieving compressed bitstream size>
+	=> DHC;
+      ? ok -> alright;
+      ? failed -> invalid parameters or DHC ran out of destination buffer;
+    "alright"
+	[resulting packet size in bits] = [dhc bits out];
+
+      DHC, the compression routine, will fail if the compressed bitstream's
+    size exceeds [dhc size out] on entry. Such failures will not overwrite any
+    memory bits beyond the buffer provided by [dhc data out]. It will also
+    fail unconditionally if the [dhc wordsize] parameter is set to a value
+    below 0 or greater than 8, because the Huffman tree buffers are only
+    intended to hold a maximum of 256 + 1 nodes, the additional node being the
+    "new leaf" code. The typical value to set "size out" to, is the same value
+    held by "datasize": this way, if the datagram cannot be efficiently
+    compressed, DHC would fail, rather than attempt to produce a compressed
+    packet that'd be longer than its uncompressed version.
+      The tree regeneration latency is the value for a counter that delays
+    regeneration of the Huffman tree while reading known words: if it's left
+    to zero, it regenerates the tree every time a word is read from the input
+    datagram. Such a behaviour maximizes compression because at every moment
+    the compressor reflects the occurrences of known words on their codes'
+    length, so that shorter codes are always used for the most occuring words,
+    and the tree dynamically adapts to the datagram as compression goes on.
+    The disadvantage is that this is very slow: introducing a small latency
+    between regenerations when known words are read can dramatically speed up
+    the compression process. If latencies are small enough, and for personal
+    experience I noticed values around 30 seem to be a good compromise in most
+    cases, they may not influence compression efficiency significantly, and on
+    the other hand they will make it noticeably faster. The same happens when
+    decompressing, but please note that regeneration latency is a necessary
+    parameter to be known for successfully decompressing with unDHC. If you
+    used the unDHC routine with [dhc rlatency] set to a value different from
+    that used while compressing a given datagram, decompression would produce
+    unpredictable results, due to the Huffman tree being regenerated no longer
+    in perfect synchronicity with the compressor.
+
+	Synopsis for unDHC:
+
+    <step 1 - loading input parameters>
+	[dhc datagram] = pointer to compressed bitstream;
+	[dhc take bit] = n. of the 1st bit of the datagram to start from;
+	[dhc wordsize] = size of words in the original uncompressed data;
+	[dhc wordfill] = void bits separating words in the original data;
+	[dhc datasize] = number of words in the original datagram;
+	[dhc rlatency] = huffman tree regeneration latency;
+    <step 2 - loading output parameters>
+	[dhc data out] = pointer to bitstream to receive uncompressed data;
+	[dhc give bit] = n. of 1st bit of above bitstream to start writing to;
+	[dhc size out] = total size in bits of the bitstream provided above;
+    <step 3 - calling decompressor, retrieving uncompressed bitstream size>
+	=> unDHC;
+      ? ok -> alright;
+      ? failed -> invalid parameters or unDHC ran out of destination buffer;
+    "alright"
+	[resulting uncompressed data size in bytes] = [dhc bits out];
+
+      unDHC, the decompression routine, will fail if the uncompressed data
+    size exceeds [dhc size out] on entry. Such failures will not overwrite any
+    bits beyond the buffer provided by [dhc data out]. It will also fail
+    unconditionally if the [dhc wordsize] parameter is set to a value below 0
+    or greater than 8. To reasonably handle most packets, you can expect to
+    need at least 4 times the packet's size for the uncompressed data buffer's
+    size. To handle any possible packets, in theory you may set that buffer to
+    8 times the packet's size. The parameters that you HAVE to synchronize
+    with the compressor are: wordsize, wordfill, tree regeneration latency,
+    and datasize. Remember that datasize is given as an amount of words, not
+    an amount of single bits, because there can't be incomplete words in these
+    datagrams.
+
+      Note: both DHC and unDHC can accept null-terminated datagrams, typically
+    ASCII text strings, without needing to know the size of the datagram in
+    words. To signal them to stop when the first null code is met, load the
+    parameter "datasize" with zero. Please note that this makes impossible to
+    compress/decompress void datagrams: in such cases the caller is intended
+    to check for the datagram's size, and make sure it is not zero. If it's
+    zero, the caller might mark the datagram as void in some conventional way,
+    and never call DHC or unDHC to process it.
+
+    --------------------------------------------------------------------------
+    Optimization notes, and how this library works:
+    --------------------------------------------------------------------------
+
+      The routine building the tree uses [dhc nodes] as a mean for quickly
+    scanning existing branches. [dhc nodes] is initialized with offsets giving
+    the distance between branches, then one of these offsets gets updated
+    every time two branches of the tree are merged, so that what's being the
+    child branch at that time, will be automatically skipped in the next
+    search for the least significant branches. The unlabeled unit before the
+    very first branch, isn't representing a branch itself, but still gives the
+    offset, from location -1 in [dhc nodes], to the very first used branch.
+      For the best explanation I could give, here is the complete binary tree
+    resulting from encoding the string lately given in an example program,
+    "she sells sea shells on the seashore", of 36 bytes. The following tree
+    differs a bit from the real implementation because node 256, reserved to
+    the "insert new leaf" code, is given a weight of eight occurrences, not 1.
+    I noticed this way the tree is a bit more efficient in the very beginning
+    of a datastream, when several new leaves are expected and the new leaf
+    code might be better if shorter. Later, at every new leaf, the occurrences
+    count for node 256 keeps decreasing, to make room in the shorter codes for
+    the most occuring words, as normal. But for the rest, I don't really
+    suggest changes to the weighs of the leaves, especially because if they're
+    too unbalanced they may cause longest codes to exceed 32 bits, and produce
+    errors. In normal circumstances, instead, it is mathematically impossible
+    that they could produce codes longer than n bits where n is the addressing
+    range, in words, of the datagram to be compressed. So this is valid,
+    considering a minimum wordsize of 1 bit, for datagrams up to 512 Mb.
+      Other than that, however, unbalancing the tree doesn't usually lead to
+    better compression, and rather, any such changes tendentially make it less
+    efficient.
+
+	For instance, node 32, the root node, has three links, to nodes 101,
+	115 and 97. These links are recursively followed whenever branches get
+	merged, to update the paths, ultimately giving the binary codes, to
+	the singletons at their ends. Singletons are leaves without childs, at
+	the end of the paths. Shorter paths are given to chars repeating more.
+	  |
+NofLinks  3	3     0     0	  1	1     1     0	  0	1     0
+      | 101   110   ...   ...	111   114   116   ...	...   256   ...
+links-| 115   104
+      |  97   108    moving right means adding a binary 1 to the path
+		     descending the node means adding a binary 0 to the path
+ root -> 37_____x    when you meet an x, descend the node without adding bits
+	  |	|
+	 21_____|_________________________________________x
+	  |	|					  |
+	  |    16_________________x			  |
+	  |	|		  |			  |
+	 13_____|_____x 	  |			  |
+	  |	|     | 	  |			  |
+	  |	8_____|_____x	  8___________x 	  |
+	  |	|     |     |	  |	      | 	  |
+	  |	4_____|_____|_____|_____x     4___________|_____x
+	  |	|     |     |	  |	|     | 	  |	|
+	  |	|     |     |	  |	2_____|_____x	  |	2_____x
+	  |	|     |     |	  |	|     |     |	  |	|     |
+occurr.s  6	2     7     4	  4	1     2     1	  8	1     1
+ASCII	 32    97   101   104	108   110   111   114	115   116   256
+path	000  1000   001   101	110 10010  1110 10011	 01 11110 11111
+offset	+33   +65    +4    +3	 +4    +2    +1    +3	 +1    +1  +140
+	  |
+	  Offset +33 will be stored in the unlabeled unit before [dhc nodes],
+	  and reaches node number 32, meaning for ASCII code 32, because the
+	  offsets are based at -1, since -1 is the said unlabeled unit, and
+	  corresponds to a non-existing node, there just to make the search
+	  loops work properly also when node zero, corresponding to the null
+	  terminator, is used: when "dhc build tree" merges two branches, it
+	  needs adding up the child's offset to the offset of the branch that
+	  comes BEFORE the parent branch, and there's nothing before branch
+	  corresponding to node zero, that's why an unlabeled, non-existing
+	  branch at offset -1 is forced in. All this happens because of that
+	  kind of optimization in the search loops that find the two least
+	  significant, in terms of occurrences, nodes of the tree. Of course
+	  these get merged, and their paths updated.
+
+      Here's the said pratical example, compressing a short text string;
+    notice how partial bytes in the saved compressed bitstream are managed by
+    a quick check over the least significant 3 bits of [dhc bits out]: this
+    means, if these bits are zero, that [dhc bits out] is a multiple of 8,
+    therefore, since the packet was written starting from bit zero of the
+    buffer, and hence perfectly aligned on a byte boundary, if the value of
+    [dhc bits out] is a multiple of 8 we don't need to increment the result of
+    the division, via a binary shift, of [dhc bits out] to obtain the size, in
+    bytes, of the file. It's a bit confusing, eh? Sorry, but this way the
+    library is more flexible for use over datagrams that, being part of
+    surrounding compressed packets, may not be perfectly aligned on 8-bit
+    boundaries.
+
+	===8<=======8<=======8<=======8<=======8<=======8<=======8<=======8<==
+	"libraries"
+		DHC;
+
+	"directors"
+		unit = 32;
+
+	"variables"
+		test string = { she_sells_sea_shells_on_the_seashore };
+		compressed output file = { test.txt.dhc };
+		uncompressed output file = { test.txt };
+
+	"workspace"
+		test packet = 1000;
+		resulting string = 1000;
+
+	"programme"
+		[dhc datagram] = test string;
+		[dhc take bit] = 0;
+		[dhc wordsize] = 8;
+		[dhc wordfill] = 24;
+		[dhc datasize] = 0;
+		[dhc rlatency] = 0;
+		[dhc data out] = test packet;
+		[dhc give bit] = 0;
+		[dhc size out] = 1000 mtp BYTES PER UNIT mtp 8;
+		=> DHC;
+
+		[file name] = compressed output file;
+		=> save output;
+
+		[dhc datagram] = test packet;
+		[dhc take bit] = 0;
+		[dhc wordsize] = 8;
+		[dhc wordfill] = 0;
+		[dhc datasize] = 0;
+		[dhc rlatency] = 0;
+		[dhc data out] = resulting string;
+		[dhc give bit] = 0;
+		[dhc size out] = 1000 mtp BYTES PER UNIT mtp 8;
+		=> unDHC;
+
+		[file name] = uncompressed output file;
+		[dhc bits out] - 8;
+		=> save output;
+		end;
+
+	    "save output"
+		[file command]	= write;
+		[file position] = zero;
+		[block pointer] = [dhc data out];
+		[block size] = [dhc bits out];
+		[block size] > 3;
+	      ? [dhc bits out] - 7 -> no half bytes;
+		[block size] +;
+	      "no half bytes"
+		isocall;
+		[file command]	= set size;
+		[file size]	= [block size];
+		isocall;
+		end;
+	===>8=======>8=======>8=======>8=======>8=======>8=======>8=======>8==
+
+      Compiling and executing the above example produces two files, being:
+	test.txt.dhc - the compressed packet, and
+	test.txt     - the result of uncompressing the packet back,
+    ...where the first file, despite the fact of being a very very short
+    datagram, is 11 bytes shorter than its uncompressed version, over an
+    original size of 36 bytes. Note that the example also saves in the
+    compressed stream the final null code terminating the string, which
+    therefore is compressed from 37 bytes, but then removes the null code,
+    by decrementing "size out", when saving back the uncompressed string,
+    well... because a text file having .txt extension might not contain a
+    null terminator at its end. For DHC'ing text strings this might be a nice
+    way apart from being an example, but for contents that may not be null-
+    terminated, or not having the typical L.in.oleum strings wordsize and the
+    24 padding bits, it would be necessary to save, along with the compressed
+    packet, the informations requested to decompress the packet itself, that
+    is regeneration latency, datasize, wordsize and wordfill. Always consider
+    that this library doesn't save such values for you.
+
+    --------------------------------------------------------------------------
+    SEE ALSO
+    --------------------------------------------------------------------------
+    LZ.txt
+    unLZ.txt
+
+)
+
+"libraries"
+
+	bits;
+
+"workspace"
+
+    (DHC/unDHC input parameters)
+	dhc datagram = 1;
+	dhc take bit = 1;
+	dhc datasize = 1;
+	dhc wordsize = 1;
+	dhc wordfill = 1;
+	dhc rlatency = 1;
+	dhc data out = 1;
+	dhc give bit = 1;
+	dhc size out = 1;
+
+    (DHC/unDHC output parameters)
+	dhc bits out = 1;
+
+    (internal variables)
+	dhc failure  = 1;
+	dhc maxnode  = 1;
+	dhc stopper  = 1;
+	dhc ns count = 1;
+	dhc bits in  = 1;
+	dhc afrom    = 1;
+	dhc dfrom    = 1;
+	dhc efrom    = 1;
+	dhc nroot    = 1;
+	dhc nnode    = 1;
+	dhc nread    = 1;
+	dhc level    = 1;
+	dhc ltimer   = 1;
+	dhc widflag  = 1;
+
+    (optimization tables)
+	dhc onies    = 32;
+
+    (internal vectors)
+	no  label    = 1;   ( << warning: startup node for "dhc nodes" list! )
+	dhc nodes    = 257;
+	dhc known    = 257;
+	dhc occrs    = 257;
+	dhc times    = 257;
+	dhc codes    = 257;
+	dhc sizes    = 257;
+	dhc links    = 257 mtp 32;
+
+"programme"
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"DHC"
+	? [dhc wordsize] <= 0 -> dhc wordsize invalid;
+	? [dhc wordsize] <= 8 -> dhc wordsize valid;
+    "dhc wordsize invalid"
+	fail;
+    "dhc wordsize valid"
+	[dhc maxnode] = 1;
+	[dhc maxnode] < [dhc wordsize];
+	[dhc stopper] = pragma dhc next;
+	? [dhc datasize] != 0 -> dhc start;
+	[dhc stopper] = pragma dhc null check;
+    "dhc start"
+	=> dhc reset;
+	[dhc ltimer] = [dhc rlatency];
+
+"DHC append"
+	[dhc failure] = false;
+	[bit stream pointer] = [dhc data out];
+	[starting bit number] = [dhc give bit];
+	[dhc bits in] = [dhc take bit];
+    "dhc loop"
+	--> [bit stream pointer];
+	--> [starting bit number];
+	[bit stream pointer] = [dhc datagram];
+	[starting bit number] = [dhc bits in];
+	[bit field size] = [dhc wordsize];
+	=> get bit field;
+	[dhc bits in] + [dhc wordsize];
+	[dhc bits in] + [dhc wordfill];
+	<-- [starting bit number];
+	<-- [bit stream pointer];
+	a = [bit field content];
+	[a relating dhc occrs] +;
+	? [a relating dhc known] = true -> dhc in dictionary;
+	[a relating dhc known] = true;
+	[bit field size] = [256 relating dhc sizes];
+	[bit field content] = [256 relating dhc codes];
+	[bit field content] <@ [256 relating dhc sizes];
+	=> dhc stream code; ? failed -> dhc stop;
+	[bit field size] = [dhc wordsize];
+	[bit field content] = a;
+	=> dhc stream code; ? failed -> dhc stop;
+	[dhc ns count] +;
+      ? [dhc ns count] <= [dhc maxnode] -> dhc keep newleaf;
+	[256 relating dhc known] = false;
+	[dhc ns count] -;
+      "dhc keep newleaf"
+      ? [256 relating dhc occrs] = 1 -> dhc newleaf minimum;
+	[256 relating dhc occrs] -;
+      "dhc newleaf minimum"
+	-> [dhc stopper];
+    "dhc in dictionary"
+	[bit field size] = [a relating dhc sizes];
+	[bit field content] = [a relating dhc codes];
+	[bit field content] <@ [a relating dhc sizes];
+	=> dhc stream code; ? failed -> dhc stop;
+	[dhc ltimer] -;
+	? [dhc ltimer] > minus 1 -> dhc next norebuild;
+    "dhc next"
+	[dhc ltimer] = [dhc rlatency];
+	=> dhc build tree;
+    "dhc next norebuild"
+	[dhc datasize] ^ dhc loop;
+    "dhc stop"
+	[dhc bits out] = [starting bit number];
+	[dhc bits out] - [dhc give bit];
+	? [dhc failure] = true -> dhc failing;
+	end;
+    "dhc failing"
+	fail;
+    "dhc null check"
+	? a = 0 -> dhc stop;
+	-> dhc next;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"unDHC"
+	? [dhc wordsize] <= 0 -> undhc wordsize invalid;
+	? [dhc wordsize] <= 8 -> undhc wordsize valid;
+    "undhc wordsize invalid"
+	fail;
+    "undhc wordsize valid"
+	[dhc maxnode] = 1;
+	[dhc maxnode] < [dhc wordsize];
+	[dhc stopper] = pragma undhc next;
+	? [dhc datasize] != 0 -> undhc start;
+	[dhc stopper] = pragma undhc null check;
+    "undhc start"
+	=> dhc reset;
+	[dhc ltimer] = [dhc rlatency];
+
+"unDHC append"
+	[dhc failure] = false;
+	[bit stream pointer] = [dhc datagram];
+	[starting bit number] = [dhc take bit];
+	[dhc bits out] = [dhc give bit];
+    "undhc loop"
+	[dhc nread] = 0;
+	[dhc level] = 0;
+	[dhc nnode] = [dhc nroot];
+    "undhc keep reading"
+	[bit field size] = 1;
+	=> get bit field;
+	[starting bit number] +;
+	? [bit field content] = 0 -> undhc descend;
+	a = [dhc nnode];
+	b = a;
+	b < 5;
+	b + [b relating dhc links];
+	b - [dhc level];
+	[dhc nnode] = [b relating dhc links];
+	[dhc level] = 0;
+	-> undhc follow;
+    "undhc descend"
+	[dhc level] +;
+    "undhc follow"
+	[dhc nread] +;
+	a = [dhc nnode];
+	? [dhc nread] < [a relating dhc sizes] -> undhc keep reading;
+	? [dhc nnode] < 256 -> undhc in dictionary;
+	[bit field size] = [dhc wordsize];
+	=> get bit field;
+	[starting bit number] + [dhc wordsize];
+	a = [bit field content];
+	[a relating dhc known] = true;
+	[dhc ns count] +;
+      ? [dhc ns count] <= [dhc maxnode] -> undhc keep new leaf;
+	[256 relating dhc known] = false;
+	[dhc ns count] -;
+      "undhc keep new leaf"
+      ? [256 relating dhc occrs] = 1 -> undhc newleaf minimum;
+	[256 relating dhc occrs] -;
+      "undhc newleaf minimum"
+	[dhc widflag] = false;
+	-> undhc not in dictionary;
+    "undhc in dictionary"
+	a = [dhc nnode];
+	[dhc widflag] = true;
+    "undhc not in dictionary"
+	[a relating dhc occrs] +;
+	--> [bit stream pointer];
+	--> [starting bit number];
+	[bit stream pointer] = [dhc data out];
+	[starting bit number] = [dhc bits out];
+	[bit field content] = a;
+	[bit field size] = [dhc wordsize];
+	=> dhc stream code; ? failed -> undhc stop;
+	[bit field content] = 0;
+	[bit field size] = [dhc wordfill];
+	=> dhc stream code; ? failed -> undhc stop;
+	[dhc bits out] + [dhc wordsize];
+	[dhc bits out] + [dhc wordfill];
+	<-- [starting bit number];
+	<-- [bit stream pointer];
+	-> [dhc stopper];
+    "undhc next"
+	? [dhc widflag] = false -> undhc next rebuild;
+	[dhc ltimer] -;
+	? [dhc ltimer] > minus 1 -> undhc next norebuild;
+    "undhc next rebuild"
+	[dhc ltimer] = [dhc rlatency];
+	=> dhc build tree;
+    "undhc next norebuild"
+	[dhc datasize] ^ undhc loop;
+    "undhc stop"
+	[dhc bits out] - [dhc give bit];
+	? [dhc failure] = true -> undhc failing;
+	end;
+    "undhc failing"
+	fail;
+    "undhc null check"
+	? a = 0 -> undhc stop;
+	-> undhc next;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"dhc reset"
+	a = 0;
+	b = 256;
+    "dhc init"
+	[a relating dhc occrs] = 0;
+	[a relating dhc known] = false;
+	a +;
+	b ^ dhc init;
+	[256 relating dhc known] = true;
+	[256 relating dhc occrs] = 8;
+	[256 relating dhc codes] = 0;
+	[256 relating dhc sizes] = 1;
+	[256 mtp 32 relating dhc links] = 0;
+	[dhc ns count] = 1;
+	[dhc nroot] = 256;
+	a = 80000000h;
+	b = 0;
+	c = 32;
+    "dhc tabs init"
+	[b relating dhc onies] = a;
+	a @> 1;
+	b +;
+	c ^ dhc tabs init;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"dhc stream code"
+	a -->;
+	a = [starting bit number];
+	a + [bit field size];
+	? a > [dhc size out] -> dhc out of buffer;
+	=> set bit field;
+	[starting bit number] + [bit field size];
+	<-- a;
+	end;
+    "dhc out of buffer"
+	[dhc failure] = true;
+	<-- a;
+	fail;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"dhc build tree"
+	[dhc ns count] -->;
+	a = 0;
+	b = 0;
+	c = 257;
+	d = minus 1;
+	e = 1;
+    "dhc nodes init"
+      ? [a relating dhc known] = false -> dhc ni next;
+	[a relating dhc times] = [a relating dhc occrs];
+	[a relating dhc codes] = 0;
+	[a relating dhc sizes] = 0;
+	[b relating dhc links] = 0;
+	[d relating dhc nodes] = e;
+	d = a;
+	e = 0;
+      "dhc ni next"
+	a +;
+	e +;
+	b + 32;
+	c ^ dhc nodes init;
+	[256 relating dhc nodes] = 0;
+    "dhc tree init"
+	a = minus 1;
+	b = [dhc ns count];
+	c = greatest signed integer;
+      "dhc parent find"
+	[dhc afrom] = a;
+	a + [a relating dhc nodes];
+      ? [a relating dhc times] >= c -> dhc parent skip;
+	c = [a relating dhc times];
+	[dhc dfrom] = [dhc afrom];
+	d = a;
+      "dhc parent skip"
+	b ^ dhc parent find;
+	a = minus 1;
+	b = [dhc ns count];
+	c = greatest signed integer;
+      "dhc child find"
+	[dhc afrom] = a;
+	a + [a relating dhc nodes];
+      ? [a relating dhc times] >= c -> dhc child skip;
+	? a = d -> dhc child skip;
+	c = [a relating dhc times];
+	[dhc efrom] = [dhc afrom];
+	e = a;
+      "dhc child skip"
+	b ^ dhc child find;
+      ? e > d -> dhc merge leaves;
+	d <> e; (exchange values)
+	[dhc efrom] = [dhc dfrom];
+      "dhc merge leaves"
+	a = [dhc efrom];
+	[d relating dhc times] + [e relating dhc times];
+	[a relating dhc nodes] + [e relating dhc nodes];
+	a = [e relating dhc sizes];
+	[d relating dhc sizes] +;
+	[e relating dhc sizes] +;
+	[e relating dhc codes] | [a relating dhc onies];
+	a = d;
+	d -->;
+	a < 5;
+	d = [a relating dhc links];
+	a -->;
+      ? d = 0 -> dhc no lefts to recurse;
+	=> dhc recurse lefts;
+      "dhc no lefts to recurse"
+	a = e;
+	a < 5;
+	d = [a relating dhc links];
+      ? d = 0 -> dhc no rites to recurse;
+	=> dhc recurse rites;
+      "dhc no rites to recurse"
+	<-- a;
+	<-- d;
+	[dhc ns count] -;
+	[a relating dhc links] +;
+	a + [a relating dhc links];
+	[a relating dhc links] = e;
+	? [dhc ns count] > 1 -> dhc tree init;
+	<-- [dhc ns count];
+	[dhc nroot] = d;
+	end;
+    "dhc recurse lefts"
+	b = [a plus 1 relating dhc links];
+	a +;
+	[b relating dhc sizes] +;
+	--> a;
+	a = b;
+	--> d;
+	a < 5;
+	d = [a relating dhc links];
+      ? d = 0 -> dhc rl stop;
+	=> dhc recurse lefts;
+      "dhc rl stop"
+	<-- d;
+	<-- a;
+	d ^ dhc recurse lefts;
+	end;
+    "dhc recurse rites"
+	b = [a plus 1 relating dhc links];
+	a +;
+	c = [b relating dhc sizes];
+	[b relating dhc sizes] +;
+	[b relating dhc codes] | [c relating dhc onies];
+	--> a;
+	a = b;
+	--> d;
+	a < 5;
+	d = [a relating dhc links];
+      ? d = 0 -> dhc rr stop;
+	=> dhc recurse rites;
+      "dhc rr stop"
+	<-- d;
+	<-- a;
+	d ^ dhc recurse rites;
+	end;

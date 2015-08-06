@@ -1,0 +1,152 @@
+(
+
+	[iGUI = integration Graphical User Interface]
+	[iGUIcli = example of an iGUI's CLIent]
+
+	This program shows only what's really needed to run the iGUI.
+	It is a "skeleton application", from which you can start to
+	build an application that uses the iGUI.
+
+     |> For detailed informations about the iGUI's mechanisms, see the
+     |> source code of the Icon Editor, which is provided specifically
+     |> to learn from. There is more to it than what you see in this
+     |> short example, such as toolbars, question boxes containing input
+     |> fields, file selectors integrated in pulldown menus, customization
+     |> and deeper control of the iGUI's controls...
+
+	ANYWAY
+	======
+	Remember that the iGUI is *just* a facility to build user-friendly
+	Linoleum applications; you are absolutely NOT compelled to use this
+	kind of GUI, or to use a GUI at all. What I care to say here is that
+	you shouldn't IDENTIFY the Linoleum environment with the iGUI, 'cos
+	the iGUI is only one of the pratically infinite possibilities for a
+	user interface to be. Linoleum itself does NOT, and will NEVER, be
+	integrating some GUI that the programmer is somewhat forced to use.
+
+	NOTICE [pretty technical]
+	=========================
+	Uhm. It seems I left a stack leak in past versions of this elementary
+	client, although it most probably wasn't noticeable. The leak caused
+	some units of the stack memory to remain allocated whenever the client
+	attempted to quit, but then the answer to the "ok to quit?" question
+	was NO. In past versions, this caused the program's flow to re-enter
+	the iGUI control loop throught a label placed in the main program.
+	The moral of the story is: don't break the flow whenever operating
+	throught callback-based mechanisms. The problem was given by the fact
+	that the label associated with the "NO" button in the question was in
+	effects placed in the main program, and not in a subroutine.
+
+)
+
+(----------------------------------------------------------------------------)
+"libraries"
+
+	igui/defstyle; (INTEGRATED G.U.I's default style)
+
+(----------------------------------------------------------------------------)
+"directors"
+
+	unit = 32;
+	symbols map = ON;
+	program name = { Minimum_iGUI_client };
+
+(----------------------------------------------------------------------------)
+"constants"
+
+    (GUI setup constants)
+	INITIAL WIDTH			= 400;
+	INITIAL HEIGHT			= 300;
+	MINIMUM WIDTH			= 248;
+	MINIMUM HEIGHT			= 80;
+	MAXIMUM WIDTH			= 512;
+	MAXIMUM HEIGHT			= 384;
+	MAX MENU OPTIONS		= 100;
+	MAX ONSCREEN OPTIONS		= 100;
+	MAX LEVELS IN SHOW		= 4;
+	MAX FILES IN SELECTOR		= 1000;
+	MAX FILES IN SHOW		= 7;
+	MAX OPTIONS IN QUESTION 	= 2;
+	MAX FIELDS IN QUESTION		= 0;
+
+(----------------------------------------------------------------------------)
+"variables"
+
+	Quit Client = NO;
+
+ vector Background shade = 1.0f;1.0f;1.0f;   0.7f;0.8f;0.9f;   0.9f;0.8f;0.7f;
+
+	My Menu Caption = { CLICK_THIS };
+	My Small Caption = { iGUIcli };
+
+	Menu Layout = { MENU };
+	01000000h; OPTION TYPE NORMAL; { Show_credits }; Show Credits;
+	02000000h; OPTION TYPE NORMAL; { Quit_program }; Quit Program;
+	END OF MENU;
+
+	Credits = { Minimum_iGUI_client... };
+		  { Close }; NULL;
+		  NULL;
+
+	Ok to quit = { Ok_to_quit? };
+		     { Yes }; Quit Program;
+		     { No }; Do Not Quit;
+		     NULL;
+
+(----------------------------------------------------------------------------)
+"programme"
+
+	=> Initialize Integrated GUI;
+
+	[Menu Caption] = My Menu Caption;
+	=> Update Menu Button Appearence;
+
+	[Small Caption] = My Small Caption;
+
+	[Menu To Install] = Menu Layout;
+	=> Install Menu;
+
+	[Work Area Manager] = service Repaint Window;
+	[Control Loop] = service Control Loop;
+
+    "Session Reprise"
+	=> Enter Integrated GUI;
+	[Question Datascript] = Ok to quit;
+	=> Question;
+	? [Quit Client] = NO -> Session Reprise;
+	end;
+
+(----------------------------------------------------------------------------)
+"service Repaint Window"
+    (just clearing the background with a bright shade)
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Work Area;
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Gradients] = vector Background shade;
+	=> Rectangle;
+    (you may add your own repainting operations below...)
+	end;
+
+"service Control Loop"
+    (add your control code below...)
+	end;
+
+"Show Credits"
+	[Question Datascript] = Credits;
+	=> Question;
+	end;
+
+"Quit Program"
+    (requests iGUI to return to main program from "Enter Integrated GUI")
+	[Quit Now] = YES;
+    (requests main program to quit)
+	[Quit Client] = YES;
+	end;
+
+"Do Not Quit"
+    (requests iGUI to return to main program from "Enter Integrated GUI")
+	[Quit Now] = YES;
+    (requests main program to keep running and re-enter the iGUI)
+	[Quit Client] = NO;
+	end;

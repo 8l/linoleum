@@ -1,0 +1,26 @@
+
+
+
+
+	Use base139.bmp to construct your own icons, if you like them to reflect
+	the style of L.in.oleum 1.13.9b. The template is supposed to be modified
+	in its larger version with a painting program of your choice. Later, for
+	better antialiasing you'll want to reduce it to the size of a L.in.oleum
+	application icon, which is 48x48 pixels, and possibly doing that -after-
+	smoothing the image so that it antialiases for good. Finally,  resulting
+	picture will have to be converted to 256 colors, and here comes the time
+	for a good converter. The file must be saved as a BMP like others in the
+	"icons" folder, so that Icon Editor will load them up.
+	The other icons were edited and converted with Adobe Photoshop 7.0, but:
+	unfortunately, Photoshop saves some further parameters in its BMP files.
+	My own way to workaround this problem was to load the picons in U-Lead's
+	Finishingtouch,	which is a program old and simple (and beautiful) enough
+	to ignore those parameters (I'm not sure what's their purpose but in the
+	end they make the bitmap's header longer than Iconed expects, and that's
+	the problem), and save back BMP files without them.  Well, alternatively
+	you may take the effort of letting Iconed understand how long is the BMP
+	header block and skip it properly. ATM, the BMP header is supposed to be
+	40 bytes long, its effective size being given by the dword at offset +14
+	of the bitmap file (small-endian 28000000h = 28h = 40 bytes),  so that's
+	probably the value you'd be looking for to skip the header properly, and
+	regardless of the header size...

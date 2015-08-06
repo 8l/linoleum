@@ -1,0 +1,442 @@
+
+      ( *** LINOLEUM Example 18: Printing out the screen *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "18_printing_out_the_screen.TXT",
+	   WITH THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Prividing a printer is available, prints the contents of the display,
+	which is filled by the same code found in example 4, "a circle".
+	Well, the display is coloured white to avoid wasting ink for a black
+	background. Of course, an offscreen display can also be used, since
+	the page buffer can be physically separated from the display layer,
+	and the page buffer may not have the same size as the display layer.
+	Read the notes at the end if you don't know how this works... )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Printing_out_the_screen... };
+	display width = 240;
+	display height = 320;
+	display mode = COOPERATIVE;
+	unit = 32;
+
+	modular extensions = printer;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	(some frequently used colors)
+
+	RED	= FF0000h;
+	GREEN	= 00FF00h;
+	BLUE	= 0000FFh;
+	MAGENTA = FF00FFh;
+	YELLOW	= FFFF00h;
+	CYAN	= 00FFFFh;
+	BLACK	= 000000h;
+	WHITE	= FFFFFFh;
+
+"variables"
+
+	Circle Center X = 0f;
+	Circle Center Y = 0f;
+	Circle Radius	= 1f;
+	Circle Color	= BLACK;
+
+"workspace"
+
+	Primary Display = 240 mtp 320;
+
+"programme"
+
+	(Let's make all the display white as a first thing)
+
+	A = ZERO;
+	B = 240 mtp 320;
+    "clearing"
+	[A plus Primary Display] = WHITE; A+;
+	B ^ clearing;
+
+	(Then go on as in example 4)
+
+	[Display Origin] = Primary Display;
+
+	[Circle Center X] ,= [Display Width];
+	[Circle Center X] ** 0.5f;
+	[Circle Center Y] ,= [Display Height];
+	[Circle Center Y] ** 0.5f;
+
+	[Circle Radius] = 50f;
+	[Circle Color] = BLACK; (for sure, maybe the printer is a b&w)
+
+	=> Circle;			(call Circle subroutine)
+
+	(Then show the video display memory)
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	(And finally print it out)
+
+	[Printer Command] = PRINT PAGE;
+	[Page Origin] = [Display Origin];
+	[Page Width] = [Display Width];
+	[Page Height] = [Display Height];
+	isocall;
+
+	end;			(of MAIN PROGRAM)
+
+	(We already know what's the Plot subroutine)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+       (Here's Circle subroutine.)
+
+"Circle"
+    ( Draws a circle, using the Plot subroutine. All regs destroyed. )
+	E = 1f; E // [Circle Radius];
+	C = [Circle Color];
+	D = 0f;
+    "Circle tracement loop"
+	A = D; ~~A;
+	B = D; ~B;
+	A ** [Circle Radius]; A ++ [Circle Center X];
+	B ** [Circle Radius]; B ++ [Circle Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	D ++ E;
+	?? D < TwoPI -> Circle tracement loop;
+	end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+
+
+( Printing in Lino:
+
+	first of all, the printer is considered an optional peripheral for
+	programs to access and use, so it is setup as a modular extension of
+	the run-time module. In practice, you can't print unless you specify
+	the assignment "modular extensions = printer;" in the application's
+	"directors" period, either in the directors of the main program or of
+	one of its libraries, it doesn't matter.
+
+	Of course the point of this example program is showing how Linoleum
+	applications can get to use the system printer. The following lines:
+
+		[Printer Command] = PRINT PAGE;
+		[Page Origin] = [Display Origin];
+		[Page Width] = [Display Width];
+		[Page Height] = [Display Height];
+		isocall;
+
+	are equivalent to the "print screen" function.
+	Providing the system printer, default printer, is properly installed
+	and configured, they will send the contents of the current display
+	to the printer. The most important printing rules are just a couple:
+
+     -------------------------------------------------------------------------
+
+     1. Contents are sent as they are.
+	I mean: pixel by pixel. The contents of the page buffer are never
+	catalogued as "plain text" or formated text of any kind. They are
+	always a matrix of pixels, but of course that matrix may represent
+	letters in a text page or graphics.
+
+     2. The page buffer is always stretched or shrunk to fit the page.
+	More precisely: the page buffer is an exact image of how the printed
+	page will look. Please note this program sets up a 240x320-pixels
+	display, in PORTRAIT format, and *not* a 320x240-pixels display in
+	LANDSCAPE format. This is needed because the printer is expected to
+	work, in most cases, on an A4 paper sheet [single or fanfold, it
+	doesn't matter], or with some kind of sheet having the same aspect
+	ratio [eg. A3 is like A4 but has twice the surface]. So, what do you
+	do to print out a LANDSCAPE image/text type? Well, for sure, you
+	should prompt the user asking wether the printer is using landscape
+	or portrait layout - and I MEAN - this is NOT what says the system
+	software configuration, because Lino is abstract to the system - it's
+	the PHYSICAL way the printer takes paper sheets. 99% of printers take
+	paper in portrait format, so you may say it's the "standard" and
+	avoid prompting the user... anyway, you should still ask for which
+	orientation the program should give to that page, vertical/horizontal.
+	Now, considering for instance the portrait format, to print a portrait
+	shaped document like in this example [expanding top-down, vertically],
+	you just have to make the page buffer have the proper shape, 240x320
+	in this example program, and build the contents this way:
+				 ____________________
+				|		     |
+				| ****	***    ***   |
+				| *  *	*  *  *      |
+				| ****	* *   *      |
+				| *  *	*  *  *      |
+				| *  *	***    ***   |
+				|		     |
+				| direction of	     |
+				| expansion --->     |
+				|		     |
+				| next line/s	     |
+				|     ||	     |
+				|     ||	     |
+				|     \/	     |
+				|		     |
+				|____________________|
+
+	When you want to print a LANDSCAPE-shaped document or picture,
+	and your printer is STILL taking sheets in portrait mode [it will,
+	'cos its the physical way the machine works], your page buffer needs
+	to be setup as follows:
+				 ____________________
+				|		     |
+				|<--   d o  *******  |
+				| n l  i f     *  *  |
+				| e i  r    *******  |
+				| x n  e e	     |
+				| t e  c x  *******  |
+				|   s  t p  *  *  *  |
+				|      i a   ** **   |
+				|      o n	     |
+				|      n s   *****   |
+				|	 i  *	  *  |
+				|	 o  *	  *  |
+				|     || n	     |
+				|     ||	     |
+				|     \/	     |
+				|____________________|
+
+	If you don't proceed this way, your output will look stretched,
+	having wrong aspect ratio, because it will be always resized to
+	fill the whole page. The whole page is the minimum amount of data
+	you can print at a time: ideally, for Lino the page is just like
+	an additional display, only that it's made of paper.
+
+	In brief, Lino expands the concept of WYSIWYG, What You See Is What
+	You Get, to the extreme: in case you're printing out the display,
+	in effects, what you see is exactly what is sent to the printer, as
+	if the destination paper sheet temporarily became your DISPLAY.
+	The circle shape, in this example, is directly sent to the printer,
+	and surrounding sections of paper are left white because the display
+	is cleared with white before tracing the circle.
+
+	The resolution you get on paper is exactly the same as the display,
+	that is, 240x320. If you want to improve the printed version's
+	resolution, you only have to provide a larger page buffer. Because
+	the page buffer always represents the whole page, if it contains more
+	pixels, each pixel will look smaller as the page buffer grows in size.
+	Further improvements can be done as long as there's enough RAM to hold
+	the page buffer, and are limited by the printer's maximum resolution.
+
+     -------------------------------------------------------------------------
+
+	Now, getting back to those five simple lines:
+
+		[Printer Command] = PRINT PAGE;
+		[Page Origin] = [Display Origin];
+		[Page Width] = [Display Width];
+		[Page Height] = [Display Height];
+		isocall;
+
+	The page buffer, you must know, is theoretically a separated buffer
+	from the normal display memory. They are two different entities,
+	and they may have different resolution and contents. Anyway, the
+	page buffer follows the same dynamic as the display memory: if you
+	have functions to trace on the display, you can directly use them
+	to draw or pixilate some text over the page buffer. The page buffer
+	itself is declared as a workspace area in the program's workspace,
+	also known as global heap. Now, the example performs a direct
+	screen dump: that's possible because it sets the "Page..." variables
+	to mirror the values of the "Display..." variables. But that's not
+	the only possible way to print, as I said. Suppose you want that
+	circle to be printed using a better resolution: you have to setup
+	a separated page buffer by declaring a workspace area for it...
+	I will explain everything in details, and leave implementation of
+	the "higher resolution circle" as an "exercise for the student", so
+	pay attention this time.
+
+	    "workspace"
+		My Page Buffer = 768 mtp 1024;
+
+	...this would allocate memory in the workspace for a pretty high
+	resolution page buffer: as you can see it's 768x1024 and *not*
+	1024x768, remember this, unless you have a weird printer or a
+	plotter which is loading sheets horizontally.
+	Remember that, at this point, you have to let the program know
+	the new page buffer, so you should change the lines that care
+	for page buffer's setup, to this:
+
+		[Page Origin] = My Page Buffer;
+		[Page Width] = 768;
+		[Page Height] = 1024;
+
+	Now, in case you also want to provide visual output on the normal
+	display [supposing it's still 240x320], you have to trace two
+	different circles, one on the display and one on the page buffer.
+	The one on the display may be left as it is. The other one, on the
+	page buffer, needs to be bigger because the page buffer IS bigger
+	than the 240x320 display. If you left it as is, of course it'd
+	look tiny when printed. Here's the correct way to make a bigger
+	copy of the displayed circle:
+
+		[Circle Center X] ,= [Page Width];
+		[Circle Center X] ** 0.5f;
+		[Circle Center Y] ,= [Page Height];
+		[Circle Center Y] ** 0.5f;
+		[Circle Radius] = 160f;
+		[Circle Color] = BLACK;
+		[Display Origin] = My Page Buffer;
+		[Display Width] = 768;
+		[Display Height] = 1024;
+		=> Circle;
+		[Display Width] = 240;
+		[Display Height] = 320;
+		[Display Origin] = Primary Display;
+
+	This way the bigger circle is centered in respect to the page buffer's
+	margins, X of circle = width of page buffer / 2, Y of circle = height
+	of page buffer / 2. Also the radius is changing: it's no longer 50,
+	it's 160. Because it must be refitted to have the same apparent size
+	as the displayed circle in respect to the page buffer, so the new
+	radius is to be calculated with a simple proportion:
+
+		New Radius : Old Radius = Page Width : Display Width
+
+	numerically, in our case it's:
+
+		New Radius : 50 = 768 : 240
+
+	and the result is:
+
+		New Radius = [50 x 768] / 240
+
+	which gives 160.
+	Oh, by the way, *before* tracing the big circle onto the page buffer,
+	remember to clear the page buffer itself with color white, or you'll
+	see nothing but a black page, with lots of wasted ink, also:
+
+		A = ZERO;
+		B = 768 mtp 1024;
+	    "clearing page buffer"
+		[A plus My Page Buffer] = WHITE; A+;
+		B ^ clearing page buffer;
+
+	Finally, we're gonna print it out. Since the page buffer variables
+	have been already setup, the only things to write are:
+
+		[Printer Command] = PRINT PAGE;
+		isocall;
+
+	Or, you may setup the variables about the page buffer and print
+	the page buffer at the same time:
+
+		[Page Origin] = My Page Buffer;
+		[Page Width] = 768;
+		[Page Height] = 1024;
+		[Printer Command] = PRINT PAGE;
+		isocall;
+
+	Notes: as you will know from example number 4, the Circle subroutine
+	uses variables [Display Width], [Display Height] and [Display Origin]
+	to identify the display area. More generally, professionally developed
+	subroutines, like those in the Main/lib folder, the default libraries,
+	should be able to take any memory region of any size as the target
+	area for drawing. That's why, for instance, the TGA library needs you
+	to setup some parameters identifying the target "screen", no matter
+	if it's a page buffer or a normal on-screen layer; parameters like
+	[TGA Display Width], [TGA Display Height] and [TGA Target Layer].
+	Well, however, to "cheat" a more simple subroutine not fit to operate
+	on page buffers, like this version of "Circle", you may simply change
+	the display parameters for a while. As long as you don't perform an
+	isocall, the new display parameters won't affect the real display.
+	In this "dirty", but allowed, style of coding, after calling Circle,
+	remember to restore [Display...] variables to their REAL values for
+	the effective display to operate. This is possible thanks to the fact
+	that the applications' "supervisor", the IsoKernel, is an asynchronous
+	application interface. By the way, the stack can help in preserving
+	some values like the [Display...] variables temporarily, so you may do:
+
+		[Circle Center X] ,= [Page Width];
+		[Circle Center X] ** 0.5f;
+		[Circle Center Y] ,= [Page Height];
+		[Circle Center Y] ** 0.5f;
+		[Circle Radius] = 160f;
+		[Circle Color] = BLACK;
+		[Display Origin]-->; [Display Origin] = My Page Buffer;
+		[Display Width]-->; [Display Width] = 768;
+		[Display Height]-->; [Display Height] = 1024;
+		=> Circle;
+		<--[Display Height];
+		<--[Display Width];
+		<--[Display Origin];
+
+	that's using the stack to temporarily preserve the [Display...]
+	variables. The advantage is that you don't need to know which were
+	the original values in order to restore them, allowing for such code
+	to be placed inside some kind of library.
+
+     -------------------------------------------------------------------------
+
+	Now, can you print documents made of more than one page?
+	Of course you can: the page buffer is just a "temporary" buffer.
+	If you want to print two or more different pages, like parts of
+	a longer document, you can send the pages one after the other,
+	by building the first page into the page buffer, sending it with
+
+		[Printer Command] = PRINT PAGE;
+		isocall;
+
+	then replace the contents of the page buffer accordingly to how the
+	second page should look like, and repeat in a loop until last page.
+
+	What about colors?
+	Colors are always there: they're still those 16.7 million colors
+	made possible by the truecolor display. The page buffer is truecolor,
+	either. If you know - from a configuration form you have setup - the
+	user has a colour printer, use how many colors you like in the page
+	buffer, eventually optimizing them for specific printers... whatever.
+
+     -------------------------------------------------------------------------
+
+	This concludes how printing is performed by Linoleum applications.
+	I guess it's all very simple and efficient. Especially, however,
+	remember it's universal, like the rest of the Lino environment. )

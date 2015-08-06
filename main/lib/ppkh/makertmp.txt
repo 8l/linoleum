@@ -1,0 +1,176 @@
+(
+	MAKERTMP.CPP
+	------------
+	Reads RTM01.bin throught RTM??.bin (?? <= 64)
+	and concatenates them into a single file also
+	prepending the mappings, as follows...
+
+	offset 0 - DWORD - number of RTM instances (variants) found (=n)
+	offset 4 - n DWORDS - offsets of all RTM instances in pack file
+	offset 4 + 4*n - n DWORDS - length in bytes of each RTM instance
+	offset 4 + 4*n + 4*n - beginning of first instance (RTM01.bin)
+
+	the resulting RTMP will be called "RTMP.bin",
+	but might be renamed to whatever system it contains RTMs for,
+	such as "win32.bin" for what concerns the Win32 platform.
+)
+
+"directors"
+	unit			= 32;
+	program name		= { Makertmp };
+
+"constants"
+	MAX RTMS		= 8;
+	MAX RTM BSIZE		= 128 mtp 1024; (65 kB)
+	MAX RTM SIZE		= MAX RTM BSIZE div BYTESPERUNIT; 
+
+"variables"
+	string rtm file		= { rtm00.bin };
+	string output		= { rtmp.bin };
+
+"workspace"
+	(parameters for output file)
+	rtm output size		= 1;
+	rtm output pos		= 1;
+	rtm output no		= 1;
+	rtm header size		= 1;
+	
+	rtm instances		= 1;
+	rtm offsets		= MAX RTMS;
+	rtm sizes		= MAX RTMS;
+	rtm data		= MAX RTMS mtp MAX RTM SIZE;
+
+"programme"
+	(initializations)
+	[rtm instances]		= 0;
+	"makertmp read loop"
+		(create filename of next file)
+		a = [rtm instances];
+		a +;
+		b = a;
+		a / 10;
+		b % 10;
+		a + 48; (translate to ascii character)
+		b + 48; (translate to ascii character)
+		[string rtm file plus 3] = a;
+		[string rtm file plus 4] = b;
+		(check if file exists)
+		[file name] = string rtm file;
+		[file command] = test;
+		isocall;
+		? failed -> makertmp file doesnt exist;
+		? [file status] + ERROR -> makertmp file doesnt exist;
+		? [file status] - PERMIT TO READ -> makertmp file doesnt exist;
+		? [file size] > MAX RTM BSIZE -> makertmp binary file too large;
+		(save size information)
+		a = [rtm instances];
+		[a plus rtm sizes] = [file size];
+		(read the contents of the file)
+		a * MAX RTM SIZE;
+		a + rtm data;
+		[block pointer] = a;
+		[block size] = [file size];
+		[file name] = string rtm file;
+		[file position] = ZERO;
+		[file command] = read;
+		isocall;
+		? failed -> makertmp file doesnt exist;
+		? [file status] + ERROR -> makertmp file doesnt exist;
+		(increase counter)
+		[rtm instances] +;
+		? [rtm instances] < MAX RTMS -> makertmp read loop;
+
+	"makertmp file doesnt exist"
+	? [rtm instances] = 0 -> makertmp no rtms at all;
+	(calculate headersize)
+	[rtm header size] = [rtm instances];
+	[rtm header size] * 8;
+	[rtm header size] + 4; (header size = 8 * n + 4)
+	(calculate offsets)
+	a # a;
+	b # b;
+	[a plus rtm offsets] = b;
+	-> makertmp offsets loop next;
+	"makertmp offsets loop"
+		  [a plus rtm offsets] = b;
+		  "makertmp offsets loop next"
+		  b + [a plus rtm sizes];
+		  a+;
+		  ? a < [rtm instances] -> makertmp offsets loop;
+
+	b + [rtm header size];
+	[rtm output size] = b;
+	[rtm output pos] = 0;
+	(create output file, and write number of instances)			    
+	[file name] = string output;
+	[file command] = write;
+	[file position] = ZERO;
+	[block pointer] = rtm instances;
+	[block size] = 4;
+	isocall;
+	? failed -> makertmp couldnt write result;
+	? [file status] + ERROR -> makertmp couldnt write result;
+	[rtm output pos] + [block size];
+	(resize the file)
+	[file name] = string output;
+	[file command] = set size;
+	[file size] = [rtm output size];
+	isocall;
+	(write the offsets)
+	[file name] = string output;
+	[file command] = write;
+	[file position] = [rtm output pos];
+	[block pointer] = rtm offsets;
+	[block size] = [rtm instances];
+	[block size] < 2;
+	isocall;
+	? failed -> makertmp couldnt write result;
+	[rtm output pos] + [block size];
+	(write the sizes of the rtms)
+	[file name] = string output;
+	[file command] = write;
+	[file position] = [rtm output pos];
+	[block pointer] = rtm sizes;
+	[block size] = [rtm instances];
+	[block size] < 2;
+	isocall;
+	? failed -> makertmp couldnt write result;
+	[rtm output pos] + [block size];
+	[rtm output no] = 0;
+	"makertmp write loop"		
+		  a = [rtm output no];
+		  b = a;
+		  a * MAX RTM SIZE;
+		  a + rtm data;
+		  [file name] = string output;
+		  [file command] = write;
+		  [file position] = [rtm output pos];
+		  [block pointer] = a;
+		  [block size] = [b plus rtm sizes];
+		  isocall;
+		  ? failed -> makertmp couldnt write result;
+		  [rtm output pos] + [block size];
+		  [rtm output no] +;
+		  ? [rtm output no] < [rtm instances] -> makertmp write loop;
+	
+	? [rtm output pos] != [rtm output size] -> makertmp file size error;
+	end;
+
+	"makertmp file size error"
+	a = [rtm output pos];
+	b = [rtm output size];
+	e = 1; -> makertmp fail;	
+	"makertmp couldnt write result"
+	c = [b plus rtm sizes];
+	e = 2; -> makertmp fail;
+	"makertmp binary file too large"
+	e = 3; -> makertmp fail;
+	"makertmp no rtms at all"
+	e = 4; -> makertmp fail;
+
+	"makertmp fail"
+	[file name] = string output;
+	[file command] = destroy;
+	isocall;
+	d = [rtm instances];
+	fail;

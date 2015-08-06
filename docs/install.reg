@@ -1,0 +1,27 @@
+REGEDIT4
+
+[HKEY_CLASSES_ROOT\.txt]
+"" = "TXT_SRC"
+"Content Type" = "text/plain"
+
+[HKEY_CLASSES_ROOT\TXT_SRC]
+"" = "Text document or LINOLEUM source"
+"EditFlags" = dword:00010000
+
+[HKEY_CLASSES_ROOT\TXT_SRC\DefaultIcon]
+"" = "NOTEPAD.EXE,0"
+
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\open]
+"" = "&Edit with Notepad"
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\open\command]
+"" = "NOTEPAD.EXE %1"
+
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\print]
+"" = "&Print using Notepad"
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\print\command]
+"" = "NOTEPAD.EXE /p %1"
+
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\compile]
+"" = "&Compile as LINOLEUM Source"
+[HKEY_CLASSES_ROOT\TXT_SRC\shell\compile\command]
+"" = "C:\\LINOLEUM\\MAIN\\COMPILER.EXE %1"

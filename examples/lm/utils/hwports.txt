@@ -1,0 +1,95 @@
+(
+
+  =================================================================
+  TARGET PLATFORM: Intel 80386 processors, and later or compatibles
+  =================================================================
+  _________________________________________________________________
+ |								   |
+ | PLATFORM-SPECIFIC SOURCE CODE * DECLARATION OF NON-PORTABILITY: |
+ |								   |
+ |	This program contains native machine language fragments,   |
+ |	designed EXCLUSIVELY for the abovely mentioned platform,   |
+ |	and SOLELY for that platform! Attempting to use portions   |
+ |	provided within this program in applications intended to   |
+ |	be fully cross-platform will UNRECOVERABLY COMPELL those   |
+ |	applications to be executable only on the said platform.   |
+ |								   |
+ |	Should you need porting your application to systems other  |
+ |	than the indicated TARGET PLATFORMS of this program, then  |
+ |	you MUST CHANGE THIS PROGRAM to reflect the corresponding  |
+ |	operations for all pieces of pure machine language code.   |
+ |								   |
+ |  Also, projects built by including this program SHOULD INHERIT  |
+ |  THIS WARNING MESSAGE. Please do, this is very very important!  |
+ |  This declaration might be placed at the top of a source file.  |
+ |_________________________________________________________________|
+
+ Well, yep, this is what concerns ports IO. An how-to library.
+ Rather than being somewhat of an useful library, this is more like an
+ examples' collection showing which are the opcodes to use for ports
+ access. Supposingly, in a serious implementation where performance is
+ a requirement, you wouldn't want to really include a library and use
+ it for ports IO operations. You'd more likely want to copy and paste
+ the relevant machine language from here to your application.
+
+ Working with Windows OS'es based on NT kernel, beware that protection
+ features concerning the Intel 32-bit architecture will cause general
+ protection faults in every cases, unless you have tools to grant your
+ application the appropriate access rights. An application runs in the
+ so-called "ring 3" of privilege levels, which doesn't allow at all
+ execution of any privileged CPU instructions. This includes hardware
+ ports' IN and OUT. Experimentally, at least on my copy of XP home, I
+ noticed that setting the properties' form for the resulting linoleum
+ application to execute in "compatibility mode for Windows95", removes
+ the general protection fault. Yet, I'm not sure this would fix all the
+ possible problems you may encounter trying to do the work of a VxD in
+ a more common ring-3 application. Personally, I've tried reading from
+ port 40h, the PIC. Normally, it might return the current channel zero
+ counter, but it returned zero on all attempts. I'm quite confident
+ ports under Win32 environments will behave much different from ports
+ in MS-DOS, if they even are accessible at all. Perhaps it's just me,
+ but I wouldn't bet an eurocent on hardware ports behaviour from here
+ with all the CPU's ring 3 protection fatures in action.
+
+)
+
+"programme"
+
+    "IN byte from D"	(read a byte from port given by register D)
+	{
+	    33 C0	(xor eax, eax - to clear bits 8..31)
+	    EC		(in al, dx - input AL byte from DX port)
+	}
+	leave;		(end of subroutine - result is in register A)
+
+    "IN word from D"	(read a word from port given by register D)
+	{
+	    33 C0	(xor eax, eax - to clear bits 8..31)
+	    66 ED	(in ax, dx - input AX word from DX port)
+	}
+	leave;		(end of subroutine - result is in register A)
+
+    "IN dword from D"	(read a dword from port given by register D)
+	{
+	    ED		(in eax, dx - input EAX dword from DX port)
+	}
+	leave;		(end of subroutine - result is in register A)
+
+    "OUT byte to D"	(write reg. A as a byte to port given by register D)
+	{
+	    EE		(out dx, al - output AL byte to DX port)
+	}
+	leave;
+
+    "OUT word to D"	(write reg. A as a word to port given by register D)
+	{
+	    66 EF	(out dx, ax - output AX word to DX port)
+	}
+	leave;
+
+    "OUT dword to D"	(write reg. A as a dword to port given by register D)
+	{
+	    EF		(out dx, eax - output EAX dword to DX port)
+	}
+	leave;
+

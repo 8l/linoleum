@@ -1,0 +1,317 @@
+(
+
+	A program you certainly know very well, because you have probably
+	executed it as the first Linoleum program after downloading the
+	compiler's package: yup, this is the LINOLEUM Compiler installation.
+
+	Its commented source code is here to provide yet another instance
+	of an iGUI application. It's presented to learn from, so feel free
+	to use its code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs.
+
+	      Have a nice time programming in Lino!
+	      Alessandro Ghignola
+
+	PS. remember that, due to relative paths, recompiling this program
+	    and leaving it in the "examples" folder will cause the menu
+	    options not to work; after recompiling it, for the options to
+	    work you'll have to move it to the c:\linoleum folder, that is,
+	    simply bring its compiled executable outside the examples folder.
+
+)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"libraries"
+
+	ppkh/png; (PNG image loader by Peterpaul Klein Haneveld)
+	igui/defstyle; (INTEGRATED G.U.I's default style, sets up many constants)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"stockfile"
+
+	tapestry; (background logo, merely a decoration to fill the window)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"directors"
+
+    (general directions)
+	unit = 32;
+	symbolsmap = off;
+	programname = { LINOLEUM_Compiler_Installation };
+
+    (will cause the display to move from 0;0 to the "anchor point")
+	displayxposition = zero;
+	displayyposition = zero;
+
+    (it's a "popup explorer", so don't slow down other progs)
+	threadpriority = verylowpriority;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"constants"
+
+    (size of program's dynamic heap, for the lock library to know)
+    (dynamic heap from the lock library is requested by the PNG image loader)
+	heap size			= 50000;
+
+    (GUI setup constants in brief, for in-depth control don't use "defstyle")
+    ("iconed.txt" in the "examples/icon_editor.txt" folder fully explains 'em)
+	INITIAL WIDTH			= 366;
+	INITIAL HEIGHT			= 128;
+	MINIMUM WIDTH			= 366;
+	MINIMUM HEIGHT			= 128;
+	MAXIMUM WIDTH			= 366;
+	MAXIMUM HEIGHT			= 128;
+	MAX MENU OPTIONS		= 100;
+	MAX ONSCREEN OPTIONS		= 100;
+	MAX LEVELS IN SHOW		= 1;
+	MAX FILES IN SELECTOR		= 0;
+	MAX FILES IN SHOW		= 0;
+	MAX OPTIONS IN QUESTION 	= 1;
+	MAX FIELDS IN QUESTION		= 0;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"variables"
+
+    (title of the window, also used as a small caption)
+	title = { 1.13.11b };
+
+    (variables used in the animation bringing the window to its anchor point)
+	must move = undefined;
+	display x final position = undefined;
+	display y final position = undefined;
+
+    (menu, following iGUI's syntax, for which you may see "icon_editor.txt")
+	my caption  = { CLICK_ME };
+	menu layout = { pull_down_the_menu_here };
+	01000000h; OPTION TYPE NORMAL; { Set_compiler_option_in_registry }; installoption;
+	02000000h; OPTION TYPE NORMAL; { Read_documentation }; readdocs;
+	03000000h; OPTION TYPE NORMAL; { Read_Public_License }; readlicense;
+	04000000h; OPTION TYPE NORMAL; { Show_credits_for_this_program }; showcredits;
+
+    (credits dialog box's datascript, see "Icon Editor" for explanations)
+	credits = {
+		L.in.oleum_v1.13.11b\cr\lf
+		COMPILER_PACKAGE_INSTALLER\cr\lf
+		\cr\lf
+		This_is_ALSO_written_in_L.in.oleum!___
+		};
+		{ Ok }; NULL;
+		NULL;
+
+    (the command lines to be used in reply to menu selections)
+	install reg = { docs/install.reg };
+	index htm = { docs/index.htm };
+	wpl htm = { docs/wpl.htm };
+
+    (coords of the bounding rectangle enclosing the background picture)
+ vector tapestry area = 1; 25; 364; 126;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"workspace"
+
+    (buffer where the background PNG file is loaded)
+	tapestry file buffer = sizeof tapestry div bytesperunit plus 1;
+
+    (a spare page, or hidden layer, where "tapestry" is uncompressed and kept)
+	spare page = maximum width mtp maximum height;
+
+    (the dynamic heap, managed via the lock.txt library, and used by PNG.txt)
+	heap = heap size;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"programme"
+
+    (setup dynamic heap:
+      - see main/lib/vk/lock.txt library for code
+      - see main/lib/vk/lockdoc.htm for help and info)
+	[lock start] = heap;
+	[lock exclusive top] = heap plus heap size;
+	[lock free] = heap size;
+	[lock total] = heap size;
+
+    (this fixes the coordinates of the window's anchor point: since this is
+     an explorer, its window shouldn't cover anything important; although
+     it is impossible to use a point of the screen that really doesn't cover
+     anything important, 25;25 might be a good choice after all... oh, and
+     remember that Linoleum applications, for technical reasons, really need
+     their windows to be always-on-top; why? well, remember that a Linoleum
+     application is overlaid to the operating system, it doesn't appear as
+     a "normal" application, it's not a normal application and its code is
+     not in control of the OS; hence, the OS cannot usually switch to that,
+     so if the window got hidden there would be no way to have it back on
+     the foreground, making the program no longer accessible unless the user
+     closed all the windows in front of it, or - under Windows - alt-tabbed
+     to switch to the said Linoleum program; iGUI applications, such as this
+     one, may also be sent to dormant state, and have their window iconized,
+     by pressing the "Z" button on the window's caption controls)
+	[display x final position] = 25;
+	[display y final position] = 25;
+
+    (just reading the contents of "tapestry" inside "tapestry file buffer",
+     of course, it is much more elegant and comfortable to carry the picture
+     file inside the executable program, so this is read from the stockfile:
+     the picture's data will be decompressed right after loading it up)
+	[filecommand] = read; (what's to do to a certain file)
+	[filename] = stockfile; (selects the stockfile, not a real file name)
+	[fileposition] = tapestry; (position of the data within the stockfile)
+	[blockpointer] = tapestry file buffer; (pointer to target memory area)
+	[blocksize] = sizeof tapestry; (size of the thing to read, in bytes)
+	isocall; (does the read)
+
+    (uncompressing background image to spare page: see PNG.txt for info)
+	[PNG target layer] = spare page;
+	[PNG display alignment] = maximum width;
+	[PNG picture data] = tapestry file buffer;
+	[PNG picture left] = [left margin relating vector tapestry area];
+	[PNG picture top] = [top margin relating vector tapestry area];
+	[PNG display width] = maximum width;
+	[PNG display height] = maximum height;
+	[PNG effect] = zero; (PNG library is left free to auto-detect this)
+	=> load png picture;
+
+    (sets the "work area manager" to our "wam" service subroutine: a service
+     subroutine, a subroutine declared as a "service", doesn't cause warnings
+     to pop while the program compiles, otherwise the compiler considers
+     a bit strange the fact that you're loading a variable, work area manager,
+     with the pointer to a subroutine, given by "service wam"; the work area
+     manager is called by the iGUI whenever the window needs to be retraced)
+	[work area manager] = service wam;
+
+    (sets the "control loop" to our "control loop" service subroutine: the
+     control loop is what the iGUI calls at each frame, in its input loop,
+     and would normally contain code that the application wants to execute
+     continuously, in a loop, and in this case will contain the code to
+     animate the display so that it will always slide to its anchor point)
+	[control loop] = service control loop;
+
+    (once "work area manager" and "control loop" have been defined, we may
+     initialize the iGUI; but those pointers defined above, wam and control
+     loop, may be changed during the application's runtime; it's not needed
+     to reinitialize the iGUI when one of those gets changed)
+	=> initialize integrated GUI;
+
+    (the following lines change the menu button's caption, otherwise the
+     default caption of an iGUI menu would be, as defined in "iGUI", "MENU")
+	[menu caption] = my caption;
+	=> update menu button appearence;
+
+    (setting small caption for when the application is sleepy, or iconified)
+	[small caption] = title;
+
+    (this couple lines simply change the window's title, otherwise the default
+     title of an iGUI window would be, as defined in "defstyle", "NO NAME"...)
+	[window title] = title;
+	=> update title bar;
+
+    (the following couple lines will set the menu layout to our menu: clicking
+     the menu button will pull down that menu; the menu layout may be changed
+     and reinstalled at any time during the program's execution)
+	[menu to install] = menu layout;
+	=> install menu;
+
+    (this is where the application has finished setting up its things, and
+     it's all ready to run; at this point, the application enters the iGUI
+     input loop, a loop that simply polls for events and reacts to what the
+     user is doing with dialog boxes, text fields, window control buttons...
+     when the subroutine called "enter integrated GUI" returns to the main
+     program, it usually finds an "end" tag, or a confirmation dialog box
+     and then an "end" tag - in facts, the "enter integrated GUI" subroutine
+     will return only when the "quit now" flag is found to be non-zero: this
+     may be set by the application at some point, like when the user selects
+     an option to quit from the menu, or because the user clicked the red "x"
+     button in the upper left corner of the window, which is always present
+     and is managed automatically)
+	=> enter integrated GUI;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service control loop"
+
+	[must move] = no;
+
+    "care for x"
+	a = [display x final position]; a - [displayxposition]; a / 12;
+	? a = 0 -> move along x by at least 1 pixel;
+	[displayxposition] + a;
+	[must move] = yes;
+	-> care for y;
+    "move along x by at least 1 pixel"
+	? [displayxposition] > [display x final position] -> move left;
+	? [displayxposition] < [display x final position] -> move right;
+	-> care for y;
+    "move left"
+	[displayxposition]-;
+	[must move] = yes;
+	-> care for y;
+    "move right"
+	[displayxposition]+;
+	[must move] = yes;
+	-> care for y;
+
+    "care for y"
+	a = [display y final position]; a - [displayyposition]; a / 10;
+	? a = 0 -> move along y by at least 1 pixel;
+	[displayyposition] + a;
+	[must move] = yes;
+	-> done with control loop;
+    "move along y by at least 1 pixel"
+	? [displayyposition] > [display y final position] -> move up;
+	? [displayyposition] < [display y final position] -> move down;
+	-> done with control loop;
+    "move up"
+	[displayyposition]-;
+	[must move] = yes;
+	-> done with control loop;
+    "move down"
+	[displayyposition]+;
+	[must move] = yes;
+
+    "done with control loop"
+	? [must move] = no -> ok dont move then;
+	isocall;
+	[processcommand] = sleep;
+	[sleeptimeout] = 10;
+	isocall;
+    "ok dont move then"
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"service wam"
+
+    (the background picture is on the spare page, here we copy it to the
+     backdrop layer of the iGUI, which, in turn, will be copied to visible
+     display memory when the iGUI uses the "refresh display" subroutine:
+     the purpose of having a separated backdrop layer which isn't always
+     visible is to avoid all the flickering during mouse pointer's moves
+     and updates to "superimposed" elements such as the pull-down menus)
+
+    "retracetapestrypicture"
+	[source layer] = spare page;
+	[destination layer] = backdrop layer;
+	[l2l region] = vector tapestry area;
+	=> copy l2l region;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"showcredits"
+	[question datascript] = credits;
+	=> question;
+	end;
+
+"installoption"
+	[filecommand] = run;
+	[filename] = install reg;
+	isocall;
+	end;
+
+"readdocs"
+	[filecommand] = run;
+	[filename] = index htm;
+	isocall;
+	end;
+
+"readlicense"
+	[filecommand] = run;
+	[filename] = wpl htm;
+	isocall;
+	end;

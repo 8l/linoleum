@@ -1,0 +1,440 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        Errors<br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        TROUBLESHOOTING - ERROR MESSAGES<br>
+        <i>(in order of importance)</i><br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+"Syntax error in operand, symbol name or immediate value."<blockquote>
+        The most frequent one. There's something wrong in the syntax
+        of an operand. Could mean a lot of things; its original meaning,
+        however, is that you specified a wrong operand (such as 3F5 as
+        an hexadecimal value but without the trailing "h") or the name of
+        a symbol you didn't declare. Also check your spelling of symbols
+        names, although adding or removing blank spaces, tabulations,
+        carriage returns, is ignored by the compiler, so that's never a problem.
+        <br><br>--- (an almost useless note) ---<br><br>
+        Some particular symbols like for example F075h may equally
+        be the names of variables. I just thought it's rather improbable
+        that a variable should have such a name, but here's my advice:
+        don't declare such names or the compiler will no longer be
+        interpreting the corresponding hexadecimal value, because the
+        name of a symbol has greater priority than an immediate value.
+        The reason why I let symbols names behave like so, is because
+        I dislike "leading things" to be placed before hexadecimal values,
+        as for instance happens with C/C++ (0xF075) and assembly (0F075h).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Symbol called &lt;x&gt; has been already defined above."<blockquote>
+        Um... it's probably so. But there's a distant possibility that the
+        compiler is messing up with the ID codes it assigns to symbols
+        so that the symbols can have names of any size (the ID codes are
+        calculated as particular XORed checksums of the symbols' names).
+        If you really can't find any other symbols with that name
+        (make sure you watched inside libraries and nidified libraries),
+        try to change the name a little. It should work.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Unrecognized instruction syntax."<blockquote>
+        Ah! That's frequent, and not always means what it means.
+        Apart from effectively writing a non-existing symbolic code,
+        such as "[Soup] /& [Count];" it may be also caused by misplaced
+        operands, for example [Soup] = [Count] ? -&gt; Theyrequal;
+        and by many other "hidden" causes, such as a missing semicolon
+        in the PREVIOUS line, a closing round bracket in a comment which
+        doesn't match an opening round bracket... Check the whole syntax
+        around. It should be quite visible.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Misplaced period (periodname)."<blockquote>
+        Check what the manual says <a href = "programs.htm">on this page</a>,<br>
+        about the order in which periods are placed.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Misplaced code label or wrong period label."<blockquote>
+        Check the spelling of period names.<br>
+        Also check if you're in the "programme" period<br>
+        before declaring one of your own code labels.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Void label?!"<blockquote>
+        Void label?!
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Extra operand(s) to instruction."<blockquote>
+        Apart from the comparison directives, no instruction has more
+        than two operands. Check it out.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"&lt;end&gt;, &lt;fail&gt;, &lt;show registers&gt; only allowed within PROGRAMME period."<blockquote>
+        Should be clearly understandable.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Implicitly unlabeled memory unit allocation can only be of immediate type."<blockquote>
+        While in the variables period you can write down a number, the
+        address of a variable (by name), the name of a constant giving its
+        value, and even workspace area labels' effective addresses, you
+        can't ask for streaming the CONTENT of a location, or of a register,
+        when you're in the "workspace" period! All the locations here will be
+        just allocated, but not initialized (or, to be precise, initialized
+        to a conventional value, which is an integer zero).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Symbolic instruction too long!"<blockquote>
+        More than 7 key signs in one instruction pattern.
+        Check if you placed the semi-colons in the right way.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"There is(are) x comment tag(s) still open!"<blockquote>
+        Eh, you should close your comments.
+        This may denote some (or even all) code has been ignored because
+        it was considered to be a comment. Correct and recompile in full.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Open string!"<br>
+"Open label!"<blockquote>
+        Same as the above message.
+        But this time check for string brackets (braces) or for double-quotes.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Unable to keep compiler running."<blockquote>
+        It's an additional message to mean the compiler was compelled to
+        halt because of a serious error, and some code has not even been
+        checked for possible errors.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"&lt;unit&gt; director must be specified!"<blockquote>
+        Please write "unit = 32;" in the "directors" period.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"No main programme period found in source code!"<blockquote>
+        While a library can have no "programme" period, the main program
+        must have one. Check if you tried to compile a library, not a program.
+        Libraries, in effects, cannot be pre-compiled. They must be accessible
+        as plain text, like any other parts of the source code; that's the
+        compiler's phylosophy, at least actually.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Illegal pointer directive."<br>
+"One or more misplaced square brackets."<blockquote>
+        You're probably messing up with the brackets.
+        There may be something like three brackets, no closing
+        bracket, no opening one, misplaced brackets and so on...
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Label string too long!"<blockquote>
+        Ok ok, I told you to keep them long for disambiguation purposes,
+        but you should see this only for an over-2048-characters label.
+        Alternatively, maybe you didn't put the quotes at the end?!
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Syntax not recognized in DIRECTORS period."<br>
+"Syntax not recognized in CONSTANTS period."<br>
+"Syntax not recognized in VARIABLES period."<br>
+"Syntax not recognized in WORKSPACE period."<blockquote>
+        Tried to use a syntax different from SOMETHING = SOME VALUE.
+        In those periods, only that syntax is allowed, a possible
+        exception being the <i>program name</i> director tag.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Data or code emission to unknown period."<blockquote>
+        You wrote something (which is not a simple comment) before declaring any periods.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Register for indirect addressing mode can only be used at the beginning of an expression."<blockquote>
+        You can only specify a register name (A to E) at the beginning
+        of a linear expression used as a pointer. I mean, you can't write
+        [ThatArea plus A]. You have to write [A plus ThatArea] instead.
+        It's the same thing, I know, but the compiler doesn't acknowledge
+        the linear expression if you don't type the register name first.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Register for indirect addressing mode can only be used in program code."<blockquote>
+        Yes. You can't use registers at all, if not in the "programme" period.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Too many exponents: more than a single lowercase <e> in floating-point value."<blockquote>
+        Probably a typo.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Too many decimal points?? (one is sufficient :)"<blockquote>
+        A typo. With subtle irony.<br>
+        Rememeber you can't cast floating-point exponents in sources.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Illegal expression containing more than one CODE LABEL."<blockquote>
+        You can't add together the addresses of code labels,<br>
+        because the result is always a non-sense.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Only the &lt;program name&gt; director tag can hold a string."<blockquote>
+        Yes. No way to declare a string unless you're
+        in the "variables" period. The only exception is,
+        in effects, the "program name" director tag.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"There are actually no directors holding floating-point values."<blockquote>
+        I reserve the possibility of some of them to exist in the future,
+        but actually they're all of integer type.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"All directors except &lt;program name&gt; can only be set to immediate values."<blockquote>
+        Well, no variables. Just pure numbers or constants.<br>
+        It's unavoidable, because director tags are to set initial values.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Illegal thread priority."<br>
+"Maximum display WIDTH is 1,048,576 pixels."<br>
+"Maximum display HEIGHT is 1,048,576 pixels."<br>
+"Display mode can only be COLLABORATIVE or EXCLUSIVE."<br>
+"Value out of range for startup pointer mode."<br>
+"Value out of range for testflags. Current range is 4 bits (0 to 15)."<br>
+"One or more modular extension(s) not supported by this compiler."<br>
+"Cannot delay CPU for a negative number of loops."<blockquote>
+        All of those limits are clearly understandable.
+        What's less clear is that several of them ALSO apply to WRITE-AND-ISOCALL
+        operations. So be careful with those, because the limits are not
+        checked upon WRITE-AND-ISOCALL operations (would slow down execution).
+        It is your program's responsibility to set up these parameters with
+        legal values during application's run time: if not, you may even lock
+        up your system.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Sorry, this program doesn't fit the CPU for which this compiler has been designed."<blockquote>
+        You typed the wrong value for the "unit" director tag.<br>
+        Actually, it must be 32.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Invalid label."<br>
+"Invalid CONSTANT name."<br>
+"Invalid VARIABLE name."<br>
+"Invalid WORKSPACE AREA name."<blockquote>
+        Symbols names should follow these rules:<ul>
+        <li>They cannot contain DOT, SEMICOLON, ANY BRACKETS;</li>
+        <li>They cannot contain other signs like - / ' ? + % etc...</li>
+        <li>They cannot start with a DIGIT (0 to 9);</li>
+        <li>They cannot contain the words: "plus", "minus",
+          "relating", "multiplied", "mtp", "divided", "div".</li>
+        </ul>
+        Notes:
+        <blockquote>
+                "relating" is an alias having exactly the same function as "plus".
+                Be aware these keywords don't need to be separated by blank
+                spaces from the rest of the expression, in order for them to
+                be acknowledged. In pratice, you can't use a variable called,
+                for example, "divine inspiration", because the word "div"
+                would be acknowledged as the short form of "divide", even
+                if it's part of "divine".
+        </blockquote>
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Constants can only assume immediate values."<br>
+"Variables can only be initialized by immediate values."<br>
+"Need an immediate value for duplications count (***)."<blockquote>
+        Immediate values are the values of other constants or pure numbers,
+        but no variables names or registers.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Floating-point duplications count (***) is meaningless."<br>
+"Workspace area labels must have integer size."<blockquote>
+        Yeah! Were you trying to setup a vector which should be
+        something like (for instance) 15.25 units in size?
+        Also if you're using a constant for the duplications
+        count, make sure it's of integer type, not floating-point.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"NEGATIVE duplications count (***)."<br>
+"Negative values have no meaning for area size."<blockquote>
+        Absolutely nonsensical.<br>
+        Also if you're using a constant for the duplications
+        count, make sure it's of positive integer type.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Workspace area labels must have constant size."<blockquote>
+        Yes, that's unavoidable.
+        To dinamically allocate memory there's another way,
+        which involves changing the RAM Top. See example n. 15.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Text strings declaration is only allowed in VARIABLES period."<blockquote>
+        Yeah, with the possible exception of the "program name" director.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Syntax error in declaration of text string."<blockquote>
+        A string is declared like<br>
+        String = { This_is_the_text };
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Incorrect library inclusion."<blockquote>
+        You used key signs inside the library name.<br>
+        Libraries name can only contain LETTERS and NUMBERS.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Incorrect stockfile inclusion."<blockquote>
+        You used key signs inside the compound file name.
+        Compound file names can only contain LETTERS and NUMBERS.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"First operand too long!"<br>
+"Second operand string too long!"<br>
+"Director string operand too long!"<br>
+"Destination label (third operand) too long!"<blockquote>
+        More than 2048 characters in one operand. How could you do that??
+        Well, make shorter names, or check if your instruction's syntax is right.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Library name too long. Library ignored."<br>
+"Stock file inclusion name too long. File inclusion ignored."<blockquote>
+        Libraries' names are limited to 8 chars for compatibility reasons.
+        The same applies to the names of stockfile's compound files.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Sorry, library &lt;x&gt; not found or unaccessible."<blockquote>
+        Check if the library file, which should have TXT extension, is placed
+        in the same directory (or folder) where the main source code is.
+        Also check the spelling...
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Sorry, stock file inclusion &lt;x&gt; not found."<blockquote>
+        Check if the compound file, which may have any extension, is placed
+        in the same directory (or folder) where the main source code is.
+        Also check the spelling...
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Sorry, stock file inclusion &lt;x&gt; not accessible."<blockquote>
+        Not allowed to read from this file?
+        Or file system's too busy?
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Sorry, too many symbols defined in source."<blockquote>
+        Actually you can declare upto <big>40,289</big> symbols.
+        Symbols are all variables, constants, workspace area labels,
+        libraries names, stockfile compounds names, run-time module
+        control variables and run-time module constants.
+        If you can see this message, you should calm down with the
+        complexity of your programs. Mail me to receive an award
+        (no money but sincere admiration) and I'll see what I can do
+        for a larger symbols area (which may be slower on compiling
+        but could compile your particular monster program).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"File system trouble: can't re-open &lt;x&gt; after parsing library."<blockquote>
+        It's not a problem if you have too many programs opened at that time.
+        Close some and try again.
+        It's a problem if you don't have any opened programs,
+        for your disk may have bit the dust in the meantime.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal: can't flush symbols cache to binary file (disk full?)"<blockquote>
+        Exactly: maybe the disk is full or had a malfunction.<br>
+        However there's nothing to do from the source code here.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal: error seeking source code file."<blockquote>
+        It's a file system problem. No solution.<br>
+        Sincerely, I don't even know how should it happen.<br>
+        But in case it happens, the message is there.<br>
+        You're unlucky.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal error: can't save object code."<blockquote>
+        Probably a disk failure.<br>
+        Check disk space and write-protection.<br>
+        Otherwise, check the disk's integrity (run ScanDisc or similar).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal: can't link &lt;x&gt; to the stock file."<blockquote>
+        Disk error. Check it out.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal: can't create application file."<br>
+"Fatal: can't fill initialization paragraph..."<br>
+"Fatal: can't link workspace cache to application file."<br>
+"Fatal: can't link object code to application file."<br>
+"Fatal: can't link stock file to application file."<blockquote>
+        Troubles with the disk. Again.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Fatal: can't find initialization paragraph in runtime module."<blockquote>
+        Your copy of the compiler must be somewhat corrupted.
+        Try to re-download. If it fails again, mail me ASAP, because
+        in this other case maybe the server-side version is corrupted.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Internal compiler problem: ..."<br>
+"Fatal: wrong code-label ISMO within instruction set."<br>
+"Fatal: wrong relative displacement ISMO within instruction set."<blockquote>
+        Heck. Mail me: if you see one of those, you've found a bug.
+        You should mail me the line which caused the error to occur,
+        plus additional data about the operands used (are their variables,
+        constants, immediate values, code labels).
+        However, there's a little chance that your compiler's copy may
+        be corrupted, so try to redownload. But PLEASE mail me in any cases.
+        See <a href = "http://anywherebb.com/tellalex.html">http://anywherebb.com/tellalex.html</a>
+        for a way to contact me.
+        <br><br>
+        <i>Curiosity: an I.S.M.O. is an Instruction Set Mobile Opcode, the
+        placeholder for a value that the compiler will replace with the
+        effective address, or relative jump displacement, or immediate value,
+        from one of the operands to an instruction.</i>
+</blockquote>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

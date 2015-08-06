@@ -1,0 +1,487 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        constants<br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "constants" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This period follows "directors".<br>
+        This period preceeds "variables", if "variables" is used.<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        As a first thing to do, let's introduce how values are held in memory
+        and which are the most used ways to represent numbers.
+
+        <br><br>
+
+        Computers are internally using binary representation of all values.
+        A value is always formed by a stream of bits, and each bit can take
+        one of two values: zero or one. You can set the most simple kind of
+        value (the binary one) by adding a lowercase "b" letter after the
+        value itself. Obviously, this way you have to use upto n bits for a
+        constant's value or any other bits will be ignored by your CPU. And
+        n, as explained above, is the CPU unit, the number of bits in the bus.
+        Let's make an example, assigning a binary value to a constant.
+
+        <blockquote>
+                my first constant = 1110001b; (7 digits = 7 bits)
+        </blockquote>
+
+        Oh, well, ok, it's got 7 bits out of n... but which is the value?
+        This needs additional explanations and a bit of mathematics. Sorry.
+        Normally, we are used to think at numbers in decimal format. This
+        means we call the digits "units", "tens", "hundreds", "thousands",
+        and so on. All of these names identify a different power of 10.
+        Mathematically speaking, 10 is our natural RADIX, or MODULUS.
+        If we wanted to write, for example, 1045 using powers of ten,
+        we would write 1045 as the sum of:
+
+        <blockquote>
+                1 x 10 raised to the power of 3 (1 x 1000) +<br>
+                0 x 10 raised to the power of 2 (0 x 100) +<br>
+                4 x 10 raised to the power of 1 (4 x 10) +<br>
+                5 x 10 raised to the power of 0 (5 x 1) =<br>
+                <br>
+                = 1000 + 40 + 5 = 1045
+        </blockquote>
+
+        Looks complicated? It isn't really.
+        10 raised to the power of 3 is 1000, what we call a "thousand",
+        10 raised to the power of 2 is 100, what we call a "hundred",
+        and so on for 10 raised to 1 and 10 raised to 0 which are "tens"
+        and single "units" (because any numbers raised to 0 give 1).
+        Consequentially, a digit in a decimal number can assume ten values, 0 to 9.
+
+        <br><br>
+
+        Now let's work with a different modulus, the computer's one.
+        We can use only two values for each digit, zero and one.
+        And we must proceed by using powers of two, not powers of ten.
+        So if the above constant had a value of 1110001b, which is its
+        decimal value? It's quite simple: the leftmost digit (also called
+        "most significant bit", corresponds to 2 raised to the power of 6,
+        while the digit immediately to the right corresponds to 2 raised
+        to 5, and so on until the rightmost digit, being 2 raised to 0).
+        Let's see:
+
+        <blockquote>
+                1 x 2 raised to the power of 6 (1 x 64) +<br>
+                1 x 2 raised to the power of 5 (1 x 32) +<br>
+                1 x 2 raised to the power of 4 (1 x 16) +<br>
+                0 x 2 raised to the power of 3 (0 x 8) +<br>
+                0 x 2 raised to the power of 2 (0 x 4) +<br>
+                0 x 2 raised to the power of 1 (0 x 2) +<br>
+                1 x 2 raised to the power of 0 (1 x 1) =<br>
+                <br>
+                = 64 + 32 + 16 + 1 = 113
+        </blockquote>
+
+        That's it. We can see the value was 113 in decimal.
+        Ok, ok, there's no need of using binary values in your program
+        (you'd just get mad trying to do such a thing). But understanding
+        binary arithmetics is needed for a lot of things, like using single
+        bits, instead of an entire memory unit, in special operations.
+        Single bits are often used in programs as "flags".
+        Flags are especially used to mark particular features of an entity,
+        (take the run-time module for instance: it sets a flag in a certain
+        system variable while the left mouse button is held down by the user),
+        or to remember that "something has happened".
+
+        <br><br>
+
+        Not only for that: using your knowledge of binary arithmetics,
+        you can tell which is, for example, the highest integer value you
+        can assign a variable or a constant to. I mean: it's easy to
+        understand that you can't use a 33-bit constant if your CPU can
+        only see 32 bits! So which is the highest value held by 32 bits?
+        Easy: it's 2 raised to the power of 32, minus 1.
+        In decimal format, it's precisely 4,294,967,295.
+        In binary, this means 32 bits all set to 1.
+        Why did I subtract 1? Just think to the representation of value
+        zero, which is one of the combinations, and is not counted when
+        you want to find the GREATEST number represented by 32 bits.
+        And what would happen if you assigned a constant to 4,294,967,296?
+        This would need complessively 33 bits: a 1 followed by 32 zeroes.
+        Being that a 32-bit CPU isn't able to interpretate the 33rd bit which
+        is the only one set to 1, it would see the value as if it was ZERO!
+        Paradoxical? No, not that much. The problem is: in pure mathematics,
+        there is no limit to numbers. Unfortunately, the PC is a physical
+        instrument and it can't hold an infinite number of bits to encode all
+        possible values. You'll have to deal with these limits, and if you
+        need greater values you'll have to use more than a single memory unit
+        and to manage them in some ways. We can't avoid this. But in common
+        calculations, believe me, you rarely need more than 4 billions...
+
+        <br><br>
+
+        Getting back to the constants, how do we assign them directly to a
+        decimal value? By simply typing the value as it is. This time you
+        don't need to use a lowercase "b" after the value, but if you want
+        to remark the fact that value is in decimal you may add a lowercase "d",
+        although that's not needed because L.in.oleum takes by default decimal values.
+        So you can replace the following example with:
+
+        <blockquote>
+                my first constant = 113;
+        </blockquote>
+
+        ...which is fairly more readable,
+        but please remember what you learned about binary numbers:
+        it's important!
+
+        <br><br>
+
+        Now, are there other kinds of formats for numbers?
+        Yes, there are another two formats: hexadecimal and floating-point.
+
+        <br><br>
+
+        Hexadecimal numbers are represented using a radix, or modulus, of 16.
+        Um... only 10 signs in numbers: 0, 1, 2, 3, 4, 5, 6, 7, 8 and 9.
+        How do I represent 10, 11, 12, 13, 14 and 15 with one digit?
+        Intelligent question. Well, being that there weren't enough signs
+        in our common digits to write down hexadecimal numbers, we are
+        conventionally using letters, in this way: A means 10, B means 11,
+        C means 12, D means 13, E means 14, and F means 15.
+
+        <br><br>
+
+        Now, why using a radix of 16? Why not 12, 13, 150?
+        Because there is an evident advantage in using this radix.
+        16 is a power of two and digits in such numbers range from 0 to 15.
+        This allows easy conversion of hexadecimal numbers to binary, and
+        vice-versa, because an hexadecimal digit always takes a maximum of
+        4 binary digits to be represented. See the following table:
+
+        <br><br>
+
+        <center>
+        <table cellpadding = 0 cellspacing = 20 border = 0>
+        <tr>
+        <td><font face = "arial, helvetica" size = 3 color = "white"><b>hexadecimal digit</b></font></td>
+        <td><font face = "arial, helvetica" size = 3 color = "white"><b>binary number (4 digits)</b></font></td>
+        </tr>
+        <tr>
+        <td align = "center"><font face = "arial, helvetica" size = 3 color = "white"><b>0<br>1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>A<br>B<br>C<br>D<br>E<br>F</b></font></td>
+        <td align = "center"><font face = "arial, helvetica" size = 3 color = "white"><b>0000<br>0001<br>0010<br>0011<br>0100<br>0101<br>0110<br>0111<br>1000<br>1001<br>1010<br>1011<br>1100<br>1101<br>1110<br>1111</b></font></td>
+        </tr>
+        </table>
+        </center>
+
+        <br><br>
+
+        Let's see if you're able to translate 113 to hexadecimal, considering
+        it's 1110001 in binary. It's a piece of cake: just consider the 4
+        rightmost binary digits: they are 0001. Look up the above table and
+        you'll find it means 1 in hexadecimal. Then take the other 4 digits,
+        proceeding left. They're 111. Consider a leading zero, which doesn't
+        affect the value, for better clearence: 0111. What's it? It's 7.
+        So here's your number: 113 in decimal means 71 in hexadecimal.
+        Seventy-one? Not as such. You can't read it that way, it might be read,
+        in reality, as "seven-one": in fact, if you say "seventy" you're
+        implicitly refering to the name we conventionally assign to "seven
+        tens", which has no meaning when the number's radix is sixteen.
+        In a nutshell, hexadecimal is a "packed" method to represent binary
+        values, using less signs, and therefore being much easier to read than
+        plain binary, providing you get some practice with it. Now, hexadecimal
+        numbers are coded by placing a lowercase "h" after their value.
+        Like in our "standard" example:
+
+        <blockquote>
+                my first constant = 71h;
+        </blockquote>
+
+        Ok. We learned binary and hexadecimal.
+        They were always integer and positive numbers.
+        How do I code a negative number??
+        There is a universal representation for integer negative numbers,
+        called the "two's complement" technique. Well, I must say it would
+        need a very long explanation to understand WHY it works. So I'll just
+        consider HOW it works. Sincerely, you don't need to know the logical
+        demonstration to why two's complement actually works. You just need
+        to know how to code your negative numbers, and here's how.
+
+        <br><br>
+
+        Suppose you've got to code the simplest case, number -1 (minus 1).
+        The rule of thumb is: take +1 and all of its n bits, and COMPLEMENT
+        them. What does it mean complement? If a bit is zero, make it one,
+        and versa if it's one, make it zero. Not difficult indeed.
+        When you've complemented the bits, add 1 to the value (in binary,
+        so remember that in this case 1+1 gives zero and a carry of 1).
+        Here's how things should go for n = 32:
+
+        <br><br>
+        <center>
+        <table cellpadding = 0 cellspacing = 0 border = 0>
+        <tr>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b>plus 1 is</b></font></td>
+        <td width = 50>&nbsp;</td>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b><pre>00000000000000000000000000000001</pre></b></font></td>
+        </tr>
+        <tr>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b>now complement</b></font></td>
+        <td width = 50>&nbsp;</td>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b><pre>11111111111111111111111111111110</pre></b></font></td>
+        </tr>
+        <tr>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b>and add 1</b></font></td>
+        <td width = 50>&nbsp;</td>
+        <td valign = "top"><font face = "arial, helvetica" size = 3 color = "white"><b><pre>11111111111111111111111111111111</pre></b></font></td>
+        </tr>
+        </table>
+        </center>
+
+        Ok, found it! Minus 1 is represented by 32 bits all set to 1.
+        What??? But wasn't it meaning 4,294,967,295? What the...
+        No mysteries: the PC's memory just takes your bits as you tell it to.
+        The fact that you're meaning a negative number or a positive one,
+        depends on how you TREAT that number in your program.
+        If it's a positive number, its range is from 0 to 4,294,967,295.
+        If it can also be negative, it's -2,147,483,648 to +2,147,483,647.
+        Eh...this is -(2 raised to the power of 31) to +(2 raised to 31) - 1.
+        There's another little rule deriving from what we do: the most
+        significant bit of an integer number is the sign bit. If it's set
+        to 1, the number is negative. If it's 0, the number is positive.
+
+        <br><br>
+
+        Um... why? It's difficult, why can't I just say the most significant
+        bit is the sign bit and the rest are left as they are, without having
+        to perform that "two's complement" stuff?
+        This goes back to the "why is two's complement working" question,
+        and as I said it won't be explained because it's too long to explain,
+        and you don't need to know. Just consider that if you make your own
+        conventions to represent negative numbers, you will need to process
+        the numbers one bit at a time when, for example, you have to make an
+        addition or a subtraction. Using two's complement, instead, values
+        will always behave correctly even using the simple rules of binary
+        arithmetics, so you can perform operations with them in exactly the
+        same way you would do with positive numbers. That's it, and here's
+        a brief example to show what happens if you add -1 to -1 in 32 bits,
+        using a simple addition.
+
+        <br>
+        <pre>
+                 11111111111111111111111111111111       +
+                 11111111111111111111111111111111       =
+                111111111111111111111111111111110</pre>
+
+        That was a binary addition: in binary like in any other radix,
+        1 + 1 still makes 2, but remember 2 is written as 10 in binary.
+        So you have a CARRY each time you perform 1 + 1.
+
+        <br><br>
+
+        As you can see, the result is 33 bits long, because there is a final
+        carry when we add the rightmost bits together (the result of 1+1 in
+        binary is 2, which is translated to 10, plus the carry from above
+        giving 11). Well, but the CPU will just truncate this value,
+        considering its leftmost 32 bits only. So what's the meaning of
+        11111111111111111111111111111110 in two's complement?
+        It's what we expected: minus 2. Try to encode minus 2 starting
+        from its positive counter-part (+2) and you will see...
+
+        <br><br>
+
+        Nope... ok ok it's confusing, I admit. What's it like in L.in.oleum?
+        If you had to manually code negative numbers, as well as if you had
+        to manually code binary numbers, you'd get mad in both cases.
+        Obviously, L.in.oleum allows marking negative numbers easily.
+        But there's a thing about the particular way to mark a "minus" sign
+        into the source code. Well, as you will see later, the "minus" sign
+        itself, in L.in.oleum, is an instruction, a command which must be only
+        placed in the last period, the "programme". In particular, "-" means
+        "please perform an integer subtraction here" to the compiler. So, it
+        cannot be directly used to mark a negative value. Instead, you will
+        have to use an alphabetic tag, exactly the word "minus". Take for
+        example the case when you have to assign your constant to -113 rather
+        than just 113. You'd write:
+
+        <br>
+        <pre>my first constant = minus 113;</pre>
+
+        AND NOT
+
+        <br>
+        <pre>my first constant = -113;</pre>
+
+        because the L.in.oleum compiler would interpretate this as an unknown
+        command, represented by a non-existing symbolic instruction: "=-".
+
+        <br><br>
+
+        However, you can negate even values written in other radixs.
+        You can put "minus" even before binary and hexadecimal numbers.
+        And well, if you didn't write "minus", or if you wrote "plus",
+        you would simply obtain a positive number, as normal.
+
+        <br><br>
+
+        There are not only "plus" and "minus" tags.
+        Sometimes it's useful to perform short calculations with constants,
+        like if you had to assign a certain constant to the value of 56261
+        multiplied by 78... you would have to take the calculator to find
+        the result, wouldn't you? Well, using constants, and ONLY USING
+        CONSTANTS, there's a way to let the compiler perform the calculation
+        for you. Along with "plus" and "minus", there are the "multiplied"
+        and "divided" tags. So you'd write:
+
+        <br>
+        <pre>a difficult constant to calculate = 56261 multiplied 78;
+another example = 56261 multiplied 78 plus 5004;</pre>
+
+        Such calculations are called "linear expressions".
+        Beware you can't use symbols such as * and / to multiply and divide.
+        Symbols, in L.in.oleum, are *always* part of a command instruction.
+        You can't even use parenthesis. Linear expressions are calculated
+        performing one calculation after the other. Parenthesis in L.in.oleum
+        are always used to mark comments, as you will see...
+
+        <br><br>
+
+        Finally, there are shorter ways to write "multiplied" and "divided".
+        "multiplied" can be written as "mtp", and "div" stands for "divided".
+        Take some fresh air before we get to the last format,
+        this manual runs very fast throught these topics...
+
+        <br><br>
+
+        The last format is used for floating-point numbers.
+        For instance, the value of PI is a floating-point number,
+        being about 3.14159265358979323846 argh how do we code it?
+        Eh... this time we really can't investigate the process.
+        For a simple reason: it's not standard.
+        Well, floating-point numbers are held in FPU registers, which are
+        different from the ALU registers placed inside the CPU itself.
+        The FPU is an acronym for Floating-Point Unit, and it's usually a
+        secondary microprocessor taking care of floating-point calculations,
+        while the CPU performs the integer ones. Most of today's processors
+        have built-in FPUs, but in any cases you need an FPU to perform such
+        operations throught a L.in.oleum program. This is unavoidable because
+        I didn't setup floating-point emulation, for the simple fact that I'd
+        prefere to leave this duty to programmers, if they liked to make their
+        programs capable of executing FPU calculations on older processors:
+        it's partially because FPU emulation would enlarge programs, and
+        partially because my machine has a built-in FPU and this makes me
+        quite lazy about trying to emulate the FPU. However, Pentiums always
+        have a built-in FPU, PowerPCs too, and I don't see any reasons why
+        they should remove the FPU in future versions... so why worrying?
+        Down to the format: current standard should be called IEEE, and it's
+        actually claimed to be standard. I'm not sure it will be the same in
+        the future. While integer binary-encoded numbers, positive and not,
+        will always be in two's complement because it's way too comfortable,
+        floating-point formats kept changing in time and since they may be
+        changing in near future, I suggest you NOT TO operate floating-point
+        formats at binary level. Just keep them in decimal: there are enough
+        instructions in the L.in.oleum instructions set to manage them very
+        comfortably. Don't even mind about their binary representation.
+
+        <br><br>
+
+        How do I code a floating-point number in a L.in.oleum program?
+        In the easiest possible way: type it in, and let a lowercase "f"
+        follow the value. The compiler will convert it to binary for you.
+        Here's a classical example setting up the "PI" constant:
+
+                PI = 3.141592654f;
+
+        Easy as cake.
+        And what if I need to add an exponent?
+        There's another special sign for it: a lowercase "e".
+        It works like so:
+
+                test = 1.2345e25f;
+
+        it's easy: this means "test" is assigned a value of 1.2345 raised
+        to the power of 25. You can also add a sign to the exponent,
+        obtaining numbers below zero in scientific form.
+
+                test = 1.2345 e minus 3;
+
+        which would mean 0.0012345 in other words.
+        (Mathematicians only?) - What if I need a floating-point exponent?
+        Eh... forget it. Calculate by using n-roots and powers by hand.
+        Sorry, the compiler's syntax only allows 1 decimal point in values.
+        However, come on: if you know what a floating-point exponent means,
+        you should certainly be able to calculate it using instructions,
+        and we can't really say floating-point exponents are used a lot.
+        Of course I could let the compiler encode such numbers, but I
+        actually don't think it would really worth the effort. However,
+        if you really think they're needed let me know. Should I receive a
+        sufficient number of HOT requests, I'll certainly add such syntaxes
+        in future versions of the compiler. But I doubt I will be asked to.
+
+        <br><br>
+
+        As a final note, there are obviously limits even to the floating-point
+        formats, but not even those limits are standard. Let's say in current
+        IEEE formats, 32 bits would hold exponents upto +/-38. I guess it
+        should be enough in terms of quantity. For the quality... well, there
+        will be a loss of digits (a partial loss of precision) when using high
+        exponents. It's unavoidable. Feel free to split numbers in mantissa
+        and exponent, if you need it, and have time to do it.
+
+        <br><br>
+
+        Ok, that concluded all of what we could say about the PC's numbers.
+        In the next paragraph we will meet memory organization, and its
+        most frequent use: the <a href = "variable.htm">variables</a>.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

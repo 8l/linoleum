@@ -1,0 +1,562 @@
+(** &lib Bmem:
+ *     This library contains routines to manage byte-based memory.
+ *     &include Ctype, Bytes
+ *     &authors Peterpaul Klein Haneveld:pp_kl_h@hotmail.com
+ *     &copyright 2002, 2003 by Peterpaul Klein Haneveld.
+ *     &license LGPL:
+ *     This library is free software; you can redistribute it and/or<BR>
+ *     modify it under the terms of the GNU Lesser General Public<BR>
+ *     License as published by the Free Software Foundation; either<BR>
+ *     version 2.1 of the License, or (at your option) any later version.<p>
+ *
+ *     This library is distributed in the hope that it will be useful,<BR>
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of<BR>
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU<BR>
+ *     Lesser General Public License for more details.<p>
+ *
+ *     You should have received a copy of the GNU Lesser General Public<BR>
+ *     License along with this library; if not, write to the Free Software<BR>
+ *     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *)
+
+"libraries"
+	ctype;
+	bytes;
+
+"workspace"
+	BMemSource	       = 1;
+	BMemSourceStart        = 1;
+	BMemSourceLength       = 1;
+	BMemToFind	       = 1;
+	BMemToFindStart        = 1;
+	BMemToFindLength       = 1;
+
+	BMemCompareRoutine     = 1;
+	BMemCompareResult      = 1;
+	BMemFindSteps	       = 1;
+	BMemFindResult	       = 1;
+	BMemChrToStopOn        = 1;
+	
+	BMemCpyCheckSrc 	= 1;
+	BMemCpyCheckDest	= 1;
+
+"programme"
+(----------------------------------------------------------------------------)
+(set or fill routines)
+(----------------------------------------------------------------------------)
+(** &fun bmemset:This routine fills a portion of the memory with one value.
+ *     &rem <li> @P1, @P3: UNCHANGED
+ *	     <li> @P2, @P4: DESTROYED
+ *     &param 1 in reg A:pointer to memory,
+ *		2 in reg B:position of first byte to set,
+ *		3 in reg C:value to fill memory with,
+ *		4 in reg D:number of bytes to set
+ *)
+"bmemset"
+(	 ? d > 0 -> bmemsetstart;
+	end;
+	"bmemsetloop"
+	    b+;
+	    "bmemsetstart"
+	    => setbyte;
+	d^bmemsetloop;
+	end;
+)
+	a-->;
+	? d <= 0 -> bmemset end;
+	b-->;
+	b > 2;		(div 4)
+	a + b;
+	b<--;
+	b & 11b;	(mod 4)
+	b < 3;		(mtp 8)
+	[a] @> b;
+	-> bmemset start;
+	"bmemset loop"
+		[a] @> 8;
+		b + 8; ? b < 32 -> bmemset same;
+		b = 0; a+;
+		"bmemset same"
+		"bmemset start"
+		[a] & FFFFFF00h;
+		[a] | c;
+		d ^ bmemset loop;
+	b - 32;
+	|b|;
+	[a] @> b;
+	"bmemset end"
+	a<--;
+	end;
+(----------------------------------------------------------------------------)
+(copy routines)
+(----------------------------------------------------------------------------)
+(** &fun bmemcpy:This routine copies bytes from one memory location to
+ *	     another.
+ *     &rem This routine makes sure no information is lost, even when the
+ *	     locations overlap.<BR>
+ *     &param 1 in reg A:pointer to source memory,
+ *		2 in reg B:position of first byte to copy,
+ *		3 in reg C:number of bytes to copy,
+ *		4 in reg D:pointer to destination memory,
+ *		5 in reg E:position of first target byte
+ *)
+"bmemcpy"
+	? c <= 0 -> bmemcpyend;
+	? a > d -> bmemcpynormal;
+	? a < d -> bmemcpybackwards;
+	? b > e -> bmemcpynormal;
+	? b < e -> bmemcpybackwards;
+	"bmemcpyend"
+	end;
+
+	"bmemcpynormalloop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    b+; e+;
+	    "bmemcpynormal"
+	    c-->;
+	    => getbyte;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => setbyte;
+	    c<--;
+	    c^bmemcpynormalloop;
+	end;
+
+	"bmemcpybackwards"
+	b + c; e + c;
+	-> bmemcpybackwardsstart;
+	"bmemcpybackwardsloop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    "bmemcpybackwardsstart"
+	    b-; e-;
+	    c-->;
+	    => getbyte;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => setbyte;
+	    c<--;
+	   c^bmemcpybackwardsloop;
+	end;
+(
+"bmemcpy"
+	? c <= 0 -> bmemcpyend;
+	? a > d -> \bmemcpynormal[a][b][c][d][e]\;
+	? a < d -> \bmemcpybackwards[a][b][c][d][e]\;
+	? b > e -> \bmemcpynormal[a][b][c][d][e]\;
+	? b < e -> \bmemcpybackwards[a][b][c][d][e]\;
+	"bmemcpyend"
+	end;
+)
+(
+\bmemcpy[src][sptr][len][dest][dptr]\
+	? \len <= 0 -> \\end;
+	? \src > \dest -> \bmemcpynormal[\src][\sptr][\len][\dest][\dptr]\;
+	? \src < \dest -> \bmemcpybackwards[\src][\sptr][\len][\dest][\dptr]\;
+	? \sptr > \dptr -> \bmemcpynormal[\src][\sptr][\len][\dest][\dptr]\;
+	? \sptr < \dptr -> \bmemcpybackwards[\src][\sptr][\len][\dest][\dptr]\;
+	"\\end"
+\bmemcpy\
+)
+(
+\bmemcpynormal[src][sptr][len][dest][dptr]\
+	"\\loop"
+	\sptr+; \dptr+;
+	\\e;
+	\len-->;
+	\getbyte[src][sptr][len]\;
+	\setbyte[dest][dptr][len]\;
+	\len<--;
+	\len ^ \\loop;
+\bmemcpynormal\
+)
+(
+\bmemcpybackwards[src][sptr][len][dest][dptr]\
+	\sptr + \len;
+	\dptr + \len;
+	"\\loop"
+	\sptr-; \dptr-;
+	\len-->;
+	\getbyte[src][sptr][len]\;
+	\setbyte[dest][dptr][len]\;
+	\len<--;
+	\len ^ \\loop;
+\bmemcpybackwards\
+)
+(----------------------------------------------------------------------------)
+(** &fun bmemccpy:This routine copies bytes from one memory location to
+ *	     another.
+ *     &rem This routine makes sure no information is lost, even when the
+ *	     locations overlap.<BR>
+ *	     Copying stops when @P6 is copied.
+ *     &param 1 in reg A:pointer to source memory,
+ *		2 in reg B:position of first byte to copy,
+ *		3 in reg C:number of bytes to copy,
+ *		4 in reg D:pointer to destination memory,
+ *		5 in reg E:position of first target byte,
+ *		6 in var [BMem Chr To Stop On]:last chr to copy
+ *)
+"bmemccpy"
+	[ctypeinput] = [BMemchrtostopon];
+	=> tochar;
+	? c > 0 -> bmemccpystart;
+	end;
+	"bmemccpyloop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    b+; e+;
+	    "bmemccpystart"
+	    c-->;
+	    => getbyte;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => setbyte;
+	    ? c = [ctyperesult] -> bmemccpyexit;
+	    c<--;
+	    c^bmemccpyloop;
+	end;
+	"bmemccpyexit"
+	$ + 1;
+	end;
+(----------------------------------------------------------------------------)
+(compare routines)
+(----------------------------------------------------------------------------)
+(** &fun bmemcmp:This routine compares two memory locations.
+ *     &rem This routine fails if @P3 = 0.<br>
+ *	     Comparing stops as soon as one of the following events occur:
+ *	     <li> the current chrs aren't equal
+ *	     <li> @P3 chrs are compared
+ *     &param 1 in reg A:pointer to memory,
+ *		2 in reg B:position of first byte to compare,
+ *		3 in reg C:number of bytes to compare,
+ *		4 in reg D:pointer to memory,
+ *		5 in reg E:position of first byte to compare,
+ *		6 out var [BMem compare result]:Result of comparation
+ *)
+"bmemcmp"
+"service bmemcmp"
+	? c > 0 -> bmemcmpstart;
+	[BMemcompareresult] = 0;
+	fail;
+	"bmemcmploop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    b+; e+;
+	    "bmemcmpstart"
+	    c-->;
+	    => getbyte;
+	    [BMemcompareresult] = c;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => getbyte;
+	    [BMemcompareresult] - c;
+	    ? [BMemcompareresult] != 0 -> bmemcmpend;
+	    c<--;
+	    c^bmemcmploop;
+	    end;
+	"bmemcmpend"
+	$ + 1;
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun bmemicmp:This routine compares two memory locations, ignoring case.
+ *     &rem This routine fails if @P3 = 0.<br>
+ *	     Comparing stops as soon as one of the following events occur:
+ *	     <li> the current chrs aren't equal
+ *	     <li> @P3 chrs are compared
+ *     &param 1 in reg A:pointer to memory,
+ *		2 in reg B:position of first byte to compare,
+ *		3 in reg C:number of bytes to compare,
+ *		4 in reg D:pointer to memory,
+ *		5 in reg E:position of first byte to compare,
+ *		6 out var [BMem compare result]:Result of comparation
+ *)
+"bmemicmp"
+"service bmemicmp"
+	? c > 0 -> bmemicmpstart;
+	[BMemcompareresult] = 0;
+	fail;
+	"bmemicmploop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    b+; e+;
+	    "bmemicmpstart"
+	    c-->;
+	    => getbyte;
+	    [ctypeinput] = c;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => getbyte;
+
+	    => toupper;
+	    [BMemcompareresult] = [ctyperesult];
+	    [ctypeinput] = c;
+	    => toupper;
+	    [BMemcompareresult] - [ctyperesult];
+	    ? [BMemcompareresult] != 0 -> bmemicmpend;
+
+	    c<--;
+	    c^bmemicmploop;
+	    end;
+	"bmemicmpend"
+	$ + 1;
+	end;
+(----------------------------------------------------------------------------)
+(find routines)
+(----------------------------------------------------------------------------)
+(** &fun bmemchr:This routine searches the first occurence of a byte.
+ *     &rem The first occurence of byte @P3 in the memory location pointed to
+ *	     by @P1, with size @P2, is returned in @P4.
+ *	     <li> @P1, @P2, @P3: UNCHANGED
+ *     &param 1 in reg A:pointer to memory,
+ *		2 in reg D:size of memory,
+ *		3 in reg E:byte to find,
+ *		4 out reg B:position of byte
+ *)
+"bmemchr"
+	b # b;
+	-> bmemchr start;
+	"bmemchr loop"
+	    b +;
+	    "bmemchr start"
+	    ? b >= d -> bmemchr fail;
+	    => get byte;
+	    ? c != e -> bmemchr loop;
+	(chr found)
+	end;
+	"bmemchr fail"
+	fail;
+(----------------------------------------------------------------------------)
+(** &fun bmemcchr:This routine searches the last occurence of a byte.
+ *     &rem The last occurence of byte @P3 in the memory location pointed to
+ *	     by @P1, with size @P2, is returned in @P4.
+ *	     <li> @P1, @P2, @P3: UNCHANGED
+ *     &param 1 in reg A:pointer to memory,
+ *		2 in reg D:size of memory,
+ *		3 in reg E:byte to find,
+ *		4 out reg B:position of byte
+ *)
+"bmemcchr"
+	b = d;
+	? b <= 0 -> bmemcchr failed;
+	"bmemcchr loop"
+	    b-;
+	    => get byte;
+	    ? c = e -> bmemcchr found;
+	    ? b > 0 -> bmemcchr loop;
+	(byte not found)
+	"bmemcchr failed"
+	fail;
+	"bmemcchr found"
+	end;
+(----------------------------------------------------------------------------)
+(** &fun bmembmem:This routine searches the first occurence of a subString.
+ *     &rem When the subString isn't found, the fun fails.
+ *     &param 1 in var [BMem Source]:pointer to source vector,
+ *		2 in var [BMem Source Start]:position of first byte to compare,
+ *		3 in var [BMem Source Lenght]:size of source vector,
+ *		4 in var [BMem To Find]:pointer to vector to find,
+ *		5 in var [BMem To Find Start]:position of first byte to find,
+ *		6 in var [BMem To Find Lenght]:size of vector to find,
+ *		7 in var [BMem Compare fun]:service compare fun to use: "service bmemcmp" or "service bmemicmp",
+ *		8 out var [BMem Find Result]:position where subString to find is found.
+ *)
+"bmembmem"
+	? [BMemtofindlength] <= 0 -> bmembmemfail;
+	[BMemfindsteps] = [BMemsourcelength];
+	[BMemfindsteps] - [BMemsourcestart];
+	? [BMemtofindlength] > [BMemfindsteps] -> bmembmemfail;
+	[BMemfindsteps] - [BMemtofindlength];
+	[BMemfindsteps] +;
+	b = [BMemsourcestart];
+	"bmembmemloop"
+	    a = [BMemsource];
+	    d = [BMemtofind];
+	    e = [BMemtofindstart];
+	    c = [BMemtofindlength];
+	    b-->;
+	    => [BMemcompareroutine];
+	    ? [BMemcompareresult] = 0 -> bmembmemfound;
+	    b<--;
+	    b+;
+	    [BMemfindsteps]^bmembmemloop;
+	"bmembmemfail"
+	[BMemfindresult] = NULL;
+	fail;
+	"bmembmemfound"
+	[BMemfindresult]<--;
+	end;
+
+(----------------------------------------------------------------------------)
+(conversion routines)
+(----------------------------------------------------------------------------)
+(** &fun strtobmem:This routine converts a unit-based String to byte-based
+ *	     memory.
+ *     &param 1 in reg A:pointer to target vector,
+ *		2 in reg B:position of first byte,
+ *		3 in reg E:pointer to String,
+ *		4 out reg D:length of String
+ *)
+"strtobmem safe"
+	d = e;
+	? [d] = STRINGTERMINATOR -> strtobmem safe end;
+	"strtobmem safe loop"
+	   c = [d];
+	   => setbyte;
+	   b +;
+	   d +;
+	   ? [d] != STRINGTERMINATOR -> strtobmem safe loop;
+	"strtobmem safe end"
+	d - e;
+	end;
+
+
+(This version of the conversion of unit-string to bmem is more optimised than 
+the other fun, but it's not to be used for inserting characters in a string. 
+This routine will change the first and the last unit of the target with only the 
+data of the bmem. When the unit isn't completely filled with data of bmem, the 
+other bytes of the unit are made zero. Use This routine for converting whole 
+buffers. When you're not sure if you can use This routine, use "strtobmem safe")
+"strtobmem"
+	a-->;
+	e-->; d<--; (d = e;)
+	b-->;
+	b > 2;		(div 4)
+	a + b;
+	b<--;
+	b & 11b;	(mod 4)
+	b < 3;		(mtp 8)
+	[a] = zero;
+	"strtobmem loop"
+		c = [d]; c < b; [a] | c;
+		b + 8; ? b < 32 -> strtobmem same;
+		b = 0; a+; [a] = zero;
+		"strtobmem same"
+		d+; ? [d] != STRINGTERMINATOR -> strtobmem loop;
+	"strtobmem done"
+	d - e;		(d = length of string)
+	a<--;
+	end;
+
+(----------------------------------------------------------------------------)
+(** &fun bmemtostr:This routine converts byte-based memory to a String.
+ *     &param 1 in reg A:pointer to source vector,
+ *		2 in reg B:position of first byte,
+ *		3 in reg D:number of bytes to convert,
+ *		4 in reg E:pointer to target String
+ *)
+("bmemtostr"
+	? d <= 0 -> bmemtostrend;
+	"bmemtostrloop"
+	   => getbyte;
+	   [e] = c;
+	   e +;
+	   b +;
+	   d^bmemtostrloop;
+	"bmemtostrend"
+	[e] = STRINGTERMINATOR;
+	end;  )
+
+"bmemtostr"
+	a-->;
+	? d <= 0 -> bmemtostrend;
+	b-->;
+	b > 2;		(div 4)
+	a + b;
+	b<--;
+	b & 11b;	(mod 4)
+	b < 3;		(mtp 8)
+	"bmemtostrloop"
+		c = [a]; c > b; c & ffh; [e] = c;
+		b + 8; ? b < 32 -> bmemtostr same;
+		b = 0; a+;
+		"bmemtostr same"
+		e+; d ^ bmemtostrloop;
+	"bmemtostrend"
+	[e] = STRINGTERMINATOR;
+	a<--;
+	end;
+
+(----------------------------------------------------------------------------)
+(This routine compares a portion of bmem to a zero terminated string)
+(IN:	a = pointer to source vector
+	b = position of first byte to compare
+	c = number of characters to compare
+	d = pointer to string
+OUT:	c = compare result)
+"bmemcmpstr"
+	a-->; e-->;
+	c-->; e<--;
+	? c <= 0 -> bmemcmpstr end;
+	b-->;
+	b > 2;		(div 4)
+	a + b;
+	b<--;
+	b & 11b;	(mod 4)
+	b < 3;		(mtp 8)
+	-> bmemcmpstr start;
+	"bmemcmpstr loop"
+		b + 8; ? b < 32 -> bmemcmpstr same;
+		b = 0; a+;
+		"bmemcmpstr same"
+		d+;
+		"bmemcmpstr start"
+		c = [a]; c > b; c & ffh;
+		? [d] != c -> bmemcmpstr end;
+		? [d] = STRINGTERMINATOR -> bmemcmpstr end;
+		e ^ bmemcmpstr loop;
+	"bmemcmpstr end"
+	c - [d];
+	e<--; a<--;
+	end;
+
+(----------------------------------------------------------------------------)
+(This routine compares a portion of bmem to a zero terminated string)
+(IN:	a = pointer to source vector
+	b = position of first byte to compare
+	c = number of characters to compare
+	d = pointer to string
+OUT:	c = compare result)
+"bmemicmpstr"
+	a-->; e-->;
+	c-->; e<--;
+	? c <= 0 -> bmemicmpstr end;
+	b-->;
+	b > 2;		(div 4)
+	a + b;
+	b<--;
+	b & 11b;	(mod 4)
+	b < 3;		(mtp 8)
+	-> bmemicmpstr start;
+	"bmemicmpstr loop"
+		b + 8; ? b < 32 -> bmemicmpstr same;
+		b = 0; a+;
+		"bmemicmpstr same"
+		d+;
+		"bmemicmpstr start"
+		c = [a]; c > b; c & ffh;
+		? [d] != c -> bmemicmpstr loop check case;
+		e ^ bmemicmpstr loop;
+		c - [d];
+		-> bmemicmpstr end;
+
+		"bmemicmpstr loop check case"
+		? [d] = STRINGTERMINATOR -> bmemicmpstr end;
+
+		[ctypeinput] = c;
+		=> toupper;
+		c = [ctyperesult];
+
+		[ctypeinput] = [d];
+		=> toupper;
+		c - [ctyperesult];
+		? c != 0 -> bmemicmpstr end;
+		e ^ bmemicmpstr loop;
+
+	"bmemicmpstr end"
+	e<--; a<--;
+	end;
+
+(----------------------------------------------------------------------------)
+

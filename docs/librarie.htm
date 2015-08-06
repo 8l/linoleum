@@ -1,0 +1,205 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        libraries<br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "libraries" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        Remember this must be the very first period.<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+When one of your programs gets really long, it will become very difficult
+to keep in mind its whole structure, as to find particular pieces of code
+and data inside its miles-long source code.
+
+<br><br>
+The concept of library is here to help: a library is pratically a smaller
+piece of the program, only it's held in a separated text file. Libraries
+have TXT extension exactly as programs. Libraries may refer to other
+libraries and contain ALL THE SEVEN PERIODS exactly as if they were programs.
+Pratically, you can include a whole other program as a library, providing
+the two programs don't declare any symbols having the same names.
+
+<br><br>
+Libraries are referred by name.<br>
+It's easy as pie: here's an example...
+
+<br>
+<blockquote>
+        "libraries"<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;gen/stdfont;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;gen/tga;
+</blockquote>
+
+...in the example, we're including two of the default libraries coming
+with the package (those are libraries written by me for commodity).
+Specifically, STDFONT (within the "gen" folder) is a library that contains
+a text font and a nice subroutine to write some text on the display.
+If you open c:\linoleum\main\lib\gen and take a look to the file called
+STDFONT, you'll see how it works and find its source code. TGA is another
+default library to load a picture which has been previously saved as a TGA file.
+
+<br><br>
+Your program can use its own specific libraries, to be placed inside the
+same folder containing the main program's source code. Also it can use
+the default libraries placed in the c:\linoleum\main\lib folder. Finally,
+you can create your own default libraries: just write a library and place
+it in the c:\linoleum\main\lib folder, or in a subdirectory of that folder.
+Differently from specific libraries, default libraries can be accessed by
+all programs. When a specific library has the same name as one of the
+default libraries, precedence is given to the specific library.
+
+<br><br>
+Then there's the question of RELATIVE and ABSOLUTE paths for libraries:
+relative paths are what you see in the above example, where gen/stdfont is
+searched FIRST in the program's source code directory, as a folder called
+"gen" and then a library within it that's called "stdfont.txt". But note
+that the .txt extension is implicitly assumed, and so it has to be omitted
+when including a library from the "libraries" period. LATER, since in most
+cases you will not want to have a "gen" folder with "stdfont.txt" within,
+at least in your specific program's source code folder, the compiler, not
+finding that directory or file, will look into c:\linoleum\main\lib, and
+in there, will look for the same "gen" folder and the same "stdfont.txt"
+file, this time finding it. Now, assuming your program's source code, the
+one you're compiling and the one where you placed the above "libraries"
+period, is located in a folder called "c:\myprog", here's a recap of what
+happens on the side of the compiler:
+
+<br><blockquote>
+        1. the compiler looks for c:\myprog\gen\stdfont.txt<br>
+        2. the compiler doesn't find that file<br>
+        3. the compiler looks for c:\linoleum\main\lib\gen\stdfont.txt<br>
+        4. the compiler finds it and includes that as a library
+</blockquote>
+
+Now now... ABSOLUTE paths are marked with a SLASH prepended to the library
+path. When you write "/gen/stdfont.txt" you are probably refering to the
+same file as above, BUT with the difference that if you're including it
+from a library that's placed within, say, the "ppkh" folder, the file will
+be correctly seeked only if you prepend the slash. The 1st slash indicates
+the compiler to search EXACTLY for "c:\linoleum\main\lib\gen\stdfont.txt",
+otherwise, given the placement of the said library inside the "ppkh" folder,
+which is a SUBdirectory of "c:\linoleum\main\lib", the compiler would search
+for "c:\linoleum\main\lib\ppkh\gen\stdfont.txt", assuming that the search
+must start from the current folder where the library being actually compiled
+is placed, and which would be "c:\linoleum\main\lib\ppkh", to which it would
+add the rest ("gen\stdfont.txt" of the path).
+
+<br><br>
+<center>
+        INTEGRATION LIBRARIES<br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+The non-Object-Oriented nature of the L.in.oleum programming language allows
+for a whole BUNCH of new programming techniques not allowed by OOP languages.
+I personally dislike OOP languages, because I realize they forbid a lot of nice
+techniques like the one I'm going to describe. L.in.oleum is my personal
+revenge over OOP's restrictions, and comes to show programmers OOP has not
+only advantages.<br><br>
+
+Non-OOP means that L.in.oleum programs, libraries, and subroutines, and variables,
+and workspace area labels, and everything that's written inside a program, is
+SHARED towards the whole program, all of the program's parts can equally access
+all the elements of another part. Nothing is "local", nothing is "private":
+everything is "global", everything is "public". It means that you can, for instance,
+directly change the value of a variable even if that variable is declared in a
+library. I know it'd sound strange that you couldn't directly change it, but on the
+other side that's how OOP works. In L.in.oleum there is <u>absolutely</u> no
+hierarchy between the various parts of a program. A whole program, for instance,
+complete with its libraries, its main code, its internal routines, could be often
+included as if it was a huge library within another program. Every single line of
+code, no matter who wrote it, no matter where your program's listing accesses it
+from, is always fully accessible as if it was part of YOUR main program. Imagine,
+for instance, including in a program's "libraries" period the default library
+called "DefStyle". Well, that library includes the "<a href="../main/lib/igui/igui.txt">iGUI</a>"
+library on its own, and at that point, your main program could, if it wanted or needed,
+manipulate all of the contents of variables and workspace areas declared and used by
+the iGUI library. And not only that! The iGUI library contains several code labels,
+many of which are intended for larger subroutines' internal use, but this wouldn't
+forbid your main program to call one of those labels, or to jump to one of them.
+You could, for example, jump at any time to the label called "ECL J24" (its name, as
+I imagined it while writing the subroutine, could be expanded to: "End Control Loop"
+Jumper 24). ECL J24 is a piece of code that checks if the area of the screen that's
+covered by the pointer's arrow is to be retraced, and eventually retraces it. Subsequent
+instructions marked as "ECL J25" will also call "Allow Display Dragging", which checks
+if the left mouse button is being held down over the actual "dragging pad" of the window,
+which in the iGUI corresponds to the window's title bar, and then animates the window's
+movement to follow the mouse. To conclude, if your program WANTS to call ECL J24 at some
+point, it always CAN, and the fact that the said piece of code is "internal" to the
+iGUI's workings is not a limitation, it doesn't make it different from any other labels,
+once the iGUI has been included, all of its labels work the same as if they were declared
+within your main program. So, what is the the thing that L.in.oleum calls <i>integration
+library</i> and what's the thing other languages cannot do while L.in.oleum can? It's
+really easy to explain: using L.in.oleum, *not only* you can access libraries' symbols
+from the main program; ALSO you can access the main program's symbols from inside libraries!<br><br>
+
+So what's an <i>integration library</i>?
+It is simply a library of which some symbols are to be declared by the main
+program. At first you may not realize the importance of such a possibility,
+and if you're used to OOP you may think it's a "dirty" way to develope an
+application. This is, naturally, FALSE. Curious to see how an integration
+library works? See the default library called "c:\linoleum\main\lib\igui\igui.txt"
+and the Icon Editor's source code. You will immediately notice some of the GUI's
+variables and constants are declared inside the Icon Editor's source code.
+That's also why the L.in.oleum compiler compiles in 4 passes: symbols'
+management is very sophisticated, to allow any use of symbols, no matter
+where they're declared, no matter where they're referenced.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

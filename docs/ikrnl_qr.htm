@@ -1,0 +1,2365 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        IsoKernel<br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        ISOKERNEL AND RUN-TIME MODULE SYMBOLS<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<center>
+<table cellpadding = 0 cellspacing = 20 border = 0 align = "center">
+        <tr>
+                <td></td>
+                <td align = "center" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#AD">ADDITIONAL<br>DOCUMENTATION</a><br><br>
+                        <a href = "#V0">GENERAL NOTES</a>
+                        </i></b></font>
+                </td>
+        </tr>
+        <tr>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V1">[CodeOrigin]</a><br>
+                        <a href = "#V2">[IsoKernel]</a><br>
+                        <a href = "#V3">[RAMTop]</a><br>
+                        <a href = "#V4">[Priority]</a><br>
+                        <a href = "#V5">[CommandLine]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V6">[DisplayCommand]</a><br>
+                        <a href = "#V7">[DisplayStatus]</a><br>
+                        <a href = "#V8">[DisplayOrigin]</a><br>
+                        <a href = "#V9">[DisplayWidth]</a><br>
+                        <a href = "#V10">[DisplayHeight]</a><br>
+                        <a href = "#V11">[DisplayPhysicalWidth]</a><br>
+                        <a href = "#V12">[DisplayPhysicalHeight]</a><br>
+                        <a href = "#V13">[DisplayXPosition]</a><br>
+                        <a href = "#V14">[DisplayYPosition]</a><br>
+                        <a href = "#V15">[DisplayLiveRegion]</a><br>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V16">[PCMdataCommand]</a><br>
+                        <a href = "#V17">[PCMdataStatus]</a><br>
+                        <a href = "#V18">[PCMdataChannels]</a><br>
+                        <a href = "#V19">[PCMdataBitsPerSample]</a><br>
+                        <a href = "#V20">[PCMdataSamplesPerSec]</a><br>
+                        <a href = "#V21">[PCMdataSilenceThreshold]</a><br>
+                        <a href = "#V22">[PCMdataOrigin]</a><br>
+                        <a href = "#V23">[PCMdataOffset]</a><br>
+                        <a href = "#V24">[PCMdataSize]</a>
+                        </i></b></font>
+                </td>
+        </tr>
+        <tr>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V25">[ConsoleCommand]</a><br>
+                        <a href = "#V26">[ConsoleInput]</a><br>
+                        <a href = "#V27">[KEY?????????]</a><br>
+                        <a href = "#V28">LUCK TABLE</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V29">[PointerCommand]</a><br>
+                        <a href = "#V30">[PointerMode]</a><br>
+                        <a href = "#V31">[PointerStatus]</a><br>
+                        <a href = "#V32">[PointerDeltaX]</a><br>
+                        <a href = "#V33">[PointerDeltaY]</a><br>
+                        <a href = "#V33A">[PointerDeltaZ]</a><br>
+                        <a href = "#V34">[PointerXCoordinate]</a><br>
+                        <a href = "#V35">[PointerYCoordinate]</a><br>
+                        <a href = "#V35A">[PointerZCoordinate]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V36">[FileCommand]</a><br>
+                        <a href = "#V37">[FileStatus]</a><br>
+                        <a href = "#V38">[BlockPointer]</a><br>
+                        <a href = "#V39">[BlockSize]</a><br>
+                        <a href = "#V40">[FileName]</a><br>
+                        <a href = "#V41">[FileSize]</a><br>
+                        <a href = "#V42">[FilePosition]</a>
+                        </i></b></font>
+                </td>
+        </tr>
+        <tr>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V43">[TimerCommand]</a><br>
+                        <a href = "#V44">[Year]</a><br>
+                        <a href = "#V45">[Month]</a><br>
+                        <a href = "#V46">[Day]</a><br>
+                        <a href = "#V47">[DayOfWeek]</a><br>
+                        <a href = "#V48">[Hour]</a><br>
+                        <a href = "#V49">[Minute]</a><br>
+                        <a href = "#V50">[Second]</a><br>
+                        <a href = "#V51">[Milliseconds]</a><br>
+                        <a href = "#V52">[Counts]</a><br>
+                        <a href = "#V53">[CountsPerMillisecond]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V54">[APDCommand]</a><br>
+                        <a href = "#V55">[APDLine]</a><br>
+                        <a href = "#V56">[APDLines]</a><br>
+                        <a href = "#V57">[APDStatus]</a><br>
+                        <a href = "#V58">[APDXMeter]</a><br>
+                        <a href = "#V59">[APDYMeter]</a><br>
+                        <a href = "#V60">[APDZMeter]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V61">[PrinterCommand]</a><br>
+                        <a href = "#V62">[PageOrigin]</a><br>
+                        <a href = "#V63">[PageWidth]</a><br>
+                        <a href = "#V64">[PageHeight]</a>
+                        </i></b></font>
+                </td>
+        </tr>
+        <tr>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V65">[ProcessCommand]</a><br>
+                        <a href = "#V66">[SleepTimeout]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V67">[GlobalKCommand]</a><br>
+                        <a href = "#V68">[GlobalKName]</a><br>
+                        <a href = "#V69">[GlobalKData]</a>
+                        </i></b></font>
+                </td>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V70">[ClipCommand]</a><br>
+                        <a href = "#V71">[ClipSize]</a><br>
+                        <a href = "#V72">[ClipString]</a>
+                        </i></b></font>
+                </td>
+        </tr>
+        <tr>
+                <td align = "left" valign = "top">
+                        <font face = "arial, helvetica" size = 3><b><i>
+                        <a href = "#V73">[AppData]</a><br>
+                        </i></b></font>
+                </td>
+        </tr>
+</table>
+</center>
+
+<hr size = 1 width = "100%" color = "white">
+
+<a name = "AD"></a>
+<dl>
+<dt>ADDITIONAL DOCUMENTATION</dt>
+<dd>
+<br>
+There are several other topics, hints and tips not discussed in this long,
+but not even nearly complete, reference guide. This guide presents a recap
+of almost all the functions that can be performed using the run-time module
+communication area, whose variables are listed above.
+<br><br>
+First of all, the above list lacks a group, the NETWORK GROUP, which needs
+further discussion and more detailed explanations. The NETWORK GROUP allows
+dealing with Berkeleyan sockets to create server and/or client applications
+accessing the Internet via the IPv4 address space: very detailed instructions
+are given in <a href="../examples/network_node/notes.txt">THIS</a> file, and
+pratical examples for all of the network group's functionality can be found in
+the source code of the <a href="../examples/network_node/node.txt">General-Purpose
+Network Node</a>.
+<br><br>
+Second, since L.IN.OLEUM version 1.13.6b, access to a special subset of
+commands, working via the [FileCommand] unit, allows to operate with file
+system objects other than files placed in the program's startup directory (such as
+units, directories, non-disk devices), but given the large amount of explanations,
+informations about the "universal file system paradigm" and its mechanisms are given
+by the long commentary at the beginning of the source code for
+<a href="../examples/20_DIRit.txt">example 20</a>; such notes might be considered
+an extension of what this guide says about the <a href = "#V36">[FileCommand]</a> unit.
+<br><br>
+Third, even the rest of the flags, the variables, the command and status units,
+detailed in this quick reference, learning the basics of their workings is only
+intended to be a starting point, and by no means a complete programming course:
+for much more detailed informations, you are recommended to see ALL of the 20
+example files, which form a "tutorial" to also learn the fundaments of L.IN.OLEUM
+application programming.
+</dd></dl>
+
+<hr size = 1 width = "100%" color = "white">
+
+<a name = "V0"></a>
+<dl>
+<dt>GENERAL NOTES</dt>
+<dd>
+<br>
+The name of a variable is given without blank spaces, as it appears in
+a normal symbols map, but you can add blank spaces wherever you want, for
+example you can write Display X Position rather than DisplayXPosition.
+The compiler just ignores blank spaces...
+<br><br>
+The DATA TYPE specifies which operations are to be performed on a certain
+control variable. There are three types:
+</dd></dl>
+<blockquote>
+        READ-ONLY
+        The variable's content should not be changed by applications.
+        Possible malfunctions may occur otherwise.
+        <br><br>
+        READ-WRITE
+        The variable's content can be freely changed by applications.
+        Any changes will take effect immediately.
+        <br><br>
+        WRITE-AND-ISOCALL
+        The variable's content can be freely changed by applications.
+        Any changes will take effect as soon as the IsoKernel is called.
+        IsoKernel calls can be made from the main program, from a
+        subroutine, and even from inside a library. The most common
+        and comfortable way to make a call to the IsoKernel is writing:<br>
+        &nbsp;&nbsp;&nbsp;isocall;<br>
+        Alternatively, you can write:<br>
+        &nbsp;&nbsp;&nbsp;=> [IsoKernel];
+</blockquote>
+Carefully read ALL THE NOTES and about ALL THE RANGES FOR POSSIBLE OPERATIONS
+because the run-time module is built with fault-tolerance near to ZERO: means
+it will not take care for your mistakes. You're supposed not to make mistakes
+because I FEEL CONVINCED that programs written on strong behavior will rarely
+suffer from lots of hidden troubles actually afflicting many applications.
+It's a simple consideration: if the run-time module does nothing about errors
+you will SEE the error is there and be able to resolve the problem. Otherwise
+you would think your program runs just fine, under many conditions, BUT STILL
+COULD HAVE HIDDEN BUGS WHICH WERE NOT EXPERIENCED BY YOU: YOU ARE THE PROGRAMMER.
+In general remember the *whole* L.in.oleum environment is based on zero-errors-
+tolerance. If there is a bug in a program, you will have the greatest chances
+of meeting it while still developing your program. Well, L.in.oleum TRUSTS YOU!
+And when finally your program works flawlessly, at 99.999% it will always do.
+<br><br>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>PROCESS GROUP</dt>
+<dd>
+<br>
+
+<a name = "V1"></a>
+VARIABLE: &lt;CodeOrigin&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the physical pointer to the first byte of code as allocated
+        by the run-time module. It must absolutely NEVER be changed,
+        because it's used in calls and jumps and would cause a serious
+        system lock-up otherwise. The suggestion is: ignore this thing,
+        you may take a look to its value just for curiosity.
+</blockquote>
+
+<a name = "V2"></a>
+VARIABLE: &lt;IsoKernel&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the pointer to the &quot;IsoKernel functions parser&quot; subroutine.
+        It must be called with a =&gt;[IsoKernel] command to perform any
+        kind of operations involving the control of the run-time module
+        (every time the data type is described as WRITE-AND-ISOCALL).
+        It appears to your application as a normal subroutine.
+        In reality, this subroutine's code is in the run-time module.
+        An alternate syntax for &quot;=&gt;[IsoKernel];&quot; is writing &quot;isocall;&quot;
+        this is easier to type and translates exactly to &quot;=&gt;[IsoKernel];&quot;.
+        Same recommandations as for [CodeOrigin]...
+</blockquote>
+
+<a name = "V3"></a>
+VARIABLE: &lt;RAMTop&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the number of memory units currently available within the
+        application's workspace. A write-and-isocall operation performed
+        on this value will re-allocate the whole workspace in order for
+        it to be extended or shrunk. For example, the following lines:
+        <blockquote>
+                [Pointer to newely allocated block] = [RAMTop];<br>
+                [RAMTop] + 100000;<br>
+                isocall;
+        </blockquote>
+        will allocate 100000 more units and provide a pointer to the new
+        block: the pointer's simply given by the previous value of [RAMTop].
+        <br><br>
+        --- IMPORTANT notes about dynamic memory allocation - READ THIS!! ---
+        <br><br>
+        Since memory is a limited resource, this call may FAIL when used
+        to EXPAND the workspace by raising the value of [RAMTop]. When such
+        an isocall fails, [RAMTop] is restored to its previous value.
+        This is called &quot;dynamic memory allocation&quot; and involves the use of
+        MUCH caution! System memory in multitasking is normally subject to
+        fragmentation: if your program keeps varying RAMTop very frequently,
+        you may be causing a lot of disk-to-RAM swappings and difficulties
+        to other programs running in multitasking (such as out-of-memory
+        messages even if, theoretically, there IS enough memory).
+        My suggestion is: use your &quot;local heap&quot;, which is the workspace,
+        in such a way that you'll never need to extend it. Generate, for
+        example, some fixed-width &quot;workbenchs&quot; in your &quot;workspace&quot; period.
+        A workbench is simply a large vector in the workspace, fit for your
+        particular program to be used as a &quot;temporary&quot; memory space in all
+        cases where you'd need further memory allocation. Oh, and when you
+        need a workbench in a subroutine which is inside a library, make
+        that subroutine ASK THE MAIN PROGRAM for the pointer to an available
+        workbench and tell it about the minimum size of that workbench.
+        This is WAY more fast and efficient than dynamic memory allocation
+        throught direct changes in the value of [RAMTop].
+        One last thing about it: when resizing the workspace by a change
+        of [RAMTop], all the memory pointers are left unchanged in the
+        point of view of the application, BUT NOT IN THE POINT OF VIEW
+        OF THE SYSTEM, AND ESPECIALLY OF HARDWARE PERIPHERALS. Therefore,
+        external modules aren't able to keep working with your program's areas.
+        There is only one area in the workspace which may be used WHILE
+        re-allocation of the workspace happens, and it's the audio workspace
+        (see the PCMdata group below). Therefore, changing [RAMTop] while audio
+        playback is proceeding, will cause the <u>run-time module to
+        UNCONDITIONALLY FAIL the attempt to dynamically allocate memory</u>,
+        and this is one further reason why NOT to use dynamic memory allocation,
+        unless deemed truly necessary, and following all the indications given above.
+</blockquote>
+
+<a name = "V4"></a>
+VARIABLE: &lt;Priority&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the current application's main thread priority level.
+        It's directly proportional to the speed at which your program runs,
+        in respect to the time-slices assigned to it by the operating system.
+        It's an universal code ranging from zero to four, zero being
+        the worst priority level, four being the highest, and two being
+        the normal priority level. A write-and-isocall operation
+        performed on this value will change the current priority level,
+        but be careful setting up high levels: you may temporarily switch
+        to higher levels for performing BRIEF, time-critical routines,
+        and then get back to normal priority. Otherwise, the system may
+        become unstable because there'd no longer be enough CPU time for
+        the system itself to perform its own duties.
+</blockquote>
+
+<a name = "V5"></a>
+VARIABLE: &lt;CommandLine&gt;<br>
+DATA TYPE: READ-WRITE (SYSTEM-SPECIFIC CONTENT)
+<blockquote>
+        It's a vector: it holds a text string specifying the command-line
+        parameters, as passed by the operating system to the application.
+        I mean: no processing is performed on the command line contents,
+        it's your application responsibility to decode those contents,
+        mainly because such contents are system-specific.
+        <br><br>
+        The size of this vector is 32768 units. The last unit is always NULL,
+        so that it can hold upto 32767 characters in a null-terminated string.
+        The contents of this vector may be changed, because changes
+        won't affect application's execution anyway.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>DISPLAY GROUP</dt>
+<dd>
+<br>
+
+<a name = "V6"></a>
+VARIABLE: &lt;DisplayCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the display control interface.
+        There are four actions allowed for this unit:
+        <br><br>
+        [DisplayCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [DisplayCommand] = RETRACE; isocall;<br>
+        Updates the display, by copying the contents of a certain area
+        of the workspace to physical video RAM, and eventually translating
+        such contents to fit the physical display settings. The pointer to
+        the area in the workspace to be displayed is held by [DisplayOrigin]
+        and the area must extend for *at least* WxH units, where W is the
+        actual width of the display, the value of [Display Width], and H is
+        the actual height of the display, the value of [Display height].
+        Memory is copied to [Display X Position] and [Display Y Position]
+        and automatically clipped to fit a possible windowed environment.
+        <br><br>
+        [DisplayCommand] = SET COOPERATIVE MODE; isocall;<br>
+        Sets the display to cooperative move during runtime.
+        See &quot;directors&quot; on &quot;display mode&quot; for further infos.
+        <br><br>
+        [DisplayCommand] = SET EXCLUSIVE MODE; isocall;<br>
+        Sets the display to exclusive move during runtime.
+        See &quot;directors&quot; on &quot;display mode&quot; for further infos.
+</blockquote>
+
+<a name = "V7"></a>
+VARIABLE: &lt;DisplayStatus&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds a bit-mask giving the current status of the display area.
+        It's normally used in windowed environments to signal the
+        window in which the display has been fitted is active or not,
+        and if the display is in exclusive or collaborative mode.
+        The flags used by [Display Status] are marked by the constants:
+        <blockquote>
+                ACTIVE<br>
+                EXCLUSIVE
+        </blockquote>
+        there are no &quot;inactive&quot; and &quot;collaborative&quot; constants
+        because these are true when ACTIVE and EXCLUSIVE bits are not set.
+        Examples of tests will make things easier to understand:
+        <br><br>
+        ? [Display Status] + ACTIVE -&gt; Display window is active;<br>
+        ? [Display Status] - ACTIVE -&gt; Display window is inactive;
+        <br><br>
+        ? [Display Status] + EXCLUSIVE -&gt; Display window is exclusive;<br>
+        ? [Display Status] - EXCLUSIVE -&gt; Display window is collaborative;
+</blockquote>
+
+<a name = "V8"></a>
+VARIABLE: &lt;DisplayOrigin&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to the memory unit containing the colour of the
+        first dot to be displayed in the video RAM upon issuing a RETRACE
+        command throught a WRITE-AND-ISOCALL operation on [Display Command].
+        That dot is located at coordinates 0;0 (upper-left corner) along the
+        display area. The rest of the vector from [Display Origin] holds all
+        of the other pixels forming the display layout, organized in a matrix
+        of WxH units where each unit holds red, green and blue intensities
+        for the color of corresponding pixel, in a 00RRGGBBh scheme where
+        RR, GG and BB are hexadecimal values going from zero to FFh, and
+        proportional to the intensity of corresponding primary color, so
+        that if the first unit in the vector pointed by [Display Origin]
+        contains FFFFFFh, the upper-left corner of the display will be
+        coloured in white (FFFFFFh means maximum red, max green and max blue)
+        when the display will be retraced. Example to do that, in practice:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&quot;programme&quot;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A = my display area; [A] = FFFFFFh; (white dot at 0,0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Display Origin] = my display area; (load pointer)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Display Command] = RETRACE; (load command code)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;isocall; (do that!)<br><br>
+        where &quot;my display area&quot; is a vector defined in the &quot;workspace&quot; period
+        and extending for WxH units. The default display is 256x192 pixels,
+        so the resulting vector would be declared as:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&quot;workspace&quot;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;my display area = 256 multiplied 192;<br><br>
+        Of course, if your program has an interface that lets the user
+        resize the display, you'll need to declare a vector whose size
+        would be capable of supporting the maximum allowed size. Now, the
+        maximum size (and also the minimum size) is at your discretion,
+        but other than this, while resizing, always consider the two<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;[DisplayPhysicalWidth]<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;[DisplayPhysicalHeight]<br><br>
+        as additional limits, because the display will never be allowed
+        to become greater than the physical screen.
+</blockquote>
+
+<a name = "V9"></a>
+VARIABLE: &lt;DisplayWidth&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the current size, in pixels, of the video display along the
+        X axis. A write-and-isocall operation performed on this value will
+        immediately resize the display along the X axis.
+        This value is not allowed to get above the actual value of
+        [Display Physical Width], which holds the width of the physical
+        screen: upon the isocall, if this value is found GREATER than the
+        width of the physical screen, it will be NORMALIZED, and set back
+        to the value of [Display Physical Width].
+        When using exclusive display mode, the value of [Display Width] is
+        forcely set to the value of [Physical Display Width], at each and
+        every isocall.
+</blockquote>
+
+<a name = "V10"></a>
+VARIABLE: &lt;DisplayHeight&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the current size, in pixels, of the video display along the
+        Y axis. A write-and-isocall operation performed on this value will
+        immediately resize the display along the Y axis.
+        This value is not allowed to get above the actual value of
+        [Display Physical Height], which holds the height of the physical
+        screen: upon the isocall, if this value is found GREATER than the
+        height of the physical screen, it will be NORMALIZED, and set back
+        to the value of [Display Physical Height].
+        When using exclusive display mode, the value of [Display Height] is
+        forcely set to the value of [Physical Display Height], at each and
+        every isocall.
+</blockquote>
+
+<a name = "V11"></a>
+VARIABLE: &lt;DisplayPhysicalWidth&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the current number of pixels of the physical display
+        (being the physical SCREEN resolution) along the X axis.
+        Its typical use is to adjust the width, height and position
+        of your application's display area, but also acts as a limit
+        for the [Display Width] variable, which cannot effectively
+        cross the value of [Display Physical Width]. This value is
+        affected by changes in the physical screen resolution, caused
+        by a successful switch from cooperative to exclusive mode, from
+        exclusive to cooperative mode, or from exclusive mode to
+        exclusive mode when the resolution is requested to change.
+</blockquote>
+
+<a name = "V12"></a>
+VARIABLE: &lt;DisplayPhysicalHeight&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the current number of pixels of the physical display
+        (being the physical SCREEN resolution) along the Y axis.
+        Its typical use is to adjust the width, height and position
+        of your application's display area, but also acts as a limit
+        for the [Display Height] variable, which cannot effectively
+        cross the value of [Display Physical Height]. This value is
+        affected by changes in the physical screen resolution, caused
+        by a successful switch from cooperative to exclusive mode, from
+        exclusive to cooperative mode, or from exclusive mode to
+        exclusive mode when the resolution is requested to change.
+</blockquote>
+
+<a name = "V13"></a>
+VARIABLE: &lt;DisplayXPosition&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the current number of pixels to be left between the left
+        border of the physical screen and the left border of application's
+        video display area. Performing a write-and-isocall operation on
+        this value causes the video display to be moved along the X axis
+        of the screen. By default, this value is assigned to the value of
+        constant &quot;MIDDLE&quot;, which centers the display along X.
+        This value is limited by a minimum of ZERO, which corresponds to
+        the left border of the physical screen, and a maximum that depends
+        on the actual width of the display, given by the formula:
+        <pre>
+    (Max DisplayXPosition) = [DisplayPhysicalWidth] - (XPosition Now)</pre>
+        When using exclusive display mode, this value is forcely set back
+        to ZERO at each and every isocall.
+</blockquote>
+
+<a name = "V14"></a>
+VARIABLE: &lt;DisplayYPosition&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the current number of pixels to be left between the upper
+        border of the physical screen and the upper border of application's
+        video display area. Performing a write-and-isocall operation on
+        this value causes the video display to be moved along the Y axis
+        of the screen. By default, this value is assigned to the value of
+        constant &quot;MIDDLE&quot;, which centers the display along Y.
+        This value is limited by a minimum of ZERO, which corresponds to
+        the upper border of the physical screen, and a maximum that depends
+        on the actual height of the display, given by the formula:
+        <pre>
+    (Max DisplayYPosition) = [DisplayPhysicalHeight] - (YPosition Now)</pre>
+        When using exclusive display mode, this value is forcely set back
+        to ZERO at each and every isocall.
+</blockquote>
+
+<a name = "V15"></a>
+VARIABLE: &lt;DisplayLiveRegion&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Its value determines the region of the display area to be updated
+        whenever issuing a RETRACE command throught a write-and-isocall
+        operation on [Display Command]. Its value must be a pointer to a
+        rectangular region delimited by a vector of 4 memory units, holding
+        left, top, right and bottom coordinates of the region's borders.
+        Example of such a vector is:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&quot;variables&quot;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vector my live region borders = 50; 62; 102; 94;<br><br>
+        And its pointer would be passed as:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&quot;programme&quot;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Display Live Region] = vector my live region borders;<br><br>
+        This would cause subsequent RETRACE commands to retrace only the section
+        of the display whose pixels are part of the rectangle from
+        coordinates 50;62 to 102;94.
+        All of the borders are ALWAYS included in the live region, so that a
+        live region defined from 50;62 to 50;62 would update a single pixel,
+        and thus is would NOT be a void area.
+        <br><br>
+        There are some other values this unit can take:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;[Display Live Region] = WHOLE DISPLAY;<br><br>
+        is the default setting, and means no clipping is applied to the
+        display area when it's to be updated in reply to a RETRACE command.<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;[Display Live Region] = VOID REGION;<br><br>
+        means any RETRACE commands will be ignored, and THIS is the correct
+        way to setup a void live region.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>PCM AUDIO DATA GROUP</dt>
+<dd>
+
+<br>
+    Warning: the audio playback support is a MODULAR EXTENSION,
+    and its commands will effectively work only if director tag
+    "modular extensions" includes the constant "audioplayback";
+    for further informations about modular extensions, please see
+    the chapter about <a href="director.htm">directors</a>.
+<br><br>
+
+<a name = "V16"></a>
+VARIABLE: &lt;PCMdataCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the digital audio playback
+        control interface. There are seven actions allowed for this unit:
+        <br><br>
+        [PCMdataCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [PCMdataCommand] = GETDATAOFFSET; isocall;<br>
+        Gets the offset of the unit, inside the audio workspace,
+        which is currently playing. This value is always null if
+        no playback is currently going on. This command is specially
+        useful when playback is running in a never-ending loop, for
+        synchronizing real-time streaming audio.<br>
+        -- Status:<br>
+        NEVER FAILS.
+        <br><br>
+        [PCMdataCommand] = PLAYONCE; isocall;<br>
+        Plays the contents of the audio workspace once, then stops.<br>
+        -- Status:<br>
+        FAILS when the audio environment (hardware/drivers)
+        is not working, not been requested or not properly configured.
+        Remember, you must specify<br>
+                modular extensions = audioplayback;<br>
+        inside the &quot;directors&quot; period, to activate audio playback support.
+        <br><br>
+        [PCMdataCommand] = PLAYCONTINUOUSLY; isocall;<br>
+        Plays the contents of the audio workspace in a never-ending
+        loop, during which the audio workspace can be updated in real
+        time for performing real-time audio streaming and effects.<br>
+        -- Status:<br>
+        Same as PLAYONCE.
+        <br><br>
+        [PCMdataCommand] = PAUSE; isocall;<br>
+        Halts current playback temporarily.<br>
+        -- Status:<br>
+        NEVER FAILS, but does nothing if no playback is going on.
+        <br><br>
+        [PCMdataCommand] = UNPAUSE; isocall;<br>
+        Resumes playback from the unit where it was paused.<br>
+        -- Status:<br>
+        NEVER FAILS, but does nothing if playback is not paused.
+        <br><br>
+        [PCMdataCommand] = STOP; isocall;<br>
+        Halts current playback definitely.<br>
+        -- Status:<br>
+        NEVER FAILS, but does nothing if no playback is going on.
+</blockquote>
+
+<a name = "V17"></a>
+VARIABLE: &lt;PCMdataStatus&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds special codes describing the activity of the digital
+        audio playback control interface. It's a bitmask where:
+        <br><br>
+      - bit identified by constant &quot;READY&quot;:<br>
+        means audio environment has been setup, resources
+        are working and the audio interface is ready to play;<br>
+        -- IMPORTANT --<br>
+        if this bit is not set, you should avoid any operations
+        involving the audio interface, INCLUDING access to the
+        other variables such as PCMdataChannels, PCMdataSamplesPerSec
+        and so on, because they would contain illegal values.
+        <br><br>
+      - bit identified by constant &quot;PAUSED&quot;:<br>
+        means current audio playback is actually paused,
+        in reply to a PAUSE command sent throught [PCMdataCommand].
+        <br><br>
+      - Example of bit-wise test directives on [PCMdataStatus]:<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&quot;programme&quot;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;? [PCM data Status] + READY -&gt; audio hardware is working;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else) -&gt; audio playback not supported;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;? [PCM data Status] + PAUSED -&gt; playback has been paused;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else) -&gt; playback is going on as normal;
+</blockquote>
+
+<a name = "V18"></a>
+VARIABLE: &lt;PCMdataChannels&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Informs the application of how many audio channels are to be filled
+        inside the audio workspace, in order for the audio to fit currently
+        supported PCM formats. Its value can be 1 (monaural) or 2 (stereo).
+        It's actually never over 2 channels due to a lack of standards.
+        It's null when the audio environment is not ready.
+</blockquote>
+
+<a name = "V19"></a>
+VARIABLE: &lt;PCMdataBitsPerSample&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Informs the application of how many bits per sample are to be
+        filled inside the audio workspace, in order for the audio to fit
+        currently supported PCM formats.
+</blockquote>
+
+<a name = "V20"></a>
+VARIABLE: &lt;PCMdataSamplesPerSec&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Informs the application of how many audio samples per second are
+        played from the audio workspace, in order for the audio to fit
+        currently supported PCM formats.
+</blockquote>
+
+<a name = "V21"></a>
+VARIABLE: &lt;PCMdataSilenceThreshold&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        The silence threshold is a value to be added to all samples
+        in an audio recording which are represented as &quot;absolute volume&quot;.
+        <br><br>
+        Absolute volume of a sample is given by a value in the range<br><br>
+        from    -(2 raised to [PCMdataBitsPerSample])<br>
+        to      +(2 raised to [PCMdataBitsPerSample]) - 1<br><br>
+        so that if there are 8 bits per sample, the range is:<br><br>
+        from    -128<br>
+        to      +127<br><br>
+        and if there are 16 bits per sample, the range is:<br><br>
+        from    -32768<br>
+        to      +32767
+        <br><br>
+        Now, the silence threshold is a non-standard value that may
+        change accordingly to the system or to the audio card which is
+        used to play the sequence of samples representing an audio record.
+        The silence threshold is the volume level where no sound is heard.
+        In case of Windows, for example, this is +128 for 8-bit records,
+        and it's zero for 16-bit records. Don't ask me WHY it's so: someone
+        must have changed his mind while developing 16-bit audio cards and
+        related drivers... audio support is generally a mess, but it's the
+        run-time module's responsibility to make it standard. And that's
+        why it gives you the silence threshold as a variable, not a constant.
+        What you should do with it is:
+        <br><br><ul>
+      <li>calculating the value of the sample, as absolute volume,
+        in the said range where the sign represents the phase and
+        the modulus represents the volume level;</li><br><br>
+      <li>when you're to store the value in your audio workspace
+        (the vector of the workspace you dedicated to audio data)
+        you will just add the silence threshold to it.</li>
+        </ul><br>
+        In general, I admit low-level audio waveform calculation,
+        or translation, is rather difficult for the unexperienced programmer.
+        I have written some hundred lines of comments to explain the basic
+        principles of digital audio: they are in examples 9 and 10, along
+        with a function that will be a lot useful to learn how PCM
+        audio behaves (it's the &quot;Push Sample&quot; function,
+        which is also a perfect waveform translator).
+        That's all I can do, for now. Audio playback is fully functional,
+        but needs you to take care of the waveform at its fundamental
+        level. More high-level translation functions may be added in a library,
+        in the future, considering for instance .WAV and .AU data formats, but
+        for now there's not enough time to care.
+</blockquote>
+
+<a name = "V22"></a>
+VARIABLE: &lt;PCMdataOrigin&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to the first sample inside the audio workspace.
+        The &quot;audio workspace&quot; is a way to call an area of the workspace
+        that the application dedicates to the storage of audio data while
+        they're playing. The whole area has a certain size which is
+        declared IN UNITS in the &quot;workspace&quot; period, AND IN SAMPLES
+        when it's stored inside [PCM data Size]. Since a single sample,
+        defined as the number of bits required to play at *upto* 16 bits
+        over *upto* 2 channels, CANNOT GET OVER 1 UNIT in size, what's
+        needed is a buffer having the SAME size, in memory units, as the length,
+        in samples, of the longest record to play.
+        Samples in the raw waveform, however, may not be aligned to the
+        size of a FULL unit (e.g. on a stereo card supporting 8 bits per
+        sample, the size of a sample is 16 bits, because it's 8 bits multiplied
+        by 2 channels, while the current compiler unit is 32 bits),
+        so that a section of the reserved audio workspace may not be used:
+        for simplicity, I'd like to suggest not worrying about this little,
+        harmless, and only eventual, waste of space.
+        <br><br>
+        Before you play some audio, you have to set both &quot;PCM data Origin&quot;
+        and &quot;PCM data Size&quot; to indicate the pointer and size of the
+        workspace memory area where you have stored (or you will load) audio data.
+</blockquote>
+
+<a name = "V23"></a>
+VARIABLE: &lt;PCMdataOffset&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the offset (in samples) of the currently playing sample in
+        the audio workspace. The offset is relative to sample number zero.
+        This value is always zero when no playback is going on.
+</blockquote>
+
+<a name = "V24"></a>
+VARIABLE: &lt;PCMdataSize&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the size (in samples) of the current audio workspace.<br>
+        See the notes about &lt;PCMdataOrigin&gt; for more info.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>CONSOLE GROUP</dt>
+<dd>
+<br>
+
+<a name = "V25"></a>
+VARIABLE: &lt;ConsoleCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the ASCII-mode keyboard
+        input interface. There are three actions allowed for this unit:
+        <br><br>
+        [ConsoleCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [ConsoleCommand] = GETCONSOLEINPUT; isocall;<br>
+        Retrieves the ASCII code of last keystroke.
+        The code will be stored in variable [ConsoleInput].<br>
+        -- Status:<br>
+        FAILS when there are no keystrokes to retrieve from the
+        keyboard buffer. The keyboard buffer holds up to 32 keystrokes.
+        Please note this is NOT the BIOS keyboard buffer on IBM PCs,
+        which holds upto 16 keystrokes and is driven by the BIOS.
+        When this command fails, [ConsoleInput] is set to ZERO.<br>
+        -- Notes:<br>
+        To know all of the standard codes, see the ASCII table included in
+        this same manual, where it talks about text strings declared in
+        the &quot;variables&quot; period.
+        <br><br>
+        [ConsoleCommand] = RESETCONSOLEBUFFER; isocall;<br>
+        Wipes out any existing keystrokes from the keyboard buffer.
+        If no further keys are pressed after this command is issued,
+        any calls to the GETCONSOLEINPUT command will fail.<br>
+        -- Status:<br>
+        NEVER FAILS.<br>
+        -- Notes:<br>
+        Useful before your program enters a loop to wait for a keypress,
+        where it ensures the loop won't close immediately due to previous
+        keystrokes which may have not been retrieved from the buffer.
+</blockquote>
+
+<a name = "V26"></a>
+VARIABLE: &lt;ConsoleInput&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the ASCII code of last keystroke read from the keyboard,
+        in reply to a GETCONSOLEINPUT command sent throught [ConsoleCommand].
+        If no keystrokes are available at the moment, its value will be zero.
+        Remember to use the LUCK table to acknowledge any keystrokes which
+        don't produce plain ASCII standard codes. Such keystrokes are not
+        returned by GETCONSOLEINPUT.
+</blockquote>
+
+<a name = "V27"></a>
+VARIABLE: &lt;KEY?????????&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        This is a vector whose units are ALL labeled. Its size is 98 units.
+        It's also called the LUCK table, an acronym for Linoleum Universal
+        Console Keycode table, and allows real-time keyboard tracking, by
+        continuously informing the application about the actual status of
+        one or more keys (KEY PRESSED / KEY RELEASED). Its most frequent
+        use is acknowledgement of combined keystrokes, such as ALT+SHIFT+W.
+        However, the LUCK table is managed so that any combinations are,
+        theoretically, allowed. So you could check, for example, when the
+        user is pressing A+T+ENTER+ESCAPE, or F1+F2+F3, or whatever else...
+        The codes for each variable are in some way made standard, even if
+        some keys are obviously not supported because they don't fit this
+        standard. What you look for, therefore, is not the ASCII code of the
+        keys to be checked. Instead, it's such as an hardware-related code,
+        but it's NOT EVEN the real hardware scancode. Let's say... it's a
+        certain code, which the L.in.oleum design assigned to a certain key,
+        and that code is ALWAYS the same, no matter which keyboard is used.
+        Yes, I know there are other keyboard layouts such as greek, japanese
+        and so on... but they are mostly remaps of the physical keys: when a
+        certain key is pressed, it produces always the same code, no matter
+        what the sign, printed on top of it, looks like. Yes, yes, it IS
+        partially false: some keys have no equivalent in western layouts,
+        but they are very few, and none is of vital importance. I checked
+        out the keymaps before saying that.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>LUCK TABLE MAPPINGS</dt>
+<dd>
+<br>
+
+<a name = "V28"></a>
+<blockquote>
+Alphabetic keys:<pre>
+        VARIABLE: &lt;KEYA&gt;           
+        VARIABLE: &lt;KEYB&gt;           
+        VARIABLE: &lt;KEYC&gt;           
+        VARIABLE: &lt;KEYD&gt;           
+        VARIABLE: &lt;KEYE&gt;           
+        VARIABLE: &lt;KEYF&gt;           
+        VARIABLE: &lt;KEYG&gt;           
+        VARIABLE: &lt;KEYH&gt;           
+        VARIABLE: &lt;KEYI&gt;           
+        VARIABLE: &lt;KEYJ&gt;           
+        VARIABLE: &lt;KEYK&gt;           
+        VARIABLE: &lt;KEYL&gt;           
+        VARIABLE: &lt;KEYM&gt;           
+        VARIABLE: &lt;KEYN&gt;           
+        VARIABLE: &lt;KEYO&gt;           
+        VARIABLE: &lt;KEYP&gt;           
+        VARIABLE: &lt;KEYQ&gt;           
+        VARIABLE: &lt;KEYR&gt;           
+        VARIABLE: &lt;KEYS&gt;           
+        VARIABLE: &lt;KEYT&gt;           
+        VARIABLE: &lt;KEYU&gt;           
+        VARIABLE: &lt;KEYV&gt;           
+        VARIABLE: &lt;KEYW&gt;           
+        VARIABLE: &lt;KEYX&gt;           
+        VARIABLE: &lt;KEYY&gt;           
+        VARIABLE: &lt;KEYZ&gt;           
+</pre>Numeric keys:<pre>
+        VARIABLE: &lt;KEY0&gt;           
+        VARIABLE: &lt;KEY1&gt;           
+        VARIABLE: &lt;KEY2&gt;           
+        VARIABLE: &lt;KEY3&gt;           
+        VARIABLE: &lt;KEY4&gt;           
+        VARIABLE: &lt;KEY5&gt;           
+        VARIABLE: &lt;KEY6&gt;           
+        VARIABLE: &lt;KEY7&gt;            
+        VARIABLE: &lt;KEY8&gt;            
+        VARIABLE: &lt;KEY9&gt;            
+</pre>Function keys:<pre>
+        VARIABLE: &lt;KEYF1&gt;           
+        VARIABLE: &lt;KEYF2&gt;          
+        VARIABLE: &lt;KEYF3&gt;           
+        VARIABLE: &lt;KEYF4&gt;           
+        VARIABLE: &lt;KEYF5&gt;           
+        VARIABLE: &lt;KEYF6&gt;           
+        VARIABLE: &lt;KEYF7&gt;           
+        VARIABLE: &lt;KEYF8&gt;           
+        VARIABLE: &lt;KEYF9&gt;           
+        VARIABLE: &lt;KEYF10&gt;          
+        VARIABLE: &lt;KEYF11&gt;          
+        VARIABLE: &lt;KEYF12&gt;          
+        VARIABLE: &lt;KEYF13&gt;          
+        VARIABLE: &lt;KEYF14&gt;          
+        VARIABLE: &lt;KEYF15&gt;          
+        VARIABLE: &lt;KEYF16&gt;          
+        VARIABLE: &lt;KEYF17&gt;          
+        VARIABLE: &lt;KEYF18&gt;          
+        VARIABLE: &lt;KEYF19&gt;          
+        VARIABLE: &lt;KEYF20&gt;          
+        VARIABLE: &lt;KEYF21&gt;          
+        VARIABLE: &lt;KEYF22&gt;          
+        VARIABLE: &lt;KEYF23&gt;          
+        VARIABLE: &lt;KEYF24&gt;          
+</pre>Text editing keys:<pre>
+        VARIABLE: &lt;KEYBACKSPACE&gt;    
+        VARIABLE: &lt;KEYTAB&gt;          
+        VARIABLE: &lt;KEYRETURN&gt;       
+        VARIABLE: &lt;KEYESCAPE&gt;       
+        VARIABLE: &lt;KEYSPACEBAR&gt;     
+        VARIABLE: &lt;KEYINSERT&gt;      
+        VARIABLE: &lt;KEYDELETE&gt;      
+        VARIABLE: &lt;KEYHOME&gt;         
+        VARIABLE: &lt;KEYEND&gt;         
+        VARIABLE: &lt;KEYPGUP&gt;      
+        VARIABLE: &lt;KEYPGDN&gt;        
+</pre>Cursor arrows:<pre>
+        VARIABLE: &lt;KEYUP&gt;        
+        VARIABLE: &lt;KEYDOWN&gt;       
+        VARIABLE: &lt;KEYLEFT&gt;      
+        VARIABLE: &lt;KEYRIGHT&gt;    
+</pre>Numeric keypad:<pre>
+        VARIABLE: &lt;KEY0N&gt;       
+        VARIABLE: &lt;KEY1N&gt;        
+        VARIABLE: &lt;KEY2N&gt;       
+        VARIABLE: &lt;KEY3N&gt;       
+        VARIABLE: &lt;KEY4N&gt;        
+        VARIABLE: &lt;KEY5N&gt;      
+        VARIABLE: &lt;KEY6N&gt;        
+        VARIABLE: &lt;KEY7N&gt;        
+        VARIABLE: &lt;KEY8N&gt;        
+        VARIABLE: &lt;KEY9N&gt;        
+        VARIABLE: &lt;KEYSLASH&gt;    
+        VARIABLE: &lt;KEYASTERISK&gt;   
+        VARIABLE: &lt;KEYHYPHEN&gt; (former "keyminus" until 1.13.1)
+        VARIABLE: &lt;KEYCROSS&gt; (former "keyplus" until 1.13.1)
+        VARIABLE: &lt;KEYDOT&gt;     
+</pre>Control keys:<pre>
+        VARIABLE: &lt;KEYSHIFT&gt;  
+        VARIABLE: &lt;KEYCONTROL&gt;   
+        VARIABLE: &lt;KEYALTERNATE&gt;  
+</pre>Special keys:<pre>
+        VARIABLE: &lt;KEYPAUSE&gt;    
+        VARIABLE: &lt;KEYNUMLOCK&gt;    
+        VARIABLE: &lt;KEYCAPSLOCK&gt;  
+        VARIABLE: &lt;KEYSCROLLLOCK&gt;  
+        VARIABLE: &lt;KEYUNCLASSIFIED&gt;
+</pre>
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>POINTER GROUP</dt>
+<dd>
+<br>
+
+<a name = "V29"></a>
+VARIABLE: &lt;PointerCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the pointing device control
+        interface. There should be five actions allowed for this unit,
+        but only two are implemented in this first version of the RTM.
+        <br><br>
+        [PointerCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [PointerCommand] = READPOINTER; isocall;<br>
+        Retrieves the current coordinates of the pointing device's cursor,
+        when using the BY COORDINATE mode. Alternatively, it will read the
+        amount of units the pointing device has moved since last call to
+        this same function (using the BY DELTA mode).<br>
+        -- Status:<br>
+        NEVER FAILS.<br>
+        -- Notes:<br>
+        Coordinates are returned positively-right along the X axis,
+        and positively-down along the Y axis, so that the origin is
+        placed in the upper left corner of the video display area.
+        To change the pointing device control mode (BY COORDINATE or
+        BY DELTA) while the application is running, you must load the
+        value of one of the two constants called &quot;BY COORDINATE&quot; and
+        &quot;BY DELTA&quot; inside the [Pointer Mode] variable (see below),
+        and finally make an isocall.
+</blockquote>
+
+<a name = "V30"></a>
+VARIABLE: &lt;PointerMode&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Selects the current mode in which the pointing device movements
+        are tracked. Its initial value depends on the settings specified
+        inside the &quot;directors&quot; period. The default value is BY COORDINATE.
+        The two possible values are BY COORDINATE and BY DELTA.
+        BY DELTA gives the advantage of unlimited movements along the two
+        axes, but needs the program to update the coordinates on its own,
+        and forbids interaction of the pointing device with other programs
+        in case of windowed interfaces.
+</blockquote>
+
+<a name = "V31"></a>
+VARIABLE: &lt;PointerStatus&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Reports in real time about the status of the pointing device,
+        by asserting one or more of the following flags:
+        <blockquote>
+                PD LEFT BUTTON DOWN<br>
+                PD RIGHT BUTTON DOWN<br>
+                PD MIDDLE BUTTON DOWN<br>
+                PD PRESENT<br>
+                PD IN SIGHT
+        </blockquote>
+        The first three flags report about the instant status of three
+        of the pointing device's buttons. They are named from the most
+        common pointing device: the mouse.<br><br>
+        PD PRESENT is a flag signalling that the pointing device is
+        available and the RTM is controlling it correctly. Normally,
+        I can't see how an error clearing this flag should ever happen
+        using modern operating systems, but an error condition can be
+        simulated, for the sake of stressing your applications to see
+        if they can manage that, by using the DISABLE PD flag among the
+        test flags specification in the "directors" period, for which I
+        suggest reading the paragraph about <a href="director.htm">directors</a>.<br><br>
+        PD IN SIGHT signals, when the pointing device is controlled in
+        the BY COORDINATE mode, that the pointing device's cursor lays
+        inside the range of coordinates pertaining to the application's
+        display area. While in BY DELTA mode, this is always true because
+        the pointing device is captured exclusively by the application.
+</blockquote>
+
+<a name = "V32"></a>
+VARIABLE: &lt;PointerDeltaX&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY DELTA,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command]
+        <br><br>
+        Holds the number of &quot;pointer units&quot; the pointing device has moved
+        along the X axis since last READ POINTER command was sent. It is
+        always zero when using the BY COORDINATE mode.
+</blockquote>
+
+<a name = "V33"></a>
+VARIABLE: &lt;PointerDeltaY&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY DELTA,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command]
+        <br><br>
+        Holds the number of &quot;pointer units&quot; the pointing device has moved
+        along the Y axis since last READ POINTER command was sent. It is
+        always zero when using the BY COORDINATE mode.
+</blockquote>
+
+<a name = "V33A"></a>
+VARIABLE: &lt;PointerDeltaZ&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY DELTA,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command]
+        <br><br>
+        Holds the number of &quot;pointer units&quot; the pointing device has moved
+        along the Z axis since last READ POINTER command was sent. It is
+        always zero when using the BY COORDINATE mode.
+        <br><br>
+        The third axis of the pointing device, on most today's systems, is represented
+        by the mouse wheel, commonly placed between the left and right buttons.
+        If you move the wheel UP, the delta will be positive, and vice-versa.
+</blockquote>
+
+<a name = "V34"></a>
+VARIABLE: &lt;PointerXCoordinate&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY COORDINATE,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command].
+        <br><br>
+        Holds the current X coordinate of the pointing device, relatively
+        to the upper-left corner of the video display (positive right).
+</blockquote>
+
+<a name = "V35"></a>
+VARIABLE: &lt;PointerYCoordinate&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY COORDINATE,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command].
+        <br><br>
+        Holds the current Y coordinate of the pointing device, relatively
+        to the upper-left corner of the video display (positive down).
+        <br><br>
+        Note about both X and Y coordinates:
+        entering the BY DELTA mode does not change the actual values of
+        these coordinates. In facts, their values will be used to reset
+        the pointing device's cursor position once the application gets
+        back to the BY COORDINATE mode. So for a cheap trick: if you
+        need to change the position of the pointing device's cursor,
+        you can enter the BY DELTA mode for a little, then change these
+        two values of [PointerXCoordinate] and [PointerYCoordinate].
+        Finally, get back to the BY COORDINATE mode and the pointing
+        device's cursor will instantly move to the new position.
+</blockquote>
+
+<a name = "V35A"></a>
+VARIABLE: &lt;PointerZCoordinate&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Effective only if [Pointer Mode] has been set to BY COORDINATE,
+        and is updated only after a READ POINTER command has been sent
+        to the pointing device control interface throught a write-and-
+        isocall operation performed on [Pointer Command].
+        <br><br>
+        Holds the current Z coordinate of the pointing device.
+        The third axis of the pointing device, on most today's systems, is represented
+        by the mouse wheel, commonly placed between the left and right buttons. In this
+        point of view, Z movements are unlimited in both positive and negative direction.
+        If you move the wheel UP, the coordinate will raise, and vice-versa. Because,
+        supposing you still have a 2D monitor running a 2D operating system, the third
+        axis is unused to point at stuff with the pointer's cursor, this coordinate will
+        most probably be set at zero upon starting your application, but please don't
+        entirely rely on that... what if in the future we'll be using a 3D mouse? ;)
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>DATA MANAGEMENT SYSTEM (DMS) DATA GROUP</dt>
+<dd>
+<br>
+
+<a name = "V36"></a>
+VARIABLE: &lt;FileCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code for the DMS of the operation to be performed.
+        This value can be one of the following constants:
+        <blockquote>
+                IDLE<br>
+                TEST<br>
+                READ<br>
+                WRITE<br>
+                SET SIZE<br>
+                DESTROY<br>
+                RUN<br>
+                <br>
+                SET DIR<br>
+                GET DIR<br>
+                MKDIR<br>
+                RMDIR<br>
+                GET FIRST FILE<br>
+                GET NEXT FILE<br>
+                GET FIRST DIR<br>
+                GET NEXT DIR
+        </blockquote>
+        For the first group of commands, operating on FILES, you might keep
+        reading this document and see example 16 to see the commands at work;
+        for what concerns the <u>SECOND</u> group of commands, operating on
+        OTHER FILESYSTEM OBJECTS and introduced with version 1.13.6b of the
+        L.IN.OLEUM environment, you might see the large comment block at the
+        beginning of example 20 (<a href="../examples/20_DIRit.txt">DIRit</a>),
+        which discusses the "universal file system paradigm" in detail, and also
+        gives a few pratical examples, except for the workings of GET FIRST FILE
+        and GET NEXT FILE commands, still being discussed later in this section.
+        <br><br>
+        A write-and-isocall operation involving [File Command] should be
+        only performed after having loaded the other DMS-related variables
+        with the proper parameters. Such a write-and-isocall operation will
+        operate the file system depending on the code held by [File Command].
+        The IsoKernel will fail the call whenever there's something wrong in
+        the file or in the parameters, also signalling error status by
+        setting the ERROR flag in variable called [File Status].
+        For already experienced programmers, it is important to understand
+        that there are no open/create/close operations. You just read and
+        write: the RTM does the rest. Of course you can read and write large
+        blocks of informations, if not the whole file at once, to speed up
+        these processes. It is a HIGHLY simplified DMS; <u>I don't care for
+        anything that's not strictly related with preserving and reading
+        data to and from files</u>, because I want it to fit any kinds of
+        specific file systems; past, present and future. You will also find
+        it's been organized very rationally, also allowing for quick random
+        data access.
+        <br><br>
+        Pratical examples of code follow...
+        </blockquote>
+        <u>Testing a file</u>
+        <pre>
+        (The TEST command returns to your program some informations about
+        the file. These informations are stored in the following variables:
+        [File Size] --- the actual size of the file, in bytes
+        [File Status] - status flags (error state) and permits (to read/wr))
+    (now testing the file)
+        [File Name] = Test file name; (pointer to the string giving the name)
+        [File Command] = TEST; (get informations)
+        isocall; (do that)
+    (checking returned infos)
+        ? [File Status] + ERROR -&gt; No such file or file not accessible;
+        [Actual size of that file] = [File Size];
+        ? [File Status] + PERMIT TO READ -&gt; App can read from this file;
+        ? [File Status] + PERMIT TO WRITE -&gt; App can write to this file;
+        </pre>
+        <u>Creating/writing a file</u>
+        <pre>
+        [File Name] = Test file name; (pointer to the string giving the name)
+        [File Command] = WRITE; (creates new file if it doesn't exist)
+        [File Position] = ZERO; ([re]write from the beginning of the file)
+        [Block Pointer] = Mydata; (selects &quot;Mydata&quot; as the pointer to data)
+        [Block Size] = 1000 mtp BYTESPERUNIT; (assuming we have to write 1000 units)
+        isocall; (ok, do that now)
+        </pre>
+        Note: since in the &quot;workspace&quot; period, the size of memory areas
+        is given in units (not bytes), while [Block Pointer] must be loaded with
+        a value expressed in bytes, of course the effective amount of data held
+        within the memory area pointed by &quot;Mydata&quot; should be of
+        1000 (units) multiplied by BYTESPERUNIT (bytes). Now, &quot;BYTESPERUNIT&quot;
+        is a constant that's automatically declared for you by the compiler.
+        &quot;BYTESPERUNIT&quot; is an integer value reflecting how many bytes are needed
+        to make a memory unit. If the current CPU unit is 32, like in this version of the
+        L.in.oleum package, &quot;BYTESPERUNIT&quot; is assigned to 4, because 32 bits
+        divided by 8 bits (one byte) gives 4.
+        <br><br>
+        Also: if the file already exists, you must have write permission.
+        Theoretically, when the file isn't yours, you should first
+        perform a TEST operation on it, to see if [File Status] returns
+        the PERMIT TO WRITE flag set.
+        <br><br>
+        <u>Appending data to the file</u>
+        <pre>
+        [File Name] = Test file name;
+        [File Command] = WRITE;
+        [File Position] = 1000 mtp BYTESPERUNIT; (write past unit 1000)
+        [Block Pointer] = Additional Data;
+        [Block Size] = 500 mtp BYTESPERUNIT;
+        isocall; (adds another 500 units taking them from &quot;Additional Data&quot;)
+    (and at this point...)
+        [Number of bytes written to that file] = [Block Size];
+        ? ok -&gt; Successful operation;
+        ? failed -&gt; Oh no a file system error;
+        </pre>
+        Note: in case you were not appending data, but just changing
+        previous data, there would be no problems; just set the
+        file position to zero again, and overwrite the previous data...
+        <br><br>
+        <u>Appending data to any file without previously knowing its size</u>
+        <pre>
+        [File Name] = Test file name;
+        [File Command] = TEST; (only retrieves informations about the file)
+        isocall;
+        ? failed -&gt; Oh no I cant find that file;
+        [Our particular file size] = [File Size]; (retrieving actual size)
+        ? [File Status] - PERMIT TO WRITE -&gt; We dont have permission;
+    (now going to append data...)
+        [File Name] = Test file name;
+        [File Command] = WRITE;
+        [File Position] = [Our particular file size]; (see that?)
+        [Block Pointer] = Data to append;
+        [Block Size] = Size of the data to append;
+        isocall;
+    (and at this point...)
+        [Number of bytes written to that file] = [Block Size];
+        ? ok -&gt; Successful operation;
+        ? failed -&gt; Oh no a file system error;
+        </pre>
+        <u>Shortening the file (removing data)</u>
+        <pre>
+        [File Name] = Test file name;
+        [File Command] = SET SIZE;
+        [File Size] = 750 mtp BYTESPERUNIT;
+        isocall; (the file was now 1500 units: removing its second half)
+        </pre>
+        <u>Extending the file without saving data</u>
+        <pre>
+        [File Name] = Test file name;
+        [File Command] = SET SIZE;
+        [File Size] = 5000 mtp BYTESPERUNIT;
+        isocall; (file is extended from its 750 units upto 5000 units)
+    (and at this point...)
+        ? ok -&gt; Successful operation;
+        ? failed -&gt; Oh no a file system error;
+        </pre>
+        Note: the 4250 units added to the file this way are NOT
+        initialized, and they will just contain garbage until
+        you don't write some effective data to them. &quot;Garbage&quot;
+        means *any possible values*, it doesn't mean ZERO!
+        <br><br>
+        <u>Reading your data back from the file</u>
+        <pre>
+        [File Name] = Test file name;
+        [File Command] = TEST;
+        isocall;
+        ? failed -&gt; Oh no I cant find that file;
+        ? [File Status] - PERMIT TO READ -&gt; We dont have permission;
+    (now reading...)
+        [File Name] = Test file name;
+        [File Command] = READ;
+        [File Position] = ZERO;
+        [Block Pointer] = Where to store data read from file;
+        [Block Size] = 1000 mtp BYTESPERUNIT;
+        isocall;
+        [bytes loaded] = [Block Size];
+        ? [bytes loaded] != 1000 mtp BYTESPERUNIT -&gt; Incomplete data;
+        </pre>
+        Note: in general, to see if a certain file exists you should
+        TEST it out. The TEST command will fail if the file does
+        not exist, or if it's not accessible for some reason.
+        Also check if PERMIT TO READ is granted. Some times you
+        may find protected files your program can't read from...
+        <br><br>
+        Also: to read upto a certain number of bytes from the file,
+        without knowing if there are enough bytes, try to read
+        them anyway and check [Block Size] after the operation:
+        the value of [Block Size] will be corrected so that
+        it indicates the number of bytes that were effectively read.
+        <br><br>
+        <u>Destroying a file</u>
+        <pre>
+        [File Name] = Name of file to destroy;
+        [File Command] = TEST;
+        isocall;
+        ? [File Status] - PERMIT TO WRITE -&gt; Cant destroy protected files;
+        [File Name] = Name of file to destroy;
+        [File Command] = DESTROY;
+        isocall;
+        ? failed -&gt; Cant destroy file due to file system error;
+        </pre>
+        <u>Getting a directory listing</u><br><br>
+        It is very simple to obtain a directory listing. There are just two
+        commands: GET FIRST FILE and GET NEXT FILE. Calling the first one will
+        retrieve the name of the first file inside your work directory, and
+        subsequently you should call GET NEXT FILE to retrieve names of the other
+        files, until the GET NEXT FILE command fails, meaning there were no more
+        files to find. For getting DIRECTORIES' names instead of files, you may
+        call GET FIRST DIR and GET NEXT DIR, which work in exactly the same way,
+        but before wandering around directories you're recommended to see example
+        number 20 (<a href="../examples/20_DIRit.txt">this file</a>) and its long
+        commentary, which discusses the universal file system paradigm used to
+        standardize access to file system resources regardless of the underlying
+        operating system. This paradigm, and the relative code within the variants
+        of the run-time module, was introduced with L.IN.OLEUM 1.13.6b, former
+        versions being confined to work with files placed only in their startup
+        directory. The limitation was there because the phylosophy I had chosen
+        for L.IN.OLEUM applications' file access was different, and mostly due to
+        the fact that I couldn't, at that time, figure out an appropriate
+        cross-platform syntax for representation units and directories' paths.
+        The former mechanism, however, had several advantages, which targetted my
+        efforts to mantain absolute, 100% backward-compatibility with it: your
+        program will start by working in its "startup directory", which usually
+        means the directory in which the program's executable file is placed; then,
+        you MAY access other directories, units, partitions and devices in general,
+        by using the SET DIR command to navigate across the "system root directory".
+        If you know UN*X-like file systems you will be familiar with the concept of
+        a system root directory, but if you only know Windows' way of life, you may
+        imagine the system root as an approximation of the "My Computer" window.
+        Again, to understand how resource paths (root's branches) diffuse from the
+        system root, and how subdirectories are organized and seen by the universal
+        file system paradigm, you have to inspect the source code of the aforementioned
+        example 20.
+        <br><br>
+        The GET FIRST FILE command cannot usually fail, at least if you're
+        still working in your startup directory, because AT LEAST your startup
+        directory should always contain your executable program. If it fails in
+        that case, it could mean something seriously wrong happened with the file
+        system, so you may also warn the user when it happens.
+        <br><br>
+        The GET NEXT FILE command could even fail the first time you use it,
+        in case there were no files other than your program. This should be
+        the initial condition of the program's folder, unless you packaged
+        the program along with some external support files not part of the
+        stock file.
+        <br><br>
+        Both commands will return the file name by setting the DMS variable
+        [File Name] to point to a null-terminated string, made of upto 255
+        characters (not including the final null terminator) and holding the
+        file's name. At this point, your program should copy the contents of
+        that string to some vector you declared in your workspace. Otherwise,
+        the string would be changed when next file is found.
+        <br><br>
+        Well, since on L.in.oleum's side there's no limit to the number of
+        files your directory can contain, it's up to you to set this limit.
+        If you're going to store all of the files' names somewhere in your
+        workspace for faster lookups and alphabetical sorting (like for
+        example does the iGUI library), you typically have to set such a limit
+        when declaring the memory vector (a vector of strings where for each
+        string is reserved an area of 256 units) in the &quot;workspace&quot;
+        period. If, instead, you don't want limits, you can just display all or
+        part of the names pointed by [File Name] and decide you will be reading
+        the whole directory again when the user &quot;scrolls&quot; your directory
+        listing in some way. Of course, this takes away some speed, but in effects,
+        it's the best way to show potentially massive directory listings.
+        <br><br>
+        <u>Running child applications</u>
+        <pre>
+        [File Name] = Command string;
+        [File Command] = RUN;
+        isocall;
+        </pre>
+        Note: the string pointed by [File Name] contains not only the name
+        of the application to run. It also contains command-line parameters
+        that will be passed to that application. At this point, it's highly
+        important to understand that an UNIVERSAL syntax is provided for
+        passing application's name and parameters, *differently* from when
+        you're about to decode your ENTRY command-line parameters, where
+        system-specific conventions apply (see [Command Line] for infos).
+        The universal syntax for child applications' parameters is:
+        <br><br>
+        File to run = { PROGRAMNAME[.EXT]||parameters };
+        <br><br>
+        Which means there are TWO VERTICAL BARS between the name of the executable
+        file and its parameters. Both name and parameters must NOT be quoted,
+        while [.EXT] represents an optional extension, varying from system
+        to system. Under MS-DOS and Windows, it's normally EXE (or COM for
+        some old-style DOS applications running in 64Kb or less).
+        Parameters are OPTIONAL: if you aren't going to specify parameters
+        for the child application, just specify the name of that application
+        to run, *without* adding the two vertical bars and the parameters.
+        <br><br>
+        <u>Spawning to the DOS Prompt under Windows</u><br>
+        I suppose you'd just have to run &quot;COMMAND.COM&quot; (or
+        &quot;CMD.EXE&quot; on NT-based versions such as WinXP),
+        with no parameters.
+        I didn't really try but I'm pretty sure it works...
+<br><br>
+
+<a name = "V37"></a>
+VARIABLE: &lt;FileStatus&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Holds the returned status flags from last command performed by
+        the DMS throught a write-and-isocall operation on [File Command].
+        The status flags are:
+        <blockquote>
+                READY<br>
+                ERROR<br>
+                PERMIT TO READ<br>
+                PERMIT TO WRITE<br>
+        </blockquote>
+        While these flags are updated after any kind of operation,
+        the TEST command just means the RTM will update these,
+        return the [File Size] and do nothing more than that.<br><br>
+        The READY flag, only on return from commands operating upon a target
+        file (also called "active operations" and actually being TEST, READ,
+        WRITE, SET SIZE) signals that the file was successfully reached, and
+        in that case the permits reflect what your application is allowed to
+        do with that file; even if the ERROR flag is set on return, if it's
+        set along with READY it means the file operation itself has failed,
+        although the file was successfully reached. If only the ERROR flag
+        results to be set on return from an active operation, then it means
+        the target file was not even reached, and the specified operation not
+        even attempted.<br><br>
+        Instead, on return from DESTROY, RUN, GET FIRST FILE, GET NEXT FILE, GET
+        FIRST DIR, GET NEXT DIR, MKDIR, RMDIR, SET DIR and GET DIR, the READY
+        flag is <u>never</u> set; such commands are called "passive operations",
+        and their failure only causes the ERROR flag to be set, other than the
+        isocall to result failed.
+</blockquote>
+
+<a name = "V38"></a>
+VARIABLE: &lt;BlockPointer&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to the memory block where to take from - or store
+        to - the data written to - or read from - a file. To be used in
+        conjunction to a READ or WRITE command sent throught [File Command].
+</blockquote>
+
+<a name = "V39"></a>
+VARIABLE: &lt;BlockSize&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the size of the memory block where to take from - or store
+        to - the data written to - or read from - a file. To be used in
+        conjunction to a READ or WRITE command sent throught [File Command].
+        The size of the memory block is always expressed in bytes.
+        <br><br>
+        NOTE: this variable is <u>always influenced</u> by commands READ and
+        WRITE, which will report the amount of bytes effectively read from
+        (or written to) the target file. In case the said operations fail,
+        the value of this variable is set to zero, but remember that with those
+        commands it does never preserve, after an isocall, its original value.
+</blockquote>
+
+<a name = "V40"></a>
+VARIABLE: &lt;FileName&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to the name of current target file,
+        seen as a null-terminated text string. Legal file names
+        are defined in relation to the current operating system.
+        If [File Command] is set to RUN, the [File Name] string
+        must respect the following universal syntax:<br><br>
+                Application[.EXT]||parameters<br><br>
+        and the null terminator must be placed after the parameters.
+        Naturally, the extension may vary accordingly to the needs
+        of your system. EXE is the right one for MS-DOS and Windows.
+        And naturally, &quot;Application[.EXT]&quot; is a placeholder for the
+        true name of the program to run. Hey, by the way...
+        don't get confused with the [Command Line] string: that one
+        exclusively contains parameters for YOUR application, not
+        for CHILD applications launched by yours.
+        <br><br>
+        IMPORTANT: Loading [File Name] with value of the constant called
+        &quot;STOCKFILE&quot; will access the application's stock file.
+        The stock file is used to link support files to the final executable file.
+        The stock file can only be accessed throught READ operations: <u>never</u>
+        load [File Name] with constant STOCKFILE using other operations, especially
+        not for operations that are supposed to alter the string and return a name
+        (GET DIR, GET FIRST FILE etc...); in this last case, an isocall would have
+        catastrophic effects, and before or later, crash the application. This is
+        because STOCKFILE is a constant, not a real pointer to a real buffer: it's
+        equal to zero, and if the IsoKernel was told to overwrite contents of the
+        application's memory workspace from location zero, it would overwrite very
+        important values, many application variables and mostly, the [CodeOrigin]
+        pointer, used in indirect jumps or calls such as the instruction "=>A;".
+        <br><br>
+        NOTE: the string pointed by this variable is <u>always influenced</u> by
+        commands GET FIRST FILE, GET NEXT FILE, GET FIRST DIR, GET NEXT DIR and
+        GET DIR, which will attempt to fill upto 256 units in that string to return
+        the requested entity's name/path. In case the said operations fail, only
+        the first unit of the string is filled, by setting it to a value of zero
+        (which acts as a string terminator and, placed in the very first unit of the
+        string, therefore signals a void string), but remember that with those
+        commands the string pointed by [File Name] does NEVER preserve, after the
+        isocall, its original content.
+</blockquote>
+
+<a name = "V41"></a>
+VARIABLE: &lt;FileSize&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Serves the double purpose of returning the actual size of the
+        target file after a &quot;dummy&quot; TEST command performed on the file,
+        and of holding the requested new size of the target file before
+        calling to the IsoKernel with [File Command] = SET SIZE.
+        The size of a file, either set or returned, is always expressed in bytes;
+        use the &quot;BYTESPERUNIT&quot; constant to calculate the amount of
+        memory bytes needed to fill a certain number of memory units.
+        <br><br>
+        NOTE: this variable is <u>always influenced</u> by commands TEST, READ,
+        WRITE, SET SIZE, which will report the amount of bytes taken by the file
+        after the operation completed, no matter if it failed or succeeded. For
+        example the TEST and SET SIZE commands, on failure, both set [FileSize]
+        to zero. So, remember that after using those commands, [FileSize] does
+        never preserve, after the isocall, its original value.
+</blockquote>
+
+<a name = "V42"></a>
+VARIABLE: &lt;FilePosition&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the position (in bytes since the beginning of the file) where
+        an operation on the target file starts from. Effective only when
+        [File Command] is set to READ or WRITE, and ignored in any other cases.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>TIMER GROUP</dt>
+<dd>
+<br>
+
+<a name = "V43"></a>
+VARIABLE: &lt;TimerCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the system timer interface.
+        There are two actions allowed for this unit:
+        <br><br>
+        [TimerCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [TimerCommand] = READTIME; isocall;<br>
+        Retrieves current date and time.<br>
+        Values will be stored in variables:
+        <blockquote>
+                [Year]<br>
+                [Month]<br>
+                [Day]<br>
+                [DayOfWeek]<br>
+                [Hour]<br>
+                [Minute]<br>
+                [Second]<br>
+                [Milliseconds]
+        </blockquote>
+        -- Status:<br>
+        NEVER FAILS.
+        <br><br>
+        [TimerCommand] = READ UTC TIME; isocall;<br>
+        Retrieves current UTC (GMT) date and time.<br>
+        For the rest, works like READTIME.
+        <br><br>
+        [TimerCommand] = READ COUNTS; isocall;<br>
+        Retrieves current high performance timer's counts.<br>
+        The timer's counts will be stored in variable [Counts].<br>
+        -- Status:<br>
+        NEVER FAILS.
+</blockquote>
+
+<a name = "V44"></a>
+VARIABLE: &lt;Year&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current year.<br>
+        It's 4 digits long, so don't fear Y2K.
+</blockquote>
+
+<a name = "V45"></a>
+VARIABLE: &lt;Month&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current month. Range 1 to 12.<br>
+        1 = January, 2 = February, etc...
+</blockquote>
+
+<a name = "V46"></a>
+VARIABLE: &lt;Day&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current day of the month.<br>
+        Range 1 to 31.
+</blockquote>
+
+<a name = "V47"></a>
+VARIABLE: &lt;DayOfWeek&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current day of the week.<br>
+        <i>(introduced with 1.1 beta version)</i><br>
+        0 = Sunday, 1 = Monday ... 6 = Saturday.
+</blockquote>
+
+<a name = "V48"></a>
+VARIABLE: &lt;Hour&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current hour.<br>
+        Range 0 to 23.
+</blockquote>
+
+<a name = "V49"></a>
+VARIABLE: &lt;Minute&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current minute.<br>
+        Of course, 0 to 59.
+</blockquote>
+
+<a name = "V50"></a>
+VARIABLE: &lt;Second&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current second.
+        Of course, 0 to 59 again.
+</blockquote>
+
+<a name = "V51"></a>
+VARIABLE: &lt;Milliseconds&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current milliseconds within the current second.<br>
+        Range 0 to 999, but resolution varies depending on your platform
+        and hardware. Many platforms may not be able to resolve every single
+        millisecond. Eh, a pity the TSC was only introduced with recent CPUs.
+        However, it's a good randomizer for seeding random number generators.
+        <br><br>
+        Note: the TSC, Time Stamp Counter, is an internal counter to some
+        of the newer CPUs. It counts in CPU clocks, so it's very precise.
+        Under Windows, it's fundamentally useless. I tried measuring small
+        intervals with it, but there are too many things happening between
+        threads, because of multi-tasking needs. So it's unreliable anyway.
+</blockquote>
+
+<a name = "V52"></a>
+VARIABLE: &lt;Counts&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Current high performance timer counts.<br>
+        Retrieved by READ COUNTS command.
+</blockquote>
+
+<a name = "V53"></a>
+VARIABLE: &lt;CountsPerMillisecond&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        To synchronize the high performance timer, the run-time module
+        calculates (elapses) this value before the application starts running.
+        Its value depends directly on the CPU speed. Normally, the high performance
+        timer is able to track periods of time (per single count) below or near to
+        1 microsecond (1 millionth of second), so there may be several thousands
+        counts within a single millisecond. For this reason, the [Counts] unit may
+        overflow once in a few minutes; thus, the high performance counter is
+        recommended for measuring relatively SMALL amounts of time.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>APD <i>(Auxiliary Pointing Devices)</i> GROUP</dt>
+<dd>
+<br>
+
+<a name = "V54"></a>
+VARIABLE: &lt;APDCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the auxiliary pointing devices
+        (APD) interface. There are three actions allowed for this unit:
+        <br><br>
+        [APDCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [APDCommand] = QUERYAPDLINES; isocall;<br>
+        Retrieves current number of devices plugged in.<br>
+        <i>IT MUST BE DONE</i> before reading these devices.<br>
+        The return value will be stored in [APDLines].<br>
+        -- Status:<br>
+        NEVER FAILS, BUT MAY RETURN ZERO DEVICES.
+        <br><br>
+        [APDCommand] = READAPDLINE; isocall;<br>
+        Reads the APD corresponding to [APDLine].
+        The value stored in [APDLine] before calling
+        the isokernel to execute this function, is in the
+        range ZERO to [APDLines]-1, zero being the first device.
+        The return values will be stored in the variables:
+        <blockquote>
+                [APDStatus]<br>
+                [APDXMeter]<br>
+                [APDYMeter]<br>
+                [APDZMeter]
+        </blockquote>
+        -- Status:<br>
+        FAILS IF SPECIFIED DEVICE ISN'T PLUGGED.
+</blockquote>
+
+<a name = "V55"></a>
+VARIABLE: &lt;APDLine&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        To be loaded with the number of the APD line corresponding to
+        the desired &quot;auxiliary pointing device&quot; to read,
+        before isocalling with [APDCommand]=READAPDLINE.
+        Currently on Windows, the APD are all the joypads, so the first device
+        corresponds to the first joypad (device zero), the second device to
+        the second joypad (device one), and so on... until [APDLines]-1.
+</blockquote>
+
+<a name = "V56"></a>
+VARIABLE: &lt;APDLines&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Automatically loaded by the QUERYAPDLINES function of the
+        [APDCommand] interface. Reports the number of auxiliary pointing
+        devices actually connected to the system. May vary during the runtime
+        if one or more devices are unplugged. May also be zero.
+</blockquote>
+
+<a name = "V57"></a>
+VARIABLE: &lt;APDStatus&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Automatically loaded by the READAPDLINE function of the
+        [APDCommand] interface. Reports the current status of the
+        auxiliary pointing device for which the read was made,
+        <i>providing the READAPDLINE function returned successfully</i>.
+        <br><br>
+        [APDStatus] is a bitmask where each bit identifies one of the
+        buttons of the device. Bit zero (less significant bit) identifies
+        the first button, bit one is the second button, and so on until
+        bit 31 (being the thirtysecond button). Currently, however, only
+        upto four buttons are supported by the Intel/Windows environment.
+</blockquote>
+
+<a name = "V58"></a>
+VARIABLE: &lt;APDXMeter&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Automatically loaded by the READAPDLINE function of the
+        [APDCommand] interface. Reports the current X delta of the
+        auxiliary pointing device for which the read was made,
+        <i>providing the READAPDLINE function returned successfully</i>.
+</blockquote>
+
+<a name = "V59"></a>
+VARIABLE: &lt;APDYMeter&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Automatically loaded by the READAPDLINE function of the
+        [APDCommand] interface. Reports the current Y delta of the
+        auxiliary pointing device for which the read was made,
+        <i>providing the READAPDLINE function returned successfully</i>.
+</blockquote>
+
+<a name = "V60"></a>
+VARIABLE: &lt;APDZMeter&gt;<br>
+DATA TYPE: READ-ONLY
+<blockquote>
+        Automatically loaded by the READAPDLINE function of the
+        [APDCommand] interface. Reports the current Z delta of the
+        auxiliary pointing device for which the read was made,
+        <i>providing the READAPDLINE function returned successfully</i>.
+        <br><br>
+        <i>Note the Z-delta corresponds to an undefined,
+        and only eventually present, additional potentiometer
+        mounted on certain joypads; in the future, it may be
+        used for 3D desktop pointing devices.</i>
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>PRINTER GROUP</dt>
+<dd>
+
+<br>
+    Warning: the printer support is a MODULAR EXTENSION,
+    and its commands will effectively work only if director tag
+    "modular extensions" includes the constant "printer";
+    for further informations about modular extensions, please see
+    the chapter about <a href="director.htm">directors</a>.
+<br><br>
+
+<a name = "V61"></a>
+VARIABLE: &lt;PrinterCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the WYSIWYG printer interface.
+        There are two actions allowed for this unit:
+        <br><br>
+        [PrinterCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called, to
+        avoid repeating the action at next call.
+        <br><br>
+        [PrinterCommand] = PRINTPAGE; isocall;<br>
+        Sends the contents of the off-screen graphics buffer pointed
+        by [PageOrigin], and described by [PageWidth] and [PageHeight],
+        to the local printer <i>(if any)</i>.<br>
+        -- Status:<br>
+        FAILS IF NO PRINTERS ARE AVAILABLE.
+        <br><br>
+        The printer, as seen by a L.in.oleum application, is simply an off-screen
+        graphics display. The printer's display area is called the <i>PAGE BUFFER</i>
+        and it's selected by loading [PageOrigin] with the pointer to a workspace
+        memory area, exactly as it's done for the video display. Again, like for the
+        video display, the PRINTPAGE function is the printer's equivalent of the
+        RETRACE function for the video display. The printer is seen exactly as an
+        additional display, only that it's usually made of paper.
+        <br><br>
+        The area pointed by [PageOrigin] may or may not be the same pointed by
+        [DisplayOrigin]. If it's the same area, and providing you will <i>also</i>
+        set up [PageWidth]=[DisplayWidth] and [PageHeight]=[DisplayHeight], you will
+        get a perfect copy of what your actual display shows at that moment.
+        <br><br>
+        But [PageOrigin], [PageWidth] and [PageHeight] are separate entities from
+        [DisplayOrigin], [DisplayWidth] and [DisplayHeight]. For best results, they
+        would usually point to a memory area which is managed like a video display,
+        but not shown on the screen. That's called an <i>off-screen display</i>, and
+        its resolution for printing purposes would generally be higher than that of
+        the effective video display.
+        <br><br>
+        Also, remember that the page buffer's contents will be resized (and eventually
+        stretched) to fill the whole physical page. So, if you're printing on normal
+        A4 sheets (the most used paper format), and you don't want the aspect ratio
+        of the resulting page to be different from 1:1, you have to set up [PageWidth]
+        and [PageHeight] in order to reflect the aspect ratio of an A4 paper sheet.
+        This is easily calculable: first set the desired [PageHeight], then multiply
+        the value of [PageHeight] by the floating-point constant 0.707f. The result
+        will give the value of [PageWidth] for a perfect A4 aspect ratio.
+</blockquote>
+
+<a name = "V62"></a>
+VARIABLE: &lt;PageOrigin&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Pointer to the unit corresponding to the first pixel (upper-left corner)
+        of the page buffer. The page buffer is a normal memory area, to be
+        declared in the &quot;workspace&quot; period, whose size is described
+        by the values of [PageWidth] and [PageHeight].
+</blockquote>
+
+<a name = "V63"></a>
+VARIABLE: &lt;PageWidth&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Width of the page buffer in pixels.<br>
+        The total size of the page buffer area (pointed by [PageOrigin]) must be
+        <i>at least</i> the result of [PageWidth] multiplied by [PageHeight],
+        and its contents must be aligned so that each single row of pixels
+        is exactly [PageWidth] pixels long.
+</blockquote>
+
+<a name = "V64"></a>
+VARIABLE: &lt;PageHeight&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Height of the page buffer in pixels.<br>
+        The total size of the page buffer area (pointed by [PageOrigin]) must be
+        <i>at least</i> the result of [PageWidth] multiplied by [PageHeight],
+        and its contents must be aligned so that each single row of pixels
+        is exactly [PageWidth] pixels long.
+</blockquote>
+
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>PROCESS GROUP</dt>
+<dd><br>
+
+<a name = "V65"></a>
+VARIABLE: &lt;ProcessCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the process control interface.
+        There are four actions allowed for this unit:
+        <br><br>
+        [ProcessCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called.
+        <br><br>
+        [ProcessCommand] = END PROCESS; isocall;<br>
+        Terminates the program's main process and thread, immediately
+        and releasing all the allocated resources. The break can be
+        performed even from within a subroutine, with any number of
+        values being left upon the stack.
+        <br><br>
+        [ProcessCommand] = FAIL PROCESS; isocall;<br>
+        Same effect as END PROCESS, but also shows the contents
+        of all the registers. This is extremely valuable for
+        debugging purposes.
+        <br><br>
+        [ProcessCommand] = SLEEP; isocall;<br>
+        Suspends execution of the program's thread for a given number
+        of milliseconds. The amount of time is to be loaded in unit
+        [SleepTimeout] before making the "isocall": this is valuable
+        whenever your program is not a one-shot application that runs
+        without interacting with the user, because it allows placing
+        small, unnoticeable delays (say 10 milliseconds) between each
+        iteration of the loops where the application is waiting for
+        user input. It saves CPU time hogging. Beware, however, that
+        this is NOT a good way to synchronize something: the program is
+        not guaranteed to resume execution exactly after the timeout
+        has expired, because other applications, or parts of the system,
+        may be in time-critical parts of their code in the meantime.
+</blockquote>
+
+<a name = "V66"></a>
+VARIABLE: &lt;SleepTimeout&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Timeout for the SLEEP command, as explained in the above paragraph.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>GLOBAL K GROUP</dt>
+<dd><br>
+
+<a name = "V67"></a>
+VARIABLE: &lt;GlobalKCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the global K control interface.
+        There are four actions allowed for this unit:
+        <br><br>
+        [GlobalKCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called.
+        <br><br>
+        [GlobalKCommand] = K READ; isocall;<br>
+        Reads 255 units of data from the global K indicated by the
+        given name, passed as a string which pointer must be loaded
+        in variable [GlobalKName], and places the resulting data in
+        the memory area pointed by [GlobalKData].
+        <br><br>
+        [GlobalKCommand] = K WRITE; isocall;<br>
+        Writes 255 units of data into the global K indicated by the
+        given name, passed as a string which pointer must be loaded
+        in variable [GlobalKName], and takes the data to write from
+        memory area pointed by [GlobalKData].
+        <br><br>
+        [GlobalKCommand] = K DESTROY; isocall;<br>
+        Destroys the global K indicated by the given name, passed as
+        a string which pointer must be loaded in variable [GlobalKName],
+        freeing its space in the central database.
+        <br><br>
+        Global K's are globally shared keys of raw binary data, which may
+        contain whatever the application wants to save in one or more of them;
+        global K's are accessible from other instances of the same application
+        (when two or more instances of a program are kept running together) or
+        even by other applications. They might be used to preserve programs'
+        configuration data, or for signalling something to other Linoleum
+        programs, or even for sharing small chunks of informations.
+        <br><br>
+        Global K's are ALL kept in a centralized database, physically placed
+        somewhere in the system, but the precise position depends on the
+        specific system and platform; under Win32, global K's are saved in
+        system registry key "HKEY_CURRENT_USER/Software/Linoleum_Shared". As
+        a consequence of the fact that they will ALL contribute to enlarge
+        the central database, applications are severely discouraged from
+        saving LARGE amounts of data in multiple global K's, to avoid hogging
+        system resources excessively.
+        <br><br>
+        A few other things to know about global K's are that their data size
+        is, by definition, ALWAYS 255 units, while their <u>names</u> are limited to
+        24 characters (not including the null terminator). Furthermore, their
+        names must be formed of very standard characters for cross-platform
+        compatibility issues, and so, exactly like libraries' names, global
+        K's names must be formed by alphanumeric characters only, that is, by
+        ASCII uppercase or lowercase A-to-Z letters, numbers 0 to 9, plus a
+        single token code, the underscore. Any characters that don't fit that
+        range will be transformed, upon accessing the global K, to underscores.
+        Interestingly, characters not allowed in K names include the blank space,
+        and since blank spaces are marked with underscore signs in compiled text
+        strings, in practice an underscore in the string gets to correspond with
+        an underscore in the effective K name.
+        Please also note that differently from compiler symbols, global K's names
+        are case-sensitive, and swapping lowercase with uppercase letters in a name
+        doesn't refer to the same K.
+        Also, remember that YOU CANNOT write or read LESS or MORE than 255
+        units to/from a global K. Especially if you're reading from a global K,
+        remember to always reserve a buffer of <u>at least 255 units</u>, in order
+        for the data to get fully contained in the buffer, or the isocall will
+        eventually crash the application and/or overwrite the buffer's subsequent
+        memory areas.
+</blockquote>
+
+<a name = "V68"></a>
+VARIABLE: &lt;GlobalKName&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to a string, formed of upto 24 characters
+        (not including the null terminator) in the ranges A-to-Z, a-to-z,
+        0-to-9, or underscore. This string identifies the global K which
+        the run-time module will try to access with READ, WRITE or DESTROY
+        commands loaded in the "GlobalKCommand" unit prior to an isocall.
+</blockquote>
+
+<a name = "V69"></a>
+VARIABLE: &lt;GlobalKData&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+        Holds the pointer to a buffer, formed of <u>at least 255 units</u>.
+        This pointer indicates the buffer where global K data will be stored
+        or taken from, when the run-time module will try to access a global
+        K with READ or WRITE commands loaded in the "GlobalKCommand" unit
+        prior to an isocall.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>CLIPBOARD GROUP</dt>
+<dd><br>
+
+<a name = "V70"></a>
+VARIABLE: &lt;ClipCommand&gt;<br>
+DATA TYPE: WRITE-AND-ISOCALL
+<blockquote>
+        Holds the command code to be sent to the system clipboard interface.
+        The system clipboard is typically the entity that contains things you
+        copy and paste between applications via the CUT, COPY and PASTE commands,
+        or via the frequently used keyboard combinations CTRL+INS (COPY),
+        SHIFT+INS (PASTE), SHIFT+DELETE (CUT), or the alternative set CTRL+X (CUT),
+        CTRL+C (COPY), CTRL+V (PASTE). Clipboard objects not made of plain text are
+        ignored by the L.in.oleum environment. Plain text is intended to be ASCII
+        text, with a null code terminating the string (ASCIIZ). Eventually,
+        L.in.oleum applications could still share binary data via the clipboard
+        if the said data was encoded as text in some way that both applications
+        agreed to use (a good widely accepted standard for binary data exchange as
+        plain text could be the popular "MIME base64" encoding method, used worldwide
+        for e-mail attachments; for details see RFC 2045 section 6.8). On systems
+        using multiple clipboards, only one of the clipboards may be used (presumably
+        some kind of "default clipboard"). On systems providing no clipboard, its
+        functions are supposed to be emulated via the use of a shared file that would
+        preserve the actual contents of the clipboard.
+        <br><br>
+        There are four actions allowed for this unit:
+        <br><br>
+        [ClipCommand] = IDLE; isocall;<br>
+        Does nothing: the command unit is restored to that value
+        once the isokernel functions parser has been called.
+        <br><br>
+        [ClipCommand] = GET CLIP SIZE; isocall;<br>
+        Returns how many units of memory would be needed to form a destination
+        buffer for the contents of the clipboard to be saved. Clips seen from
+        the L.in.oleum environment are always shared as plain ASCII text, where
+        each character code is padded to one unit per character, just like any
+        L.in.oleum strings that you may declare in the "variables" period. The
+        text clip is always terminated with a null code, a unit set to zero.
+        The buffer size returned by this command, which is returned in variable
+        [ClipSize], is always including that last null code. If you had a clip
+        reading "Hello" copied in the system clipboard at that moment, the
+        [ClipSize] variable would be set to 6, not to 5, being the 5 characters
+        forming "Hello" and the null code.
+        <br><br>
+        [ClipCommand] = READ CLIP; isocall;<br>
+        Reads upto [ClipSize] characters from the actual text saved in the system
+        clipboard, and places its contents in the buffer pointed by [ClipString].
+        As mentioned above, the said buffer must be capable of containing the clip
+        and the final null code, if you are willing to read the whole clip.
+        However, READ CLIP considers the value of [ClipSize] as a limit for the
+        receiving buffer: it can be limited to read only part of the string by
+        setting [ClipSize] to the number of characters that could be fit in the
+        [ClipString] buffer. If the null code is found in the clipboard before that
+        limit is reached, the IsoKernel will stop reading after having placed the
+        null code into the destination buffer. If the null code is not found within
+        an amount of characters equal to [ClipSize], the clip will be truncated and
+        the last character in the destination buffer will be erased with zero, so
+        that the string will be properly terminated anyway. Examples follow:
+   <pre>CASE 1: destination buffer longer than clip
+
+GETCLIPSIZE would return: 15
+clipboard contains:       HEYMALOOKITSME
+destination buffer is 20: --------------------
+buffer after READ CLIP:   HEYMALOOKITSME&middot;-----
+
+CASE 2: destination buffer fit for clip
+
+GETCLIPSIZE would return: 15
+clipboard contains:       HEYMALOOKITSME
+destination buffer is 15: ---------------
+buffer after READ CLIP:   HEYMALOOKITSME&middot;
+
+CASE 3: destination buffer shorter than clip
+
+GETCLIPSIZE would return: 15
+clipboard contains:       HEYMALOOKITSME
+destination buffer is 10: ----------
+buffer after READ CLIP:   HEYMALOOK&middot;
+
+&middot; = placeholder for the null terminator
+- = placeholder for an unused/unchanged unit</pre>
+        Example of a program performing case 3:
+    <pre>"directors"
+  unit = 32;
+
+"workspace"
+  my buffer = 10;
+
+"programme"
+
+ (the user supposingly has copied the sample
+  string "HEYMALOOKITSME" into the clipboard)
+
+  [clipcommand] = get clip size;
+  isocall;
+
+ (at this point [clipsize] contains value 15)
+
+  [clipcommand] = read clip;
+  [clipstring] = my buffer;
+  [clipsize] = 10;
+  isocall;
+
+ (the buffer now contains "HEYMALOOK&middot;")
+
+  end;</pre>
+        [ClipCommand] = WRITE CLIP; isocall;<br>
+        Writes upto [ClipSize] characters to the system clipboard, taking
+        the string pointed by [ClipString] as the source buffer: if no null
+        terminator is found in the said string within the amount of characters
+        indicated by [ClipSize], the string is truncated to [ClipSize] and a
+        null terminator is inserted in the clipboard after the last character
+        read from the buffer (in this case the last character is NOT replaced
+        by the null code in the clipboard). If the null terminator is found,
+        it causes the write operation to stop there, no matter the value of
+        [ClipSize]. Ideally, for saving clips that could have any size, you
+        could load up [ClipSize] with GREATEST UNSIGNED INTEGER and then use
+        only the null terminator as a limit for the WRITE CLIP command. Here's
+        a quick example - try compiling the following, launch the resulting
+        executable, and then try opening a text editor which uses the system
+        clipboard, and press SHIFT+INS or a menu command to paste the clip:
+    <pre>"directors"
+  unit = 32;
+
+"variables"
+  my string = {
+    Hello_this_clip_is_made_in_L.in.oleum...\cr\lf
+    By_the_way,_the_newline_sequence_in_the_clipboard\cr\lf
+    interface_seen_by_L.in.oleum_applications_is_always_CR+LF.\cr\lf
+  };
+
+"programme"
+
+  [clipcommand] = write clip;
+  [clipstring] = my string;
+  [clipsize] = greatest unsigned integer;
+  isocall;
+
+  end;</pre>
+</blockquote>
+
+<a name = "V71"></a>
+VARIABLE: &lt;ClipSize&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+Holds number of characters to write using WRITE CLIP command.<br>
+Returns requested buffer size using READ CLIP command.<br>
+See the above paragraph (ClipCommand) for details.
+</blockquote>
+
+<a name = "V72"></a>
+VARIABLE: &lt;ClipString&gt;<br>
+DATA TYPE: READ-WRITE
+<blockquote>
+Holds pointer to source string buffer using WRITE CLIP command.<br>
+Holds pointer to destination string buffer using READ CLIP command.<br>
+See the paragraph about ClipCommand for details.
+</blockquote>
+
+<hr size = 1 width = "100%" color = "white">
+<br>
+<dt>END OF RUN-TIME MODULE COMMUNICATION AREA</dt>
+<dd>
+<br>
+
+<a name = "V73"></a>
+VARIABLE: &lt;AppData&gt;<br>
+DATA TYPE: INVALID
+<blockquote>
+        <i>Not to be used by applications.</i><br>
+        It serves as an internal mark for the compiler to use.
+        It marks the end of run-time module's control variables.
+        Pratically, it points to the first variable defined in
+        the &quot;workspace&quot; period, so it's useless.
+</blockquote>
+
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

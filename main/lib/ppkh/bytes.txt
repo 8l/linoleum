@@ -1,0 +1,64 @@
+(
+    Bytes.txt: a byte management library for Linoleum.
+    Copyright (C) 2002	Peterpaul Klein Haneveld.
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+)
+(
+    For bugs and remarks, mail me at:	 Pp_kl_h@hotmail.com
+    Author's website:			 home.hetnet.nl/~ptkleinhaneveld
+)
+
+"programme"
+(----------------------------------------------------------------------------)
+"getbyte"
+(IN:	   a = byte stream pointer;
+	   b = byte number;
+OUT:	   a, b = preserved
+	   c = byte;)
+	   (get pointer to unit containing byte)
+	   b-->; c<--;
+	   c > 2; (/ 4 or bytesperunit)
+	   c + a;
+	   c = [c];
+	   b-->;
+	   (shift byte to right)
+	   b & 11b; (% 4 or bytesperunit)
+	   b < 3; (* 8)
+	   c > b;
+	   c & ffh;
+	   b<--;
+	   end;
+(----------------------------------------------------------------------------)
+"setbyte"
+(IN:	   a = byte stream pointer;
+	   b = byte number;
+	   c = byte content;
+OUT:	   a, b, c = preserved;)
+	   (get pointer to unit containing byte)
+	   a-->; b-->;
+	   b > 2; (/ 4 or bytesperunit)
+	   a + b;
+	   b<--; b-->;
+	   (prepare)
+	   b & 11b; (% 4 or bytesperunit)
+	   b < 3; (* 8)
+	   [a] @> b;
+	   [a] & ffffff00h;
+	   [a] | c;
+	   [a] <@ b;
+	   b<--; a<--;
+	   end;
+(----------------------------------------------------------------------------)

@@ -1,0 +1,132 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        Punctuators<br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        PUNCTUATORS<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+<dl>
+        <dt>{...}&nbsp;&nbsp;&nbsp;string brackets (braces)</dt>
+                <dd>The string brackets are used to mark text strings as variables
+                when declaring a string in the "variables" period; the symbol
+                used to identify the string will represent the pointer to that
+                string inside the workspace. Remember to use the underscore
+                besides any effective blank spaces inside a text string.</dd>
+        <br><br>
+        <dt>[...]&nbsp;&nbsp;&nbsp;square brackets</dt>
+                <dd>Square brackets are used to reference the CONTENT of memory
+                locations, like variables or locations pointed by registers.
+                If omitted, registers' values or symbols' effective addresses
+                are referenced instead; this mechanism needs you to be careful
+                using brackets where appropriate, and only where appropriate.</dd>
+        <br><br>
+        <dt>(...)&nbsp;&nbsp;&nbsp;parenthesis</dt>
+                <dd>Parenthesis are used to mark comments.
+                Comments may be placed anywhere and have any size: they can
+                contain any characters (except a closing parenthesis of
+                course, which would terminate the comment).
+                Comments may be nidified: this means comments inside other
+                comments are allowed, and ultimately, that you may write comments
+                in common language without having to worry about special characters
+                that may interrupt the comment block; the only thing you have to
+                remember is to always close parenthesis.</dd>
+        <br><br>
+        <dt>_&nbsp;&nbsp;&nbsp;underscore</dt>
+                <dd>The underscore means a blank space, and should be used ONLY
+                within text strings: it causes commands to be misinterpreted.
+                "_" is here because any "real" blank space is always ignored,
+                along with any other control codes below ASCII code 32 (this
+                includes tabulations, carriage return, line feed and suchs).</dd>
+        <br><br>
+        <dt>\&nbsp;&nbsp;&nbsp;backslash</dt>
+                <dd>Used in declared text strings, marks special text format
+                control codes: \cr means a carriage return, \lf means a line
+                feed, \ta means a tabulation, \us means an underscore, and \cs
+                means a closing brace. To mark an effective backslash, type a
+                backslash which is not immediately followed by cr, lf, ta, us
+                or cs, or type a double backslash: "\\".</dd>
+        <br><br>
+        <dt>;&nbsp;&nbsp;&nbsp;semicolon</dt>
+                <dd>Marks the end of an instruction, declaration or directive.
+                Must be always included, unless you're inside a comment.
+                Also period names and code labels don't need the terminal
+                semicolon, since they're already enclosed between quotes.</dd>
+        <br><br>
+        <dt>"&nbsp;&nbsp;&nbsp;doublequote</dt>
+                <dd>Quotes are used to mark both "code labels" and "periods".
+                Code labels are, for example, the destionation of a jump,
+                or the beginning of a subroutine (giving the routine's name).
+                Periods are the units in which the structure of an application
+                is divided; there are complessively 7 periods: "libraries",
+                "stockfile", "directors", "constants", "variables",
+                "workspace" and the "programme" period, and they must be
+                declared one after the other in exactly that order, even if
+                some periods may be omitted when there's no need for them.
+                Code labels, instead, can only be placed in the "programme"
+                period, which contains the executable code forming the main
+                program and all of its subroutines.</dd>
+        <br><br>
+        <dt>***&nbsp;&nbsp;&nbsp;triple asterisk</dt>
+                <dd>The triple asterisk specifies duplicates for variable's value,
+                used when the symbol is a vector rather than a variable.
+                This can be used only within the variables area.</dd>
+</dl>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

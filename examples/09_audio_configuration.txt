@@ -1,0 +1,303 @@
+
+      ( *** LINOLEUM Example 9: Take a look to the audio configuration *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "09_audio_configuration.TXT", WITH
+	   THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Shows the digital audio wave parameters for the current system.
+	Those parameters will be used in next example, to emit simple waves. )
+
+      ( WARNING:
+	If the audio environment isn't ready to play, for whatever reason, the
+	flag READY of variable [PCM data Status] is NOT set. Your program may
+	check for that flag in the following way:
+
+	  ? [PCM data Status] - READY -> Tell the user you cant play;
+	  ? [PCM data Status] + READY -> Its alright;
+
+	before version 1.13.6b, the run-time module did that kind of check on
+	startup, and displayed a standard warning message on failure; starting
+	with the said version, this intrusive way to work was removed, and the
+	responsibility to eventually warn the user left to the application. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Audio_Configuration };
+	modular extensions = audio playback;
+	unit = 32;
+
+"programme"
+
+      ( This example's very easy to understand, but as long as we're to
+	learn about everything, I'll also introduce audio management in
+	general, in this same file. )
+
+	A = [PCM data Channels];
+	B = [PCM data Samples Per Sec];
+	C = [PCM data Bits Per Sample];
+	D = [PCM data Silence Threshold];
+
+	show registers;
+
+( Well, as you can see, the example loads each register with a different
+variable. All of those variables are related to the audio subsystem. You
+can also notice a new DIRECTOR, namely:
+
+    modular extensions = audio playback;
+
+it's NEEDED if your program intends to perform audio playback.
+Audio recording, instead, isn't managed by LINOLEUM applications (in
+facts, as a general phylosophy, LINOLEUM run-time modules allow media
+output streaming, not input, due to a complete lack of standards, and
+you know LINOLEUM applications must run everywhere). Oh, fear not! This
+doesn't mean you can't save FILES. Files management is a totally
+different thing and will be examined later. Now, talking of how
+LINOLEUM's audio playback works, have you ever seen a LOOP TAPE?
+If not, a loop tape is a never-ending tape; you can think to a cassette
+in which the tape looks like so (some ASCII art requires fixed-
+width fonts, please pick one from the editor you're using):
+     _________________
+    |		      \
+    |  /~~~~~~~~~~~\  |
+    | |     ___     | |
+    | |  o |___| o  | |
+    | | 	    | |
+    |__\  .  _	.  /__|
+	~~~~~~~~~~~
+I know it stinks, thank you. But I guess you've understood the meaning.
+It's a cassette inside which the tape runs in an infinite loop, playing
+always the same record.
+Now, basically, LINOLEUM's audio workspace can work in the same way.
+There is an important difference, however: a normal tape cannot be
+re-recorded while it's playing, that is, its contents will never change
+during a loop. Our workspace, instead, can do that. Pratically, it means
+you can output the image of an audio waveform throught the speakers, like
+if it was an "animated screen". Each frame in the "animation" means a
+LOOP of the audio workspace. Frame, in this case, is of course not meant
+to be a picture: it's just a block of data, holding a sequence of PCM
+audio samples. Now you're obviously willing to know what's a PCM sample.
+This brings the matter on digital audio dynamics. I'll make it easy.
+In a nutshell, a computer can reproduce audio records by emitting a long
+sequence of values to a thing called D-A-C and laying inside your audio
+card. The D-A-C, a.k.a Digital-to-Analogue-Converter, is a piece of
+circuitry capable of taking a certain value and transforming that value
+to an impulse for the speakers. This value, called a SAMPLE, represents
+the VOLUME (intensity of vibration) of the speakers in a given moment.
+Now let's say you're going to emit the simplest waveform: the sine wave.
+A sine wave, represented as a sequence of SAMPLES, would look as follows:
+
+     +1 |
+	|   ....		  ....			....
+	| ..	..		..    ..	      ..    ..
+	|.	  .	       .	.	     .	      .
+      0 .----------.----------.----------.----------.----------
+	|	    .	     .		  .	   .
+	|	     ..    ..		   ..	 ..
+	|	       ....		     ....
+     -1 |
+
+On the X axis is the TIME. Each (-) sign represents a fraction of a second.
+How small are those fractions, depends on the SAMPLING RATE.
+If your card had a sampling rate of 44,100 Hertz, or 44.1 KiloHertz,
+each (-) segment in the above scheme would last exactly 1/44100th
+of a second.
+
+On the Y axis is the VOLUME of the samples, which obscillates from -1
+to +1 regularly, giving the shape of the sine wave. In reality, the
+value of the samples in the audio workspace must be of INTEGER type,
+so the volume range of -1 to +1 is stretched by multiplying the samples
+by a certain number, and then adding another number called the silence
+threshold, which will be soon examined if you keep reading.
+In the end you've got the following formula to calculate a sine wave:
+
+	SAMPLE VALUE = SIN (x) * n + ST
+
+where n is the number I was talking about.
+That number depends, again, on your system capabilities and settings.
+There are currently two possible values of n: 256 or 65,536.
+If you can't remind what those numbers are, they are 2 raised to the
+power of 8, and 2 raised to the power of 16. Now maybe you can see
+things becoming more familiar: 8 or 16? They are the number of bits
+usually supported by audio cards, for each sample.
+ST stands for "silence threshold" and is a value representing the volume
+level at which no sound is heard. It varies from system to system, and
+also may depend on how many bits per sample the audio card supports.
+Under Windows and related hardware, ST is 128 for 8 bits, and zero for
+16 bits. The value of ST is given by variable [PCM data Silence Threshold]
+and it must be added to the absolute volume of each sample. For maximum
+compatibility, you should ALWAYS use [PCM data Silence Threshold], because
+any other constants or variables may need to change to fit other systems.
+
+Also in the above formula:
+
+	SAMPLE VALUE = SIN (x) * n + ST
+
+(...that you could PRATICALLY implement as something like...)
+
+	[n] = SMALLEST SIGNED INTEGER;
+	[n] <@ [PCM data Bits Per Sample];
+
+(...because SMALLEST SIGNED INTEGER is always given by a binary value
+whose bits are all cleared EXCEPT for the most significant one, the
+leftmost bit - when unit is 32, SMALLEST SIGNED INTEGER is 80000000h,
+or 10000000000000000000000000000000b. So when you rotate its bits to
+the left - with the <@ instruction - it will automatically give the
+range for PCM audio samples... now for the rest of the formula...)
+
+	[SAMPLE VALUE] = [x];
+	~ [SAMPLE VALUE];
+	[SAMPLE VALUE] * [n];
+	[SAMPLE VALUE] + [PCM data Silence Threshold];
+
+x is the angle passed to the SINe function.
+From the point of view of an audio record, it depends on the frequency
+of the desired sound. Let's try to determine the frequency of the wave
+showen in the above scheme: this time I'll mark the time at every point
+where the wave crosses the silence threshold (the zero value along Y).
+
+     +1 |
+	|   ....		  ....			....
+	| ..	..		..    ..	      ..    ..
+	|.	  .	       .	.	     .	      .
+      0 .----------.----------.----------.----------.----------
+	|	   |.	     .| 	 |.	   .|	       |
+	|	   | ..    .. | 	 | ..	 .. |	       |
+	|	   |   ....   | 	 |   ....   |	       |
+     -1 |	   |	      | 	 |	    |	       |
+	0	   10	      20	 30	    40	       50
+
+It's therefore clear that the wave crosses silence threshold one time
+each 10 samples. In the case of the sine wave, this means it completes
+a single CYCLE in twice the time, or 20 samples.
+And here's how to calculate the frequency: twenty samples are 1/20th
+of the sampling rate. Thus, if the sampling rate was 44.1 KHz, resulting
+frequency for that wave would be 44.1 / 20 = 2.205 KHz, or 2205 Hz.
+
+Now, vice-versa, how many samples would a single cycle in the sine wave
+have to last to produce a 440 Hz tone if the sampling rate was 44.1 KHz?
+
+	LENGTH OF A CYCLE = 44100 / 440 = about 100.2273
+
+440 Hz is the frequency of a diapason, a perfect A of central octave.
+Now, to calculate the sine, we have to INCREMENT parameter x in the
+SAMPLE VALUE formula, so that it would take it 100.2273 increments to
+reach a multiple of <2 times PI>. How many radians would it need as
+the increment?
+
+	DELTA RADIANS = 2PI / 100.2273
+
+Now that you have all the formulas to calculate the waveform, before
+EFFECTIVELY attempting to do it, have some more patience if you plese.
+
+If you want your program to run everywhere, you have to consider the
+actual system settings and the capabilities of the audio card.
+The AUDIO SUBSYSTEM PARAMETERS are held in the following four
+variables, automatically filled in your program's workspace when
+you specify "audio playback = ACTIVE" as a director tag:
+
+	[PCM data Channels]		- number of audio channels
+	[PCM data Samples Per Sec]	- the SAMPLING RATE in Hz
+	[PCM data Bits Per Sample]	- size of a sample, 8 or 16
+	[PCM data Silence Threshold]	- silence threshold
+
+The channels can usually be 1 or 2. 1 is monaural, 2 is stereo.
+MORE than 2 channels, or more than 16-bit, is NOT ALLOWED by the
+run-time module, mainly because you'd rarely need more than this.
+Digital surround still needs more than 2 channels, but it's going
+to be implemented ONLY when a standard has been decided for it.
+For now, please have patience.
+
+The run-time module will try to setup your card for using the BEST
+quality, with the only limit being the sample rate, which won't be
+set at more than 44,1 KHz. That's because it would be useless.
+Having sampling rates of 44,1 KHz means resolving frequencies upto
+22,05 KHz. If you consider the human ear can hardly reach 18 KHz,
+it's clear that raising the sampling rate more than this is a total
+waste of time and memory.
+
+This example shows the above parameters in the A, B, C, D registers.
+Another couple of values of vital importance, not set in the example:
+
+	[PCM data Origin]		- origin of cyclic buffer
+	[PCM data Size] 		- size of cyclic buffer
+
+As it happens when you draw to the display, before writing values
+to the audio buffer you have to retrieve the origin of that memory
+area, so that you can use it as a pointer. Also important is the
+size of this buffer, called the audio workspace. Its size can be
+simply specified by the proper director. It's got a maximum size
+equal to 100 Mu (providing you've got enough -400 Mb- RAM for this,
+and remembering a Mu is a Mega-unit, or one million memory units,
+just like a Megabyte is one million memory bytes).
+
+Normally, there can be two uses for the audio buffer.
+You can set the buffer to be very big, meaning that you will have
+to play, say, a whole recorded song all at once, just translating
+the audio data to the buffer.
+Or, you can set the buffer to a smaller value and "animate" it,
+by replacing its contents between one loop and the next, exactly
+like in the "double-buffering" scheme seen for animations.
+
+In the second case, the most useful but even the most difficult to
+be controlled, you will need to know, exactly, which is the sample
+that is currently playing. I mean: suppose you have to start playing
+a certain sound/effect but the loop is not playing at the beginning
+of the audio workspace. You too would have to start streaming FX data
+starting from that location which is currently playing.
+This is unavoidable when performing real-time audio streaming.
+Well, for this case there's this last variable in the PCM data group:
+
+	[PCM data Offset]		- number of current sample
+
+Its value is updated when you make a call to the IsoKernel,
+by writing the following:
+
+	[PCM data Command] = GET DATA OFFSET;
+	isocall;
+
+At this point, you may try running this program, but you should also
+see what the manual says about those variables, in the final section
+of the manual itself. It looks difficult, I know, but everything looks
+difficult the first time you try to learn it. A lot of people are
+practiced with the mechanics of real-time digital audio, so why
+shouldn't you too be capable of getting in this topic? LINOLEUM cuts
+every system-specific things you'd need to know, to leave you only
+with REAL programming principles. When you learn something here, you
+are learning something that will always work in the same way, and not
+only because LINOLEUM is universal, but also because that's the way
+things work at their most fundamental levels.
+
+Now run this little program to take a look to how your configuration,
+for what concerns audio, is seen by the LINOLEUM run-time module.
+Oh, and you may hear a little "click" from the speakers, caused by the
+sudden turn-on/turn-off sequence made by the run-time module and by the
+program itself because it ends immediately. )
+
+( Coming on in next example, some practice with audio! )

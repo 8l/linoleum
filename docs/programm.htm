@@ -1,0 +1,263 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        programme<br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "programme" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This is the VERY LAST period.<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        The last period contains only code. You can't declare variables,
+        constants or workspace area labels there: only instruction syntaxes
+        are acknowledged in this period.
+
+        <br><br>
+
+        Instruction syntaxes:
+        There is a very flexible scheme for instructions syntaxes.
+        Basically, the compiler expects instructions to be separated by a
+        semicolon (;). Any other ASCII signs which are neither letters,
+        nor digits, are considered to be part of the INSTRUCTION PATTERN.
+        Anywhere between the signs, there are the OPERANDS. Depending on how
+        many operands they require, instructions are divided in the following
+        categories:<br><br>
+
+        <ul>
+      <li>Instructions requiring NO OPERANDS are called PREPROCESSOR DIRECTIVES.</li><br><br>
+      <li>Instructions requiring only ONE operand are called either SUFFIXES
+        or PREFIXES, depending on their "ideal" positioning in respect to
+        their unique operand. In facts, when instructions have only one operand,
+        you can place the signs forming their symbolic code either before or
+        after the operand.</li><br><br>
+      <li>Instructions requiring TWO operands are called BINARY OPERATORS,
+        because the only correct way to insulate their operands is placing
+        the signs which form the instruction pattern always BETWEEN the
+        two operands.</li><br><br>
+      <li>Instructions requiring THREE operands are not precisely instructions,
+        but COMPARISON DIRECTIVES. They have a fixed scheme. An exception is
+        the "integer loop" directive, which requires two operands but is
+        effectively a comparison directive, not a binary operator.</li>
+        </ul>
+
+        Operands meaning:
+        It is of vital importance to remember L.in.oleum translates most of its
+        instructions to a SINGLE MACHINE-LANGUAGE OPCODE, that is to ONLY ONE
+        effective action of the CPU. You must know the CPU is only capable of
+        executing one action, said to be an ATOMIC instruction, at a time.
+        Atomic instructions are instructions that cannot be split in simpler
+        instructions: they are already as simple as they can be. Examples of
+        atomic instructions are additions, subtractions, multiplications,
+        divisions, assignments, bitwise shifts, jumps...
+        I mean: if you know BASIC or C/C++ you know you can write,
+        for example, instructions like...
+
+        <pre>
+                A = B + C
+        </pre>
+
+        This is not "directly" possible in L.in.oleum, because if you reflect,
+        it represents TWO atomic instructions for the CPU. In practice, it
+        means "assign A to the value of B + C". Well, these are two atomic
+        instructions: an ASSIGNMENT and an ADDITION. How do you do the same
+        thing in L.in.oleum? There are many ways, for example the following:
+
+        <pre>
+                A = B; (assigns value of register B to register A)<br>
+                A + C; (adds value of register C to register A)
+        </pre>
+
+        Did you undestand? It's not very difficult: the key is considering
+        the LEFT operand (A) to be the DESTINATION, and the RIGHT operand
+        (first B then C) to be the SOURCE. Therefore it's clear that if you
+        first let A take the value of B, then add C to A, you obtain the
+        same effect as the common "A = B + C" high-level syntax.
+
+        <br><br>
+
+        Hey... why should I follow the CPU this way?<br>
+        It's easier to say A = B + C isn't it?
+
+        <br><br>
+
+        For the POWER, my friend.<br>
+        Suppose you're writing the same thing in C.<br>
+        A pretty fast language isn't? C is known to be fast!<br>
+        Well in C you may write:
+
+        <pre>
+                long A, B, C;   // declares A, B, and C as 32-bit variables
+                A = B + C;      // sums B + C and stores result in A
+        </pre>
+
+        This, from C, would translate to the following Intel assembly code:
+
+        <pre>
+                mov eax, ds:[B] ; transfers content of B to register EAX
+                add eax, ds:[C] ; adds content of C to register EAX
+                mov ds:[A], eax ; transfers EAX to variable A
+        </pre>
+
+        What would it mean in terms of speed, say on a Pentium?<br>
+        The first "mov" instruction would take 1 cycle.<br>
+        The second "add" instruction would take 2 cycles.<br>
+        The third "mov" instruction would take another more cycle.<br>
+        Not to speak of cache delays and alignments different from 32 bits,<br>
+        but just the "theoretical" time: it's AT LEAST 4 cycles.
+
+        <br><br>
+
+        The L.in.oleum group:
+
+        <pre>
+                A = B;
+                A + C;
+        </pre>
+
+        translates to the following Intel code:
+
+        <pre>
+                mov eax, ebx ; transfers reg. B to reg. A
+                add eax, ecx ; adds reg. C to reg. A
+        </pre>
+
+        Both instructions take 1 cycle each. <i>That's 2 cycles, half the time.</i>
+        And CPU registers won't suffer from cache delays or wrong alignment.
+        That's because in L.in.oleum you can use CPU REGISTERS, not only the
+        variables. A, B and C in L.in.oleum are remapped, on an Intel CPU, to
+        EAX, EBX and ECX, not to some memory locations. But you don't even
+        have to worry for their names to change in case you had a Motorola:
+        A, B and C would then be mapped to the equivalents of EAX, EBX, ECX
+        on the Motorola processor (specifically they'd be D0, D1 and D2).
+        In a nutshell, the L.in.oleum over-language is more strictly related
+        to the CPU than any others (but native assembly, that's clear): in
+        practice, L.in.oleum is the assembler-made-easy. REEEEALLY easier.
+        And if you're an assembly programmer, you know what this means.
+
+        <br><br>
+
+        At this point there's only another important thing to say about the
+        "programme" period: how to mark some "reference points", more precisely
+        called CODE LABELS, in your program. It requires a bit of explanations.
+        You may write a program this way (note is a totally useless example):
+
+        <pre>
+                A = B;
+                A + C;
+                C = D;
+                C + E;
+                B = E;
+                end;
+        </pre>
+
+        But what if you wouldn't need to perform "C = D" and "C + E" always?
+        What if you need to skip these instructions and execute them only if
+        a certain condition is met? You would need a CODE LABEL.
+        A code label looks like a period label: a name placed between quotes.
+        It can contain characters, digits, and even blank spaces, just like
+        symbols names (do you remember "my first variable" etc...?), but it
+        will be used in a different way.
+        Now for an example of code label: to keep it simple, I won't introduce
+        a "comparison directive" to check for that condition I was talking of,
+        and just write a fragment of program which will always skip over the
+        two "C = D" and "C + E" instructions:
+
+        <pre>
+                A = B;
+                A + C;
+                -> skip those;
+                C = D;
+                C + E;
+        "skip those"
+                B = E;
+                end;
+        </pre>
+
+        As you can see, a code label is declared by placing its name between
+        quotes, like period labels. There's also a new instruction pattern:
+        the little arrow, which causes the CPU to jump straight to the code
+        label indicated by the arrow itself. A note about the style: you don't
+        need aligning the rows in the programs in that way; in effects, the
+        compiler would understand the program even if you wrote it like so:
+
+        <pre>
+                A=B;A+C;->skipthose;C=D;C+E;"skipthose"B=E;
+        </pre>
+
+        ...only that it's very difficult to understand for a HUMAN.
+        So I definitely recommend you to highlight the code labels and single
+        instructions in some comprehensible way. That's my style. You choose.
+
+        <br><br>
+
+        <i><big>Now you can start learning how to program:</big></i>
+        <hr size = 1 width = "100%" color = "white">
+
+        <ul>
+        <li>The best way to learn a programming language is by EXAMPLES</li><br><br>
+        <li>See the funny story about <a href = "process.htm">PROCESS MANAGEMENT</a></li><br><br>
+        <li>See the page about the <a href = "subrouti.htm">SUBROUTINES</a></li><br><br>
+        <li>See the examples included in <a href = "C:/Linoleum/examples/">C:\Linoleum\EXAMPLES</a></li><br><br>
+        <li>Use the <i>quick references</i>: <a href = "glossary.htm">glossary</a>, <a href = "instr_qr.htm">instructions</a>, <a href = "ikrnl_qr.htm">IsoKernel</a>, etc...</li><br><br>
+        <li>When you're well practiced with all of the above, remember you have the source
+        code to ALL OF THE DEFAULT LIBRARIES, the libraries I wrote. Try and find out how
+        their routines obtain what the calling program asks them.</li>
+        </ul>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

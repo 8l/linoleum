@@ -1,0 +1,885 @@
+(
+
+	-----------------------------
+	General-Purpose network node.
+	-----------------------------
+
+	This program is together a prototype and a sample which code could,
+	at programmer's will, form the basis of either a network client or
+	a server of some sort. eMail clients, http web servers, web browsers,
+	FTP clients, might all be examples of possible applications descending
+	from this prototype application, heh... of course providing you're
+	good and patient enough to take the effort of writing such complex
+	projects: I dont' suggest working alone for those. But bare network
+	transfers could more easily come useful for network-based gameplay,
+	for instance.
+
+	Linoleum 1.13.5b networking uses an asynchronous subset of Berkeley
+	sockets to establish, accept and listen to connections via sockets,
+	implemented, for what concerns Windows 32bit package, by wsock32.dll.
+
+	As it is, the program simulates a textual console, and menu provides
+	facilities to manipulate a single socket [of course, an application
+	could use any number of sockets anyway] so that you can test all of
+	the socket's functions and touch all aspects of commands available
+	throught the [netcommand] command unit.
+
+	For detailed informations, see "notes.txt" in this folder: at the end
+	of that file there are a couple nice "games" to play with Node, both
+	useful for getting an idea about how this kind of network works.
+
+	This commented source code is presented to learn from, so feel free
+	to use this code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs. This application comes
+	with the L.in.oleum compiler package - it is part of the "examples"
+	folder - not for sale. Written by Alessandro Ghignola.
+
+)
+
+"libraries"
+
+	igui/defstyle; (INTEGRATED G.U.I - using default style)
+	igui/igs;      (INTEGRATED G.U.I - style/skin switcher)
+	igui/vcons;    (virtual text console, basic string converters)
+
+"directors"
+
+	modular extensions = network; (request network support for this program)
+
+	unit = 32;
+	symbols map = off;
+	program name = { Node };
+
+"constants"
+
+    (GUI setup constants)
+	INITIAL WIDTH = 		512; (in pixels, how wide the window is)
+	INITIAL HEIGHT =		288; (in pixels, how tall the window is)
+	MINIMUM WIDTH = 		300; (in pixels, width's lower limit)
+	MINIMUM HEIGHT =		100; (in pixels, height's lower limit)
+	MAXIMUM WIDTH = 		512; (in pixels, widht's higher limit *)
+	MAXIMUM HEIGHT =		384; (in pixels, height's higher limit *)
+	MAX MENU OPTIONS =		100; (might be enough, including submenus...)
+	MAX ONSCREEN OPTIONS =		100; (often oversized, but just to be safe)
+	MAX LEVELS IN SHOW =		  4; (worthless to change: barely, always 4)
+	MAX FILES IN SELECTOR =        1000; (number of filenames held in memory)
+	MAX FILES IN SHOW =		  7; (number of filenames showen in selector)
+	MAX OPTIONS IN QUESTION =	  2; (we normally have "proceed" and "cancel")
+	MAX FIELDS IN QUESTION =	  2; (all we will have is "address" and "port")
+
+    (program-specific)
+	CONNECTION TIMEOUT =		 30; (seconds)
+	CONNECTION RECORD SIZE =	  2; (units per record)
+	  ASSOCIATED SOCKET =		  0; (relative pointer in connection record)
+	  TIMEOUT COUNTER =		  1; (relative pointer in connection record)
+
+"variables"
+
+    ("things that get written at the top of the window", let's classify them so)
+	my window caption =		  { Trial_Network_Node };
+	my menu caption =		  { Node };
+
+    (menu datascript)
+	menu layout =			  { MENU };	       (menu button's tooltip)
+	01000000h; OPTION TYPE NORMAL;	  {  GetHostByName  }; gethostbyname option;
+	02000000h; OPTION TYPE NORMAL;	  {  GetHostByAddr  }; gethostbyaddr option;
+	03000000h; OPTION TYPE SUBMENU;   { <Operate_socket }; NULL;
+	03010000h; OPTION TYPE NORMAL;	  {  Open	    }; open option;
+	03020000h; OPTION TYPE DISABLED;  {  Connect	    }; connect option;
+	03030000h; OPTION TYPE DISABLED;  {  Listen	    }; listen option;
+	03040000h; OPTION TYPE DISABLED;  {  Send	    }; send option;
+	03050000h; OPTION TYPE DISABLED;  { _Poll	    }; poll option;
+	03060000h; OPTION TYPE DISABLED;  {  Close	    }; close option;
+	04000000h; OPTION TYPE SUBMENU;   { <Skin	    }; NULL;
+	04010000h; OPTIONTYPEFILESELECTOR;{    <Import	    }; Import Skin;
+	04020000h; OPTIONTYPEFILESELECTOR;{    <Export	    }; Export Skin;
+	ENDOFMENU;
+
+    (assorted informative message strings)
+	sockets status ok =		  { node:_network_interface_ready\cr\lf };
+	sockets status not ok = 	  { node:_network_interface_not_ready\cr\lf };
+	ghbn =				  { gethostbyname:_ };
+	ghba =				  { gethostbyaddr:_ };
+	open =				  { open:_ };
+	connect =			  { connect_request:_ };
+	listen =			  { binding_and_listening:_ };
+	send =				  { send:_ };
+	recvd = 			  { received_from_client_ };
+	colon = 			  { :_ };
+	close = 			  { close:_ };
+	succ =				  { succeeded };
+	failed =			  { failed };
+	canceled =			  { canceled };
+	crlf =				  { \cr\lf };
+	equal = 			  { _=_ };
+	connd = 			  { connection_established\cr\lf };
+	refused =			  { connection_refused\cr\lf };
+	newpeer =			  { incoming_connection_from:_ };
+	clid =				  { _client_ID:_ };
+	unknown =			  { unknown };
+	est =				  { incoming_connection(s)_accepted:_ };
+	closing =			  { time_out_for_client_ID:_ };
+	timeout =			  { time_out\cr\lf };
+	shutdn =			  { server_shutdown\cr\lf };
+	active connections report =	  { clients:_0 }; null; null;
+
+    (
+     all of our dialog boxes are declared below:
+     text fields declaration goes on as follows...
+     ___________________________________________________________________________
+     { F/caption }; ptr to text buffer; effective buffer length; visible length;
+     ___________________________________________________________________________
+     note: the function that allows the user to insert text in a text field,
+	   declared by the iGUI as "Check Text Field", will consider buffer's
+	   length MINUS 1 as the effective maximum number of characters that the
+	   text field may hold, considering last unit of the buffer to be the
+	   string's "null terminator", a zeroed unit ideally placed at the end
+	   of all strings to signal, when processing them, that they end there.
+	   Use "F/caption" to declare a text field, interactively writable.
+	   Use "S/caption" to declare a string viewer, which is not writable.
+	   If you don't place any of those prefixes, S/ or F/, the option will
+	   be a simple "pushbutton", and when called, it will cause a callback
+	   to the servicing routine whose pointer is given right after the text
+	   string holding the pushbutton's caption.
+    )
+	ghbn dialog =	 { get_host_by_name };
+			 { F/Host_name:_ };    hostname field; 100; 24;
+			 { Proceed };	       gethostbyname procedure;
+			 { Cancel };	       NULL;
+			 NULL;		       (end of dialog box datascript)
+	ghba dialog =	 { get_host_by_addr };
+			 { F/Host_address:_ }; hostaddr field; 100; 21;
+			 { Proceed };	       gethostbyaddr procedure;
+			 { Cancel };	       NULL;
+			 NULL;		       (end of dialog box datascript)
+	connect dialog = { connect };
+			 { F/Host_address:_ }; hostaddr field; 100; 21;
+			 { F/Port_number:__ }; port field; 6; 21;
+			 { Proceed };	       connect procedure;
+			 { Cancel };	       NULL;
+			 NULL;		       (end of dialog box datascript)
+	listen dialog =  { bind_and_listen };
+			 { F/Listen_as:___ };  hostaddr field; 100; 22;
+			 { F/Port_number:_ };  port field; 6; 22;
+			 { Proceed };	       listen procedure;
+			 { Cancel };	       NULL;
+			 NULL;		       (end of dialog box datascript)
+	send dialog =	 { send };
+			 { F/Data_to_send:_ }; data field; 100; 21;
+			 { Proceed };	       send procedure;
+			 { Cancel };	       NULL;
+			 NULL;		       (end of dialog box datascript)
+
+    (dialog box fields' buffers: "data field" is 102 units, despite the fact that
+     it will hold a string of upto 100 characters, because a cr+lf sequence might
+     be appended to sent text in order for it not to look confusing on the remote
+     terminal's display, and because when we receive some text, at least a null
+     terminator must be found at the end of the received string, in order for the
+     "cout", standing for Console OUTput, function to know where the text ends)
+	hostname field =		  { localhost };       extend upto: 100;
+	hostaddr field =		  { 127.0.0.1 };       extend upto: 100;
+	port field =			  { 21 };	       extend upto: 6;
+	data field =			  { Hello_there! };    extend upto: 102;
+
+    (those few variables that need to be initialized to a non-zero value,
+     "undefined" technically equals "3F3F3F3Fh", or "????" seen as 8-bit ASCII,
+     and its objective is that of providing a "pratically absurd" value which
+     is neither zero, nor a very low value, to cause sensible parts of code, such
+     as when a value that for some mistake is never properly loaded and remains
+     "undefined", is used as a loop counter, so that the presence of that mistake
+     concering the said variable gets *evidently* highlighted, for the programmer
+     to know and try to solve it - "undefined" is also often used to disambiguate
+     a condition where the variable doesn't contain a valid value, from any other
+     circumstances where the same variable DOES hold a valid value, as it happens
+     here for the two variables below; [mysocket], if it's valid, might contain a
+     socket descriptor, which is very unlikely to be 3F3F3F3Fh, given that the OS
+     assigns such descriptors to progressive indexes; [previous sec] is evidently
+     not holding a valid value, since its "normal" value ranges from 0 to 59; and
+     by the way, the decimal value corresponding to 3F3F3F3Fh is 1,061,109,567)
+	mysocket =			  undefined; (signals socket is not opened)
+	previous sec =			  undefined; (has to be != current second)
+
+"workspace"
+
+    (all variables and vectors that are conventionally initialized to zero)
+	caption shadow bounds = 	  4; (i'm making the shadow of the caption bar with this)
+	number of connections before =	  1; (compared to [connections] to detect new clients)
+	established connections list =	  100; (vector whose ptr will be loaded as [clients])
+	connection records =		  100 mtp CONNECTION RECORD SIZE; (server table)
+	ascii data field =		  100 div BYTESPERUNIT plus 1; (ascii to "data field")
+	polling =			  1; (boolean indicating that we're polling for data)
+	attempting to connect = 	  1; (boolean indicating we're waiting for an answer)
+	client id =			  1; (entry client ID for "close connection")
+	console text buffer =		  10000; (for nnstdio.txt's "conout" function)
+	console text buffer terminator =  1; (single zeroed unit, see nnstdio's notes)
+	previously active connections =   1; (used in comparison in sleepy control loop)
+
+"programme"
+
+    (telling nnstdio about the console output buffer)
+	[conout] = console text buffer;
+	[cosize] = 10000;
+
+    (personalizing console paddings)
+	[console top padding] = 5;
+	[console left padding] = 5;
+	[console right padding] = 5;
+
+    (we clear the work area with light blue, feels happier than VCons' black)
+	[always clear work area] = no;
+	[ccolor] = FFFFFFh; (use black text: this says "reduce by white")
+	[consfx] = service fx antialiasing dim; (writes nicely antialiased)
+
+    (well, barely initializing the integrated GUI, you know...)
+	=> initialize integrated gui;
+	=> import preferred skin;
+
+    (changing window's caption to our program's name)
+	[window title] = my window caption;
+	=> update title bar;
+
+    (changing menu button's caption, normally reflecting a short name for the program)
+	[menu caption] = my menu caption;
+	=> update menu button appearence;
+
+    (installing our menu, so that's what they'll see when they pull down the menu)
+	[menu to install] = menu layout;
+	=> install menu;
+
+    (setting small caption for when the application is sleepy, or iconified:
+     this will change to "active connections report" if the node is a server,
+     that is, by executing the "listen" command; it will be set back to reflect
+     the menu caption once the socket is closed with a "close" command - the
+     result is that when the node is a server and gets iconized, it will anyway
+     constantly report how many clients it's connected to)
+	[small caption] = my menu caption;
+
+    (setting service subroutine to repaint the window)
+	[work area manager] = service repaint window;
+
+    (setting service subroutine to perform periodical checks)
+	[control loop] = service control loop;
+
+    (service subroutine to perform periodical checks WHILE in "dormant state")
+	[sleepy control loop] = service sleepy control loop;
+
+    (initializing run-time module control variables that will be automatically updated
+     by the run-time module upon accepting or closing a peer's connection, when this
+     node is operating as a server, that is, after it's been put in listening state)
+	[clients] = established connections list;
+	[maxconnections] = 100;
+
+    (seeing if a socket-based network subsystem of our operating system is available:
+     because it will output a message, we need the simulated console's text to update,
+     and to do that, the subroutine that repaints the window must be loaded, that's why
+     we're performing this check here, and not before)
+	? [netstatus] + ready -> network is operating;
+	? [netstatus] - ready -> network is not operating;
+	"network is operating" [szcout] = sockets status ok; -> print status message;
+	"network is not operating" [szcout] = sockets status not ok; -> print status message;
+	"print status message" => cout;
+
+    (ok, at this point we can transfer control to the iGUI, which will care for calling
+     our callback subroutines, such as those mentioned in the menu layout, whenever the
+     user wishes to use a given menu function)
+	=> enter integrated gui;
+
+    (when the iGUI returns from our above call, it means the user has chosen to close
+     our window, normally meaning he/she wants to quit, so that's what we'll do: in
+     case we wanted to compell the iGUI to release control without waiting for the user
+     to click the red X button, we could set variable [quit now] to YES, at any time;
+     before quitting, however, we might close out socket, if the user opened it, and
+     that's what the following lines do...)
+	? [mysocket] = undefined -> i dont need to close my socket;
+	=> close option;
+
+    (now, check if this node was used as a server, and in case some clients were
+     connected, close all of their connections; it also sends a "server shutdown"
+     message to the client: now, it has to be said that this is only and example -
+     under normal circumstances, I suppose a server wouldn't send such a
+     communication as pure text, because it could be mistaken by the client
+     as part of the normal data flow)
+    "i dont need to close my socket"
+	? [connections] = zero -> not serving any clients;
+      "close next client"
+	[source string] = shutdn;
+	[target string] = ascii data field;
+	=> count bytes in string;
+	=> convert fourbyte to ascii;
+	[netcommand] = netsend;
+	[socket] = [ASSOCIATED SOCKET relating connection records];
+	[netblock pointer] = ascii data field;
+	[netblock size] = [string length];
+	isocall;
+	[client id] = zero;
+	=> close connection;
+	? [connections] > zero -> close next client;
+
+    (this is the end of the main program: "end" or "fail" tags past this point are all
+     relating subroutines, and not the main program, because the main program is that
+     piece of code that runs from the "programme" period's label, to the *very first*
+     "end" or "fail" tag, at least if the programmer didn't want to make it different,
+     for instance including other such tags that are executed conditionally before the
+     normal "end" tag of the main program, or if the programmer decided to cut program's
+     execution abruptly using [processcommand] = endprocess; - in facts, there are a
+     whole lot of alternative methods to stop the program from running, as well as there
+     are lots of alternative methods to do anything in Linoleum)
+    "not serving any clients"
+	end;
+
+"service repaint window"
+    (as said in the initialization, filling the work area with light blue)
+	[destination layer] = backdrop layer;
+	[l2l region] = vector work area;
+	[l2l region color] = C5D5FFh;
+	=> clear l2l region;
+    (a little shadow on top? why not? btw - iGUI skins' shadows are always 10 pixels,
+     but that's visually a bit encumbering for such a long shadow, so i've reduced it
+     by "hiding" part of the shadow, specifically 4 pixels of it, under the window's
+     caption bar itself, which is retraced by the iGUI -above- what i draw here, so in
+     the end i've set the bounds of the region to be tiled with the shadow's pattern to
+     start 4 pixels -above- the work area's top margin, and end 5 pixels -below- the
+     same top margin: the margins are so separated by 9 pixels, but considering that
+     the bounds of rectangular regions managed by default libraries are always including
+     their edges' pixels, the shadow will be 10 pixels tall; because 4 of the pixels on
+     top of the shadow's pattern image are hidden, only the lower 6 pixels of the shadow
+     will be effectively visible... ahem... i did my best to explain)
+	[left margin relating caption shadow bounds] = [left margin relating vector work area];
+	[right margin relating caption shadow bounds] = [right margin relating vector work area];
+	[top margin relating caption shadow bounds] = [top margin relating vector work area];
+	[top margin relating caption shadow bounds] - 4; (make a smaller shadow)
+	[bottom margin relating caption shadow bounds] = [top margin relating vector work area];
+	[bottom margin relating caption shadow bounds] + 5; (edges-inclusive, it's 10 pixels)
+	[tr bounds] = caption shadow bounds; (tile region is a function of TGAtile.txt)
+	[tr picture data] = [p menu shadow horizontal]; ("p menu..." defined by the iGUI)
+	[tr target layer] = backdrop layer; (it's always the work layer, in iGUI clients)
+	[tr display alignment] = [display width]; (showen on the actual display, so...)
+	[tr effect] = service fx alpha dim; (a shadow subtracts light from background)
+	=> tile region; (will repeat TGA picture "tr picture data" over the given region)
+    (our window only contains the simulated text console, so that's all there is to it)
+	=> show console;
+	end;
+
+"service control loop"
+    (first of all, let's remember to check for user operations on the console:
+     actually, this is pratically a function that checks if the user moves the
+     vertical scroller, and eventually retraces the actual text written to the
+     console's text buffer)
+	=> control console;
+    (the control loop is executed once per "frame" of the mouse pointer's animation, let's
+     put it this way to make it simple to understand - it is executed, in reality, as part
+     of a larger loop of the iGUI, where the same iGUI controls are checked and their
+     reactions are determined: this loop goes pratically on continuously, regardless of
+     when there is an effective action from the user; here, asynchronous events are checked,
+     by simply repeately scanning for given conditions: and well, one first thing to do here
+     is, while polling for data incoming from our main socket, is effectively polling for
+     availability of data from that socket: this normally happens when we receive data from
+     a remote server, such as when a POP3 server transmits us the result of a "TOP m n"
+     command, resulting in the first n lines of email message m)
+	? [polling] = no -> not polling;
+	[netcommand] = netrecv; (command to receive data, if data is available)
+	[socket] = [mysocket]; (our main socket's descriptor, gathered when opening it)
+	[netblock pointer] = ascii data field; (let's store what we received in this vector)
+	[netblock size] = 100; (vector is 100 bytes, further data will be read next time)
+	isocall;
+    (we disregard the failure or success state of the isocall: the socket may even not
+     exist at all, but we don't care, as long as a result of zero bytes received means
+     that there's nothing to receive anyway, and signalling a failure isn't the intended
+     duty of this piece of code)
+	? [netblock size] = zero -> no data received;
+    (oh, well, but if we received something, we echo it throught our console, after having
+     converted it to the 32 bits per character, which is what "cout", our console output
+     function, wants - well, to be sincere, fourbyte string format is what the whole
+     Linoleum environment is more familiar with, given that this way a single character
+     takes a single unit, and not part of a unit, which would be uncomfortable whenever
+     we're to manipulate a string: the conversion subroutine is "convert ascii to fourbyte")
+	[source string] = ascii data field;
+	[target string] = data field;
+	[string length] = [netblock size];
+	=> convert ascii to fourbyte;
+	a = [string length];
+	[a plus data field] = null; (place string terminator for proper visualization)
+    (now to echo the text we received, loading [szcout] with the pointer to "data field",
+     because [szcout] is the input parameter for "cout", and then calling "cout")
+	[szcout] = data field; => cout;
+    (to conclude, since the converted string received from the remote host may hold
+     character codes which are not allowable in an iGUI's dialog box, we can't leave
+     the "data field" buffer, used in the "send" dialog box, as it is now: to cut it
+     short, let's just void the buffer, by placing a null terminator as its very first
+     character, this in practice empties the "data to send" field of that dialog)
+	[data field] = null;
+    (now, still caring for when this node plays the part of a client, let's also see
+     if the user sent a connection request to a server somewhere: in this case we have
+     to check for how the remote server reacts, it may accept or refuse our connection,
+     or, we could get a network exception just because there's no such remote server,
+     or because it's not reachable at the moment... we can't know this)
+    "no data received" (or) "not polling"
+	? [attempting to connect] = no -> not attempting to connect;
+    (so, if the server accepted, we'll get a successful return from "netiswritable",
+     and we notify the user by outputting the "connd" message string)
+	[netcommand] = netiswritable;
+	[socket] = [mysocket];
+	isocall;
+	? failed -> not connected yet;
+	[szcout] = connd; => cout;
+	[attempting to connect] = no;
+	-> yeah its connected;
+    (otherwise we'd better check the case where a general trouble, and exception,
+     has occured, this also happens when the connection is not accepted)
+    "not connected yet"
+	[netcommand] = netisexcepted;
+	[socket] = [mysocket];
+	isocall;
+	? failed -> keep waiting for answer;
+	[szcout] = refused; => cout;
+	[attempting to connect] = no;
+    "not attempting to connect" (or) "yeah its connected" (or) "keep waiting for answer"
+    (now that we're done with what concerns a CLIENT, let's care for a SERVER's duties,
+     because depending on what the user does with socket [mysocket], this program must
+     be capable of listening, accepting, and timing out connections: note that all those
+     operations are FRAMED by a set/unset of the "go deaf" flag in the [netstatus]
+     control variable, causing incoming connections not to touch the data in [clients]
+     vector and in the other control variable [connections], because while we check and
+     timeout connections, those variables are used and if something else, like the run-
+     time module, altered them while we work, it'd cause unpredictable malfunctions)
+	[netstatus] + go deaf;
+	=> establish and drop connections;
+	[netstatus] - go deaf;
+	end;
+
+"service sleepy control loop"
+    (this control loop replaces the above while the application is sleeping, because
+     even if we're in "background processing", and the window is iconized, a server
+     might still control its clients; we'll keep the "administrator" up to date about
+     how many connections are established via the only part of the display which is
+     intended to be visible while the application is in "dormant state", that is, the
+     small caption bar, which is 100 pixels in size, but that's sufficient for a very
+     short message simply reading "clients: xxx")
+	[netstatus] + go deaf;
+	=> establish and drop connections;
+	[netstatus] - go deaf;
+	? [previously active connections] = [number of connections before] -> no caption refresh;
+	[previously active connections] = [number of connections before];
+	[string binary] = [number of connections before];
+	[target string] = active connections report plus 9; (offset 9, after the space)
+	=> convert binary to ascii;
+	=> update sleepy title bar;
+    "no caption refresh"
+	end;
+
+"establish and drop connections"
+    (one of the server's typical duties is of course listening to incoming connections:
+     when a connection request arrives, the run-time module will automatically accept
+     it, and open a socket to the remote peer; in theory, your server application could
+     simply scan the actual connections' record and find out which peers are actually
+     connected, because we loaded a pointer to vector "established connections list" in
+     the [clients] control variable, which holds all the sockets opened so far towards
+     peers, while the value of [connections] is increased automatically by the run-time
+     module upon accepting a connection, BUT if we let things go on this way, we'd end up
+     filling that vector, apart from infinitely hogging socket resources, so we have to
+     periodically time-out inactive connections; given that we don't have a way to know
+     when a connection has been closed by the remote peer, because there really is no way
+     to know this, the way of life becomes timing out connections from which we didn't
+     receive anything since a given amount of time - that's why we effectively check when
+     one or more new connenctions are accepted: because we HAVE to setup a timeout
+     counter for them! now, [number of connections before] is zero-initialized, as well
+     as the initial value of [connections], but while [connections] is changed by the
+     run-time module out of our application's will, [number of connections before]
+     changes only when we want it, causing [number of connections before] to effectively
+     be a "memory" reflecting how many peers we had last time we got to execute the
+     following code: that's why and how the following comparison works just fine)
+	? [connections] <= [number of connections before] -> not establishing connections;
+    (hey, remember that we could get even MORE than one connection between a check and
+     the following one, while the server is not in "deaf mode", so we have to count how
+     many connections were established in the meantime, calculated below in register B,
+     as the actual difference between [connections], the actual number of connections,
+     and our former memory of that value)
+	a = [number of connections before];
+	b = [connections]; b - a;
+    (because the connections may be more than one, we have to make a loop to initialize
+     all of the new connection records: we don't need to care for the limits of the
+     "connection records" vector, because this is guarded by [max connections]: the run-
+     time module will not accept other connections once the maximum is reached)
+      "cl start new sessions"
+      (calculating relative displacement of last used entry of "connection records")
+	c = a;
+	c * CONNECTION RECORD SIZE;
+      (filling the two fields we'd like to keep in "connection records": specially,
+       we're interested in setting up the timeout counter to its initial value of 30,
+       and later, we'll be decreasing that value by 1 at every second, and when it'll
+       reach zero we'll disconnect the corresponding client, by simply closing the
+       corresponding socket)
+	[c plus ASSOCIATED SOCKET relating connection records] = [a plus established connections list];
+	[c plus TIMEOUT COUNTER relating connection records] = CONNECTION TIMEOUT;
+      (the following gets the IPv4 address of the peer, for informative, or tracking,
+       purposes: you can disregard it if you don't get to understand it now, it's not
+       something vital to do anyway)
+	[netcommand] = getpeerbysocket;
+	[socket] = [a plus established connections list];
+	[hostaddress] = hostaddr field;
+	isocall;
+	? failed -> cl cant get peer address;
+	[szcout] = newpeer; => cout;
+	[szcout] = hostaddr field; => cout;
+	-> cl got peer address;
+      "cl cant get peer address"
+	[szcout] = newpeer; => cout;
+	[szcout] = unknown; => cout;
+      "cl got peer address"
+      (prints "clid" string)
+	[szcout] = clid; => cout;
+      (prints the client ID, barely we call this way the index of this client within
+       the "connection records" vector: first client will have ID 0, the second 1, etc)
+	[dwcout] = a; => uicout;
+      (prints a carriage return + line feed, simply a newline)
+	[szcout] = crlf; => cout;
+      (increases client ID, and loops until register B is zero)
+	a+; b ^ cl start new sessions;
+      (since we're done with the loop that fills the data for the new connections into
+       vector "connection records", what reamins to do is updating the "memory" to how
+       many peers we have now, so next time we get to execute the above piece of code,
+       and unless some new connections were accepted in the meantime, it will not try
+       to re-add those connections we processed before)
+	[number of connections before] = [connections];
+      (this just prints out a recap of how many new connections were found in this run)
+	[szcout] = est; => cout;
+	[dwcout] = [connections]; => uicout;
+	[szcout] = crlf; => cout;
+    (after "welcoming" new connections, let's scan all the associated sockets to see if
+     one of these connections is sending us something, that a "serious" server may then
+     process as a request for a service, depending on what the server is supposed to do:
+     in this example, we have a dumb server just echoing what receives to the console,
+     and resetting the timout counters for all those peers that demonstrate, by sending
+     something, that they're still "alive": below, we'll loop for all actual connections,
+     polling for data eventually coming from each of them, dumbly echoing the said data)
+    "not establishing connections"
+	a = zero;
+	b = zero;
+	c = [connections];
+	? c = zero -> nothing to scan; (you know, never enter a loop with a zero count)
+      "cl scan connections"
+	[netcommand] = netrecv;
+	[socket] = [b plus ASSOCIATED SOCKET relating connection records];
+	[netblock pointer] = ascii data field;
+	[netblock size] = 100;
+	isocall;
+	? [netblock size] = zero -> said nothing;
+      (heard something from this peer: echoing...)
+	[source string] = ascii data field;
+	[target string] = data field;
+	[string length] = [netblock size];
+	=> convert ascii to fourbyte;
+	d = [string length]; (notice register A is used in this loop: using D instead)
+	[d plus data field] = null; (place string terminator for proper visualization)
+	[szcout] = recvd; => cout;
+	[dwcout] = a; => uicout;
+	[szcout] = colon; => cout;
+	[szcout] = data field; => cout;
+	[data field] = null;
+      (...and now resetting its timeout counter to 30)
+	[b plus TIMEOUT COUNTER relating connection records] = CONNECTION TIMEOUT;
+      "said nothing"
+      (...finally increasing client ID and looping)
+	a+; b + CONNECTION RECORD SIZE; c ^ cl scan connections;
+    (now that we listened to what each peer may have had to say, let's see which peers
+     said nothing for too much time: we'll see if a second has passed, and decrease
+     their counter, and if their timeout is zero we close them, automatically freeing
+     entries in the "established connections list", and manually freeing entries in our
+     "connection records" server table)
+    "nothing to scan"
+	[timercommand] = readtime;
+	isocall;
+	? [second] = [previous sec] -> wait next second;
+	[previous sec] = [second];
+      (one second has passed: do a loop to check timeouts; in the loop, we'll sometimes
+       need the client ID, and sometimes the relative displacement of the corresponding
+       record within the "connection recors" vector, so we keep two counters, A and B,
+       considering that A will be the client ID and B the said displacement: both start
+       from zero, but while A increases by 1 unit per time, B increases by 2 units,
+       because 2 units is the size of a single connection record; C is just a "loop
+       counter", that will be assigned to [connections] and decrease until zero,
+       representing the number of times the loop has to be repeated)
+	a = zero;
+	b = zero;
+	c = [connections];
+	? c = zero -> nothing to check;
+      "cl check timeout"
+      (decrease this client's timeout counter: if it's still greater than zero, go on)
+	[b plus TIMEOUT COUNTER relating connection records] -;
+	? [b plus TIMEOUT COUNTER relating connection records] > zero -> cl not timed out;
+      (time's up, client is supposed to have disconnected, or got too much lagged,
+       either way we don't have all that time to waste, so we close this client, and
+       send a "time out" message to the client, for which same recommandation seen
+       for the "shutdown" message may apply)
+	[source string] = timeout;
+	[target string] = ascii data field;
+	=> count bytes in string;
+	=> convert fourbyte to ascii;
+	[netcommand] = netsend;
+	[socket] = [b plus ASSOCIATED SOCKET relating connection records];
+	[netblock pointer] = ascii data field;
+	[netblock size] = [string length];
+	isocall;
+      (in theory we just need to close its socket, the run-time module will care for
+       updating the vector pointed by [clients] and decrease the variable [connections],
+       BUT we'll still have to update our own server table - "close connection" will do
+       this, if we pass the client ID to that subroutine)
+	[client id] = a;
+	=> close connection;
+      (we know [connections] has decreased because we closed the client's socket, so
+       we also update our memory, exactly the way we do after accepting connections)
+	[number of connections before] = [connections];
+      (prints "closing" string)
+	[szcout] = closing; => cout;
+      (prints the client ID)
+	[dwcout] = a; => uicout;
+      (adds a newline)
+	[szcout] = crlf; => cout;
+      (decreases loop counter, because we deleted a record)
+	c-; ? c = zero -> wait next second; (and if it was last record, break the loop)
+      (increase client ID, increase record displacement, loop until C is zero)
+      "cl not timed out"
+	a+; b + CONNECTION RECORD SIZE; c ^ cl check timeout;
+    "wait next second" (or) "nothing to check"
+	end;
+
+"close connection"
+    (removes a single entry from vector "connection records":
+     variable [client id] gives the client ID of the entry to remove;
+     this subroutine is strictly related to the control loop, but provided
+     as a separate subroutine for use when the server is forcely shutdown,
+     and all clients' connections might be closed)
+	a -->;
+	b -->;
+	c -->;
+	a = [client id];
+	? a >= [connections] -> cc client does not exist;
+	a * CONNECTION RECORD SIZE;
+	b = [connections]; b-; b * CONNECTION RECORD SIZE;
+	c = [connections]; c - [client id];
+	[socket] = [a plus ASSOCIATED SOCKET relating connection records];
+    "cc loop"
+	? a < b -> cc copy; (else) -> cc clear;
+      "cc copy"
+	[a plus ASSOCIATED SOCKET relating connection records]
+	= [a plus ASSOCIATED SOCKET relating connection records plus CONNECTION RECORD SIZE];
+	[a plus TIMEOUT COUNTER relating connection records]
+	= [a plus TIMEOUT COUNTER relating connection records plus CONNECTION RECORD SIZE];
+	-> cc next client;
+      "cc clear"
+	[a plus ASSOCIATED SOCKET relating connection records] = zero;
+	[a plus TIMEOUT COUNTER relating connection records] = zero;
+      "cc next client"
+	a + CONNECTION RECORD SIZE; c ^ cc loop;
+	[netcommand] = netclose;
+	isocall;
+      "cc client does not exist"
+	<-- c;
+	<-- b;
+	<-- a;
+	end;
+
+(
+
+	At this point, I hope to have enlighten how the "hard parts" work, specially
+	for what concerns a server application, which is supposed to be rock-solid.
+	The rest is formed by the functions that reply to menu selections, but they
+	simply use network commands as explained in "notes.txt", and occasionally
+	re-use conversion functions met in the above parts of code. The remaining
+	part might be rather easy to understand, although knowledge of the iGUI's
+	mechanisms explained in the IconEd's source code is a necessary requirement
+	to understand how dialog boxes and menu options are manipulated.
+
+)
+
+"gethostbyname option"
+	[question datascript] = ghbn dialog;
+	=> question;
+	end;
+    "gethostbyname procedure"
+	[szcout] = ghbn; => cout;
+	[netcommand] = gethostbyname;
+	[hostname] = hostname field;
+	[hostaddress] = hostaddr field;
+	isocall;
+	? failed -> ghbn failed;
+    "ghbn wait for completion"
+	=> begincontrolloop;
+	? [key escape] = on -> cancel host name lookup;
+	=> endcontrolloop;
+	? [netstatus] - READY -> ghbn wait for completion;
+	? [netstatus] - NETSUCCESS -> ghbn failed;
+	[szcout] = hostname field; => cout;
+	[szcout] = equal; => cout;
+	[szcout] = hostaddr field; => cout;
+	-> ghbn done;
+    "ghbn failed"
+	[szcout] = failed; => cout;
+    "ghbn done"
+	[szcout] = crlf; => cout;
+	end;
+    "cancel host name lookup"
+	[netcommand] = cancelrequest;
+	isocall;
+	? failed -> ghbn wait for completion;
+	[szcout] = canceled; => cout;
+	-> ghbn done;
+
+"gethostbyaddr option"
+	[question datascript] = ghba dialog;
+	=> question;
+	end;
+    "gethostbyaddr procedure"
+	[szcout] = ghba; => cout;
+	[netcommand] = gethostbyaddr;
+	[hostname] = hostname field;
+	[hostaddress] = hostaddr field;
+	isocall;
+	? failed -> ghba failed;
+    "ghba wait for completion"
+	=> begincontrolloop;
+	? [key escape] = on -> cancel host address lookup;
+	=> endcontrolloop;
+	? [netstatus] - READY -> ghba wait for completion;
+	? [netstatus] - NETSUCCESS -> ghba failed;
+	[szcout] = hostaddr field; => cout;
+	[szcout] = equal; => cout;
+	[szcout] = hostname field; => cout;
+	-> ghba done;
+    "ghba failed"
+	[szcout] = failed; => cout;
+    "ghba done"
+	[szcout] = crlf; => cout;
+	end;
+    "cancel host address lookup"
+	[netcommand] = cancelrequest;
+	isocall;
+	? failed -> ghba wait for completion;
+	[szcout] = canceled; => cout;
+	-> ghba done;
+
+"open option"
+	[szcout] = open; => cout;
+	[netcommand] = netopen;
+	isocall;
+	? failed -> open failed;
+	[mysocket] = [socket];
+	[option code] = 03010000h; => disable option;
+	[option code] = 03020000h; => enable option;
+	[option code] = 03030000h; => enable option;
+	[option code] = 03040000h; => enable option;
+	[option code] = 03050000h; => enable option;
+	[option code] = 03060000h; => enable option;
+	[szcout] = succ; => cout;
+	-> open done;
+    "open failed"
+	[szcout] = failed; => cout;
+    "open done"
+	[szcout] = crlf; => cout;
+	end;
+
+"connect option"
+	[question datascript] = connect dialog;
+	=> question;
+	end;
+    "connect procedure"
+	[szcout] = connect; => cout;
+	[source string] = port field;
+	=> convert ascii to binary;
+	[netcommand] = netconnect;
+	[socket] = [mysocket];
+	[hostaddress] = hostaddr field;
+	[port] = [string binary];
+	isocall;
+	? failed -> connect failed;
+	[szcout] = succ; => cout;
+	[attempting to connect] = yes;
+	[polling] = yes; [option code] = 03050000h; => mark option;
+	-> connect done;
+    "connect failed"
+	[szcout] = failed; => cout;
+    "connect done"
+	[szcout] = crlf; => cout;
+	end;
+
+"listen option"
+	[question datascript] = listen dialog;
+	=> question;
+	end;
+    "listen procedure"
+	[szcout] = listen; => cout;
+	[source string] = port field;
+	=> convert ascii to binary;
+	[netcommand] = netlisten;
+	[socket] = [mysocket];
+	[hostaddress] = hostaddr field;
+	[port] = [string binary];
+	isocall;
+	? failed -> listen failed;
+	[szcout] = succ; => cout;
+	[small caption] = active connections report;
+	-> listen done;
+    "listen failed"
+	[szcout] = failed; => cout;
+    "listen done"
+	[szcout] = crlf; => cout;
+	end;
+
+"send option"
+	[question datascript] = send dialog;
+	=> question;
+	end;
+    "send procedure"
+	[source string] = data field;
+	=> count bytes in string;
+	a = [string length];
+	[a plus data field plus 0] = 13; (cf)
+	[a plus data field plus 1] = 10; (lf)
+	[a plus data field plus 2] = null; (new null terminator)
+	[string length] + 2; (counting cr+lf, added above)
+	[source string] = data field;
+	[target string] = ascii data field;
+	=> convert fourbyte to ascii;
+	[szcout] = send; => cout;
+	[netcommand] = netsend;
+	[socket] = [mysocket];
+	[netblock pointer] = ascii data field;
+	[netblock size] = [string length];
+	isocall;
+	? failed -> send failed;
+	[szcout] = data field; => cout;
+	-> send done;
+    "send failed"
+	[szcout] = failed; => cout;
+	[szcout] = crlf; => cout;
+    "send done"
+	[data field] = null;
+	end;
+
+"poll option"
+	[polling] # yes;
+	[option code] = 03050000h;
+	? [polling] = no -> unmark option; (else) -> mark option;
+
+"close option"
+	[szcout] = close; => cout;
+	[netcommand] = netclose;
+	[socket] = [mysocket];
+	isocall;
+	? failed -> close failed;
+	[mysocket] = undefined;
+	[option code] = 03010000h; => enable option;
+	[option code] = 03020000h; => disable option;
+	[option code] = 03030000h; => disable option;
+	[option code] = 03040000h; => disable option;
+	[option code] = 03050000h; => disable option;
+	[option code] = 03060000h; => disable option;
+	[polling] = no; [option code] = 03050000h; => unmark option;
+	[szcout] = succ; => cout;
+	[small caption] = my menu caption;
+	-> close done;
+    "close failed"
+	[szcout] = failed; => cout;
+    "close done"
+	[szcout] = crlf; => cout;
+	end;

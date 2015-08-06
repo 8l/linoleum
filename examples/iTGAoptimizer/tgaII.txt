@@ -1,0 +1,292 @@
+(
+
+	Truevision TGA [tm] file format.
+	Default Linoleum TGA graphics loader, version 2.
+	Last changed: March 26th, 2003.
+	version for specific use of iTGAoptimizer,
+	doesn't translate indexed pixels to RGB when loading
+
+	Changes since version 1:
+	added 256-color pictures support for graphics optimization;
+	fixed a small glitch in the checks for presence/absence of
+	a color map, was nothing serious anyway.
+
+	The TGA file format is a trade mark of Truevision, Inc.
+	This library is part of the LINOLEUM default libraries package,
+	related copyrights and TOS informations can be found in the
+	LINOLEUM's README file. Included subroutines follow.
+
+	***	According to this package's libraries conventions,
+		functions do not preserve registers, but will preserve
+		any entry parameters passed throught related variables.
+
+	Load TGA Picture
+	    [TGA Target Layer]
+		pointer to the display layer where to trace the pic;
+		NOTE it's not [Display Origin] - it's a hidden layer.
+	    [TGA Picture Data]
+		pointer to the memory area where picture data has
+		been loaded. The whole file, including the header,
+		must be loaded, and this pointer must be the one
+		pointing to the very first byte of the TGA file.
+	    [TGA Picture Left]
+		X coordinate of displayed picture's upper left corner.
+	    [TGA Picture Top]
+		Y coordinate of displayed picture's upper left corner.
+	    [TGA Display Alignment]
+		number of pixels in a single scan-line inside the
+		target layer. To load a normal picture, it should
+		be simply set to [Display Width]. Different values
+		may be needed for banking purposes, such as
+		when you're to load font files [see TGAFont] and
+		keep them resident without wasting memory.
+	    [TGA Display Width]
+		well, the true width of the target layer is given by
+		the above parameter, but this one determines where
+		the picture will be clipped, so that no parts of the
+		picture crossing this margin [will be the right-side
+		margin] will be drawn.
+		NOTE: for backward-compatibility, since this parameter
+		didn't exist in versions of the TGA library prior to
+		Linoleum release 1.13.2b, TGA Display Width is set to
+		GREATEST UNSIGNED INTEGER, by default. Under normal
+		circumstances, however, this value might be set to the
+		actual value of [Display Width] before calling the
+		"Load TGA Picture" subroutine. For safe use with apps
+		relying on the absence of that value, keep it assigned
+		to GREATEST UNSIGNED INTEGER, eventually framing calls
+		to "Load TGA Picture" with a push/pop of this value,
+		as seen in the TGAtile.TXT library.
+	    [TGA Display Height]
+		number of scan-lines inside the target layer.
+		Loading normal pictures, it should be set to the
+		actual height of the display, being [Display Height].
+		Loading resident banks or font files, is should be
+		set to the number of scan-lines that can be held in
+		to the memory area the main program reserved
+		for that purpose. For instance, loading a font file
+		it should be set to the height of the TGA picture
+		giving the font's shape [but it may be higher to
+		allow for multiple fonts in a single bank, as you
+		prefere to organize...].
+	    [TGA Effect]
+		Pointer to a subroutine to trace each single pixel
+		from the image. Those routines are services
+		provided in the PixelFX library.
+		By default it points to the "service FX Raw"
+		subroutine, which just plots the pixels as they are.
+		See PixelFX to find out the other possible effects.
+
+	This library provides TGA file format support for importing
+	pictures inside LINOLEUM applications. Supported formats are:
+
+	* indexed images having color maps of 8 bits per pixel and
+	  any number of palette entries [providing <= 256 entries]
+	* true-color type images having depth of 24 bits per pixel
+	  with packed pixel format RRGGBBh
+	* true-color type images having depth of 32 bits per pixel
+	  with padded pixel format ??RRGGBBh, alpha channels or
+	  attributes being stored in most significant byte
+
+	Any attempts to load different formats will fail.
+
+)
+
+"libraries"
+	/gen/bits;
+	/gen/pixelfx;
+
+"variables"
+(entry parameters for Load TGA Picture)
+	TGA Target Layer	= 0;
+	TGA Picture Data	= 0;
+	TGA Picture Left	= 0;
+	TGA Picture Top 	= 0;
+	TGA Display Alignment	= 256;
+	TGA Display Width	= GREATEST SIGNED INTEGER;
+	TGA Display Height	= 192;
+	TGA Effect		= service FX Raw;
+
+"workspace"
+(service variables for Load TGA Picture)
+	LTP Pixels		= 1;
+	LTP Scanlines		= 1;
+	LTP Current Pixel	= 1;
+	LTP Current Scanline	= 1;
+	LTP CurrentPixelPointer = 1;
+	LTP Reverse Horiz	= 1;
+	LTP Forward Vert	= 1;
+	LTP Bit Field Delta X	= 1;
+	LTP Bit Field Delta Y	= 1;
+	LTP ID Block Size	= 1;
+ vector LTP Header Data 	= 5;
+	LTP Colormap Size	= 1;
+ vector LTP Colormap Data	= 256;
+
+"programme"
+"Load TGA Picture"
+
+	(Checking pointers validity)
+	? [TGA Target Layer] = 0 -> Failed to load TGA picture;
+	? [TGA Picture Data] = 0 -> Failed to load TGA picture;
+
+	(Loading header data bytes 0 to 19, if needed)
+	A = [TGA Picture Data];
+	[vector LTP Header Data plus 0] = [A plus 0];
+	[vector LTP Header Data plus 1] = [A plus 1];
+	[vector LTP Header Data plus 3] = [A plus 3];
+	[vector LTP Header Data plus 4] = [A plus 4];
+
+	(Checking first 8 bits as the ID length)
+	[LTP ID Block Size] = [vector LTP Header Data plus 0];
+	[LTP ID Block Size] & FFh;
+
+	(Checking image type [3rd byte])
+	A = [vector LTP Header Data plus 0]; A > 16; A & FFh;
+	? A = 1 -> LTP Indexed;
+	? A = 2 -> LTP Truecolor;
+	-> Failed to load TGA picture;
+
+    "LTP Indexed"
+	(Checking color map field [2nd byte] for color map presence)
+	? [vector LTP Header Data plus 0] - 0100h -> Failed to load TGA picture;
+
+	(Retrieving size of color map, this can't exceed 256)
+	[LTP Colormap Size] = [vector LTP Header Data plus 1];
+	[LTP Colormap Size] & FFFF00h; [LTP Colormap Size] > 8;
+	? [LTP Colormap Size] > 256 -> Failed to load TGA picture;
+
+	(Retrieving first entry of color map, must still fit 256 entries)
+	[Starting Bit Number] = [vector LTP Header Data plus 1];
+	[Starting Bit Number] & FFh;
+	[Starting Bit Number] + [LTP Colormap Size];
+	? [Starting Bit Number] > 256 -> Failed to load TGA picture;
+	[Starting Bit Number] - [LTP Colormap Size];
+
+	(Retrieving size of each entry in color map, only 24 is supported)
+	[Bit Field Size] = [vector LTP Header Data plus 1];
+	[Bit Field Size] & FF000000h; [Bit Field Size] > 24;
+	? [Bit Field Size] != 24 -> Failed to load TGA picture;
+
+	(Translating color map)
+	A = [Starting Bit Number];
+	B = [LTP Colormap Size];
+	[Bit Stream Pointer] = [TGA Picture Data];
+	[Starting Bit Number] = [LTP ID Block Size];
+	[Starting Bit Number] + 18; (header bytes)
+	[Starting Bit Number] < 3;
+      "LTP Colormap Decode Loop"
+	A -->; B -->; => Get Bit Field; <-- B; <-- A;
+	[A plus vector LTP Colormap Data] = [Bit Field Content];
+	[Starting Bit Number] + [Bit Field Size];
+	A +; B ^ LTP Colormap Decode Loop;
+	[LTP Colormap Size] * [Bit Field Size];
+	[LTP Colormap Size] > 3;
+	-> LTP Colormap Done;
+
+    "LTP Truecolor"
+	[LTP Colormap Size] = 0;
+	(Checking color map field [2nd byte] for NO color map presence)
+	? [vector LTP Header Data plus 0] + 0100h -> Failed to load TGA picture;
+
+    "LTP Colormap Done"
+	(Getting number of pixels per scanline [LS 16 bits of 4th unit])
+	[LTP Pixels] = [vector LTP Header Data plus 3];
+	[LTP Pixels] & FFFFh;
+
+	(Getting number of scan lines in picture [MS 16 bits of 4th unit])
+	[LTP Scanlines] = [vector LTP Header Data plus 3];
+	[LTP Scanlines] > 16;
+
+	(Getting image depth [LS 8 bits of 5th unit, can be 8, 24 or 32])
+	[Bit Field Size] = [vector LTP Header Data plus 4];
+	[Bit Field Size] & FFh;
+	? [Bit Field Size] = 08 -> LTP Pixeldepth Accepted;
+	? [Bit Field Size] = 24 -> LTP Pixeldepth Accepted;
+	? [Bit Field Size] = 32 -> LTP Pixeldepth Accepted;
+	-> Failed to load TGA picture;
+
+    "LTP Pixeldepth Accepted"
+	(Getting image origins [bits 12 and 13 of 5th unit])
+	[LTP Reverse Horiz] = [vector LTP Header Data plus 4];
+	[LTP Reverse Horiz] & 1000000000000b;
+	[LTP Reverse Horiz] > 12;
+	[LTP Forward Vert] = [vector LTP Header Data plus 4];
+	[LTP Forward Vert] & 10000000000000b;
+	[LTP Forward Vert] > 13;
+
+	(Findind first bit of picture data)
+	[Starting Bit Number] = [LTP ID Block Size];
+	[Starting Bit Number] + [LTP Colormap Size];
+	[Starting Bit Number] + 18; (header bytes)
+	[Starting Bit Number] < 3;
+
+	(Setting source and destination data streams' pointers)
+	[Bit Stream Pointer] = [TGA Picture Data];
+	[LTP Current Pixel Pointer] = [TGA Picture Top];
+	[LTP Current Pixel Pointer] * [TGA Display Alignment];
+	[LTP Current Pixel Pointer] + [TGA Picture Left];
+	[LTP Current Pixel Pointer] + [TGA Target Layer];
+
+	(Setting tracement loop control variables
+	in respect to the picture's origins)
+	[LTP Bit Field Delta X] = [Bit Field Size];
+	? [LTP Reverse Horiz] = 0 -> LTP X Trace Forward;
+	A = [LTP Pixels]; A-;
+	A * [Bit Field Size];
+	[Starting Bit Number] + A;
+	[LTP Bit Field Delta X]+-;
+    "LTP X Trace Forward"
+	[LTP Bit Field Delta Y] = [LTP Pixels];
+	[LTP Bit Field Delta Y] * [Bit Field Size];
+	? [LTP Forward Vert] != 0 -> LTP Y Trace Forward;
+	A = [LTP Scanlines]; A-;
+	A * [Bit Field Size];
+	A * [LTP Pixels];
+	[Starting Bit Number] + A;
+	[LTP Bit Field Delta Y]+-;
+    "LTP Y Trace Forward"
+
+	(Transferring picture data to the display memory)
+	[LTP Scanlines] -->;
+	[LTP Current Scanline] = [TGA Picture Top];
+    "LTP Next Scanline"
+	? [LTP Current Scanline] < 0 -> LTP Scanline Out Of Range;
+	? [LTP Current Scanline] >= [TGA Display Height] -> LTP Ignore Whole Pic;
+	[LTP Current Pixel] = [TGA Picture Left];
+	[LTP Pixels] -->;
+	[Starting Bit Number] -->;
+	[LTP Current Pixel Pointer] -->;
+	    "LTP Next Pixel"
+		? [LTP Current Pixel] < 0 -> LTP Pixel Out Of Range;
+		? [LTP Current Pixel] >= [TGA Display Width] -> LTP Exit Pixels Loop;
+		? [LTP Current Pixel] >= [TGA Display Alignment] -> LTP Exit Pixels Loop;
+		=> Get Bit Field;
+		A = [LTP Current Pixel Pointer];
+		B = [Bit Field Content];
+		(? [Bit Field Size] > 8 -> LTP This Pixel Is Truecolor;
+		B = [B plus vector LTP Colormap Data];)
+	    "LTP This Pixel Is Truecolor"
+		=> [TGA Effect];
+	    "LTP Pixel Out Of Range"
+		[Starting Bit Number] + [LTP Bit Field Delta X];
+		[LTP Current Pixel Pointer]+;
+		[LTP Current Pixel]+;
+		[LTP Pixels] ^ LTP Next Pixel;
+	    "LTP Exit Pixels Loop"
+	<-- [LTP Current Pixel Pointer];
+	<-- [Starting Bit Number];
+	<-- [LTP Pixels];
+    "LTP Scanline Out Of Range"
+	[Starting Bit Number] + [LTP Bit Field Delta Y];
+	[LTP Current Pixel Pointer] + [TGA Display Alignment];
+	[LTP Current Scanline]+;
+	[LTP Scanlines] ^ LTP Next Scanline;
+    "LTP Ignore Whole Pic"
+	<-- [LTP Scanlines];
+	(End of subroutine)
+	end;
+
+"Failed to load TGA picture"
+	(General error condition)
+	fail;

@@ -1,0 +1,256 @@
+
+      ( *** LINOLEUM Example 15: Dynamic memory allocation *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "15_dynamic_memory_allocation.TXT",
+	   WITH THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	A variation of example 8 using dynamic memory allocation.
+	There is something important to know about this technique,
+	and you should read the IsoKernel quick reference of the
+	manual, precisely where it talks about the [RAMTop] variable. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Fader_Teather };
+	unit = 32;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	LIGHT BLUE = 80A0FFh;
+	LIGHT GREEN = 80FF80h; (let's make a green spiral just for a small change...)
+
+"variables"
+
+	Spiral Center X = 0;
+	Spiral Center Y = 0;
+	Spiral Growth K = 1f;
+	Spiral Entry Angle = 0f;
+	Spiral Exit Angle = 1f;
+	Spiral Entry Radius = 10f;
+	Spiral Color = FFFFFFh;
+	Spiral Growth K Step = 0f;
+	Current Spiral Radius = 0f;
+	Current Spiral Angle = 0f;
+	Current Spiral Step = 0f;
+
+	Animation Angle Delta = 0.025f;
+	Pointer to primary display block = UNDEFINED;
+
+"programme"
+
+	(********** allocating memory)
+
+	[Pointer to primary display block] = [RAMTop];
+	[RAMTop] + 256 multiplied 192; isocall;
+	? failed -> Out of memory;
+
+	(********** initializing animation all like in example 8...)
+
+	[Display Origin] = [Pointer to primary display block];
+
+	[Spiral Center X] ,= [Display Width]; [Spiral Center X] // 2f;
+	[Spiral Center Y] ,= [Display Height]; [Spiral Center Y] // 2f;
+	[Spiral Growth K] = 0.85f;
+	[Spiral Entry Angle] = 0f;
+	[Spiral Exit Angle] = 30f;
+	[Spiral Entry Radius] = 5f;
+	[Spiral Color] = LIGHT GREEN;
+
+    "Move it"
+	=> Fade the display;
+	=> Spiral;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	[Spiral Entry Angle] ++ [Animation Angle Delta];
+	[Spiral Exit Angle] ++ [Animation Angle Delta];
+
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> Move it;
+
+	(**********  de-allocating memory - or releasing if you prefere)
+	[RAMTop] - 256 multiplied 192; isocall;
+
+    "Out of memory"
+	end;			(of MAIN PROGRAM)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width];
+	B + [Display Origin];
+	B + A;
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Spiral"
+    ( Draws a spiral, using the Plot subroutine. A, B, C destroyed. )
+    ( Spiral Center X = center X coordinate, of integer type;
+      Spiral Center Y = center Y coordinate, of integer type;
+      Spiral Growth K = spiral's growth ratio, determines how much the
+	distance from the center grows for each time
+	the tracing point turns a full circle around
+	spiral's center;
+      Spiral Entry Angle = the angle at which the tracing point begins
+	spinning, which determines the rotation of the whole figure;
+      Spiral Exit Angle = the angle at which the tracing point stops
+	spinning, determining where the spiral is no longer traced,
+	that is, the end of the figure.
+      Spiral Entry Radius = the initial radius of the tracing point's
+	curse around the center.
+      Spiral Color = the color of the dots forming the figure. )
+	[Spiral Growth K Step] = [Spiral Growth K];
+	[Spiral Growth K Step] // TwoPI;
+	[Current Spiral Angle] = [Spiral Entry Angle];
+	[Current Spiral Radius] = [Spiral Entry Radius];
+	C = [Spiral Color];
+    "Spiral tracement loop"
+	A = [Current Spiral Angle]; ~~A;
+	B = [Current Spiral Angle]; ~B;
+	A ** [Current Spiral Radius]; A ++ [Spiral Center X];
+	B ** [Current Spiral Radius]; B ++ [Spiral Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	[Current Spiral Step] = 0.999f;
+	[Current Spiral Step] // [Current Spiral Radius];
+	[Current Spiral Angle] ++ [Current Spiral Step];
+	[Current Spiral Radius] ++ [Spiral Growth K Step];
+	?? [Current Spiral Angle] < [Spiral Exit Angle]
+		-> Spiral tracement loop;
+	end;
+
+"Fade the display"
+	A = [Display Width];
+	A * [Display Height];
+	B = [Display Origin];
+    "Loop to fade all of it"
+	C = [B];
+	? C - FF0000h -> Dont fade red;
+	C - 010000h;
+    "Dont fade red"
+	? C - 00FF00h -> Dont fade green;
+	C - 000100h;
+    "Dont fade green"
+	? C - 0000FFh -> Dont fade blue;
+	C - 000001h;
+    "Dont fade blue"
+	[B] = C;
+	B+;
+	A ^ Loop to fade all of it;
+	end;
+
+( There's pratically nothing to say about this example, it just applies
+what the paragraph of the manual's IsoKernel Quick Reference guide says.
+At least, technically speaking, there's nothing to say.
+
+Anyway, although it's very easy to allocate and free memory, the thing must
+be done WHEN APPROPRIATE, and with care. You have to consider that the
+workspace, whose size is given by the [RAMTop] value, and which size is not
+allowed to obscillate below the value of the "default RAMTop" as determined
+by the compiler in its symbols' map (SMBLSMAP.TXT) or above the amount of
+memory physically available in the OS environment, well, like all symbols,
+all subroutines and all libraries, the workspace is a SHARED resource, shared
+between the main program, its subroutines, its libraries, and libraries
+included by other libraries. Because of this, you can't randomly allocate
+memory for the workspace anytime you need. There are two different approachs
+that may be used to successfully manage the workspace, PLUS a third, careful
+mix of the two.
+
+First:
+managing the workspace as a set of fixed-size vectors.
+This is what all of my examples do, and generally my favorite approach:
+its advantages are that it's the fastest approach, the most reliable, and
+it causes minimal fragmentation in the OS memory (less swappings to disk,
+faster program startup and operation, plus the OS may easily determine when
+the program is accessing a certain part of its private memory, and manage
+allocation dynamically on itself). Disatvantages are that vectors have fixed
+sizes, so you have to consider your application won't enlarge its buffers,
+and must eventually refuse to load things that appear too big to fit in those
+pre-defined buffers. For instance, ArtSCII, a program available on my site,
+refuses to load any background images larger than 1024x768 pixels, because
+that's the size of its internal buffer for the background image.
+Eventually, if you really need to TEMPORARILY get some more memory to perform
+a specific duty which is hopefully occuring rarely enough, you may even
+temporarily enlarge the workspace by varying [RAMTop] and isocalling, to
+later release the additional memory by restoring the previous known value
+of [RAMTop] and isocalling again. This is very similar to the way STACK is
+managed, only that in this case you're "pushing" and "popping" (popping
+always in reverse order, of course) whole groups of memory units, that is,
+whole vectors.
+
+Second:
+writing a memory manager, which will care for dividing the workspace and
+assigning pointers to its areas in the best possible way you can think of.
+This is of course more difficult, but the memory manager may be intelligent
+enough to reuse allocated areas, imitating, in practice, whan on OS does,
+but on smaller scale. The advantages are clear: it allows for "real" dynamic
+memory allocation. It has a problem, though: NO pieces of the code might
+interfere with its workings by varying [RAMTop] on themselves. It is a
+completely different programming strategy, and if you write libraries that
+use such a memory manager, thay may work only with that memory manager, and
+you cannot have two or more managers in the same application, because the
+globally shared workspace is always one and ONLY one.
+
+Third:
+and here comes the third approach: a memory manager may be used along with
+"manual" memory allocation IF the manual part is done carefully enough,
+that is, when you know a variation of [RAMTop] will not influence the
+manager's workings, usually while executing a task that needs some extra
+memory but that will not, while performing its duty, try to allocate some
+other memory using the memory manager's routines, or even call a subroutine
+that will imply such attempts. This is obviously difficult and leaves lots
+of hidden spots for occasional bugs.
+
+One last note: when you manage memory via variations of [RAMTop], no
+matter if you're allocating or freeing memory, always check if the isocall
+succeeded. It is NEVER safe to do so without expecting a possible failure:
+due to transient fragmentation conditions, the OS may even be unable to
+resize the workspace to a SMALLER size, it's not just a question of how much
+memory may be available at that time. Also, remember that resizing the
+workspace is NOT allowed while an audio playback is going on: the playback,
+if it's going on, must be first stopped, or the isocall attempting to vary
+the [RAMTop] will always fail. Why? Well, because the audio workspace that
+your application is playing, is part of its workspace, but the audio sub-
+system has to pass a FIXED pointer to that area, either to the OS or straight
+to the audio card's circuitry. This pointer just CANNOT vary while the thing
+is playing, but resizing the workspace might cause it to change, because it
+causes the workspace to be in reality re-allocated as a bigger or smaller
+block of memory, which intial unit may not be in the same place as before. )

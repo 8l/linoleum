@@ -1,0 +1,202 @@
+
+      ( *** LINOLEUM Example 5: From Circles To Spirals...*** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "05_from_circles_to_spirals.TXT",
+	   WITH THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Uses a modified version of the "Circle"
+	subroutine to draw a nautilus-shaped spiral. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Spiral };
+	unit = 32;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	LIGHT BLUE = 80A0FFh;
+
+"variables"
+
+	Spiral Center X = 0;
+	Spiral Center Y = 0;
+	Spiral Growth K = 1f;
+	Spiral Entry Angle = 0f;
+	Spiral Exit Angle = 1f;
+	Spiral Entry Radius = 10f;
+	Spiral Color = FFFFFFh;
+	Spiral Growth K Step = 0f;
+	Current Spiral Radius = 0f;
+	Current Spiral Angle = 0f;
+	Current Spiral Step = 0f;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+	(By making little changes to the Circle subroutine,
+	it's a piece of cake to build a new subroutine, to
+	trace Spirals. The subroutine is invoked by the
+	following lines.)
+
+	[Spiral Center X] ,= [Display Width]; [Spiral Center X] // 2f;
+	[Spiral Center Y] ,= [Display Height]; [Spiral Center Y] // 2f;
+	[Spiral Growth K] = 0.85f;
+	[Spiral Entry Angle] = 0f;
+	[Spiral Exit Angle] = 30f;
+	[Spiral Entry Radius] = 5f;
+	[Spiral Color] = LIGHT BLUE;
+	=> Spiral;
+
+	(Then show the video display memory)
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	(We already know what's the cycle below for...)
+
+    "wait keystroke"
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> wait keystroke;
+
+	end;			(of MAIN PROGRAM)
+
+	(We already know the Plot subroutine)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+	(Here's the Spiral subroutine, very similar to "Circle".)
+
+"Spiral"
+    ( Draws a spiral, using the Plot subroutine. A, B, C destroyed. )
+    ( Spiral Center X = center X coordinate, of integer type;
+      Spiral Center Y = center Y coordinate, of integer type;
+      Spiral Growth K = spiral's growth ratio, determines how much the
+	distance from the center grows for each time
+	the tracing point turns a full circle around
+	spiral's center;
+      Spiral Entry Angle = the angle at which the tracing point begins
+	spinning, which determines the rotation of the whole figure;
+      Spiral Exit Angle = the angle at which the tracing point stops
+	spinning, determining where the spiral is no longer traced,
+	that is, the end of the figure.
+      Spiral Entry Radius = the initial radius of the tracing point's
+	curse around the center.
+      Spiral Color = the color of the dots forming the figure. )
+	[Spiral Growth K Step] = [Spiral Growth K];
+	[Spiral Growth K Step] // TwoPI;
+	[Current Spiral Angle] = [Spiral Entry Angle];
+	[Current Spiral Radius] = [Spiral Entry Radius];
+	C = [Spiral Color];
+    "Spiral tracement loop"
+	A = [Current Spiral Angle]; ~~A;
+	B = [Current Spiral Angle]; ~B;
+	A ** [Current Spiral Radius]; A ++ [Spiral Center X];
+	B ** [Current Spiral Radius]; B ++ [Spiral Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	[Current Spiral Step] = 0.999f;
+	[Current Spiral Step] // [Current Spiral Radius];
+	[Current Spiral Angle] ++ [Current Spiral Step];
+	[Current Spiral Radius] ++ [Spiral Growth K Step];
+	?? [Current Spiral Angle] < [Spiral Exit Angle]
+		-> Spiral tracement loop;
+	end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+( If you read this routine's code carefully, you'll see it's just a circle
+whose radius keeps varying step by step. There is only one thing to consider:
+being that this function needs as much as SIX parameters to be filled on
+entry, we've got not enough registers to hold all of them.
+This isn't a very big trouble: we just set up a group of variables
+and let the function use these for its calculations and parameters.
+And after all, we find it's even more comfortable, because we can
+give significant names to the variables, while we can't do the
+same thing with registers. Again, names are VERY important in LINOLEUM
+code: since they can be as long as you want, if you keep them long enough
+to DESCRIBE what the variable or the subroutine is for, then you'll almost
+be able to read the code even if there are no comments at all. Try it, if
+you're used to other programming languages... it leads to a wholly new style
+of programming. And if you're finding it uncomfortable because there's a lot
+of things to type, well, the cut, copy & paste commands are there to help. )
+
+( Another consideration can be made about the variable called
+"Current Spiral Step". It holds the value to be added to the
+other variable "Current Spiral Angle" used in trigonometrics.
+While that value was constant for the circle, in the nautilus
+the same value must be re-calculated accordingly to the radius,
+which varies step-by-step. Also, about that value you can see
+the first occurrence of a small glitch. A bad creature, the:
+
+	PARTIAL LOSS OF PRECISION
+
+very pleased to meet you.
+The effect, in this case, is that if you just take the formula
+to calculate the step as 1 / r, you'll be strangely missing a
+few dots in the spiral. The calculation is correct, but physically,
+the processor misses some digits in the result (because it can't
+hold all of them when they're infinite, such as if you divide 1/3
+obtaining 0.33333333333333333333... and so on...). The consequence
+is that you get an approximated result, near to the correct one,
+but not being exactly equal to that.
+
+The solution can't be very rational this time.
+The only way is to increase the figure's resolution a bit,
+so that possible small errors will be compensated. Rather than
+applying the true 1 / r formula, I had to put in 0.999 / r.
+0.999 is a value quite near to 1, but smaller anyway.
+Smaller delta, considering how the original formula was found,
+will increase the total number of steps a little, covering those
+dots not being traced otherwise. You can see the glitch again by
+replacing the line which says:
+	[Current Spiral Step] = 0.999f;
+...with the original one...
+	[Current Spiral Step] = 1f; )

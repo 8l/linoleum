@@ -1,0 +1,276 @@
+(
+
+	-----------------------------------------------------
+	Simple image viewer for Lizzie-compressed TGA images,
+	such as the skybackground.tga picture. Also shows how
+	to basically display a crosshair as the mouse cursor,
+	in the same way the iGUI does, but put simpler.
+	-----------------------------------------------------
+
+      Usage:
+      * drag the .liz file to view over the program's icon.
+      * the display can be moved holding down left mouse button.
+      * to quit, either press a key or click the right mouse button.
+
+      Will only show:
+      * .liz packet files saved from .tga image files having depth=8/24/32.
+      * .liz packet files saved at generic chunk size, that is, 3794.
+
+      Apart from these compression parameters, images have to be:
+      * .tga images no larger than 1600x1200 pixels.
+      * .tga images no larger than the current system desktop screen, well,
+	just because this little simple program can't scroll them at all so
+	any parts of the image not fitting cooperative display won't show.
+
+	This commented source code is presented to learn from, so feel free
+	to use this code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs. This application comes
+	with the L.in.oleum compiler package - it is part of the "examples"
+	folder - not for sale. Written by Alessandro Ghignola.
+
+)
+
+"libraries"
+
+	gen/unlz;
+	gen/tga;
+
+	gen/allowdd;
+	gen/region;
+	gen/rect;
+
+"directors"
+
+	unit = 32;
+	symbolsmap = off;
+	programname = { Lizzie_TGA_viewer };
+
+    (at least, initially)
+	displaywidth = 0;
+	displayheight = 0;
+
+"constants"
+
+	maxw = 1600;
+	maxh = 1200;
+	tgah = 1000;
+
+"variables"
+
+ vector dummy gradients = 0f *** 9;
+
+"workspace"
+
+	in	  = 256;
+	ddhandle  = 4;
+
+	prevptrx  = 1;
+	prevptry  = 1;
+	crosshair = 4;
+	ch flag   = 1;
+
+	screen	  = 0; (alias of inbuffer, to be reused)
+	inbuffer  = maxw mtp maxh plus tgah;
+	outbuffer = maxw mtp maxh plus tgah;
+
+
+"programme"
+
+	a = commandline;
+    "clparsefromstart"
+	? [a] = null -> allstop;
+	? [a] <= 32 -> clstrim;
+	? [a] = 34 -> clstrim;
+	-> clfoundstart;
+      "clstrim"
+	a +;
+	-> clparsefromstart;
+      "clfoundstart"
+	b = commandline plus 255;
+    "clparsefromend"
+	? [b] <= 32 -> cletrim;
+	? [b] = 34 -> cletrim;
+	-> clfoundend;
+      "cletrim"
+	b -;
+	-> clparsefromend;
+      "clfoundend"
+	c = in;
+    "clcopy"
+	[c] = [a];
+	a +; c +;
+	? a <= b -> clcopy;
+	[c] = null;
+
+	[filename] = in;
+	[filecommand] = test;
+	isocall;
+      ? failed -> allstop;
+      ? [filesize] > maxw mtp maxh plus tgah mtp bytesperunit -> allstop;
+
+	[filename] = in;
+	[filecommand] = read;
+	[fileposition] = zero;
+	[blockpointer] = inbuffer;
+	[blocksize] = [filesize];
+	isocall;
+      ? failed -> allstop;
+
+	[lz datagram] = inbuffer;
+	[lz take bit] = 0;
+	[lz wordfill] = 0;
+	[lz datasize] = 0; (idunno, means to halt on end-of-data signal)
+	[lz chnksize] = 3794;
+	[lz data out] = outbuffer;
+	[lz give bit] = 0;
+	[lz size out] = maxw mtp maxh plus tgah mtp bytesperunit mtp 8;
+	=> unLZ;
+      ? failed -> allstop;
+
+	[tgapicturedata] = outbuffer;
+	[tgaeffect] = service FX Raw;
+	[tgatargetlayer] = screen;
+	[tgadisplaywidth] = 1;
+	[tgadisplayheight] = 1;
+	[tgadisplayalignment] = 1;
+	[tgapictureleft] = 0;
+	[tgapicturetop] = 0;
+	=> Load TGA Picture;
+      ? failed -> allstop;
+      ? [ltppixels] > maxw -> allstop;
+      ? [ltpscanlines] > maxh -> allstop;
+
+	[tgapicturedata] = outbuffer;
+	[tgaeffect] = service FX Raw;
+	[tgatargetlayer] = screen;
+	[tgadisplaywidth] = [ltppixels];
+	[tgadisplayheight] = [ltpscanlines];
+	[tgadisplayalignment] = [ltppixels];
+	[tgapictureleft] = 0;
+	[tgapicturetop] = 0;
+	=> Load TGA Picture;
+
+	[displaywidth] = [ltppixels];
+	[displayheight] = [ltpscanlines];
+	[displayxposition] = middle;
+	[displayyposition] = middle;
+	isocall;
+
+	[displayorigin] = screen;
+	[displaycommand] = retrace;
+	isocall;
+
+	[ddhandle plus 0] = 0;
+	[ddhandle plus 1] = 0;
+	[ddhandle plus 2] = [displaywidth];  [ddhandle plus 2] -;
+	[ddhandle plus 3] = [displayheight]; [ddhandle plus 3] -;
+	[draggingpad] = ddhandle;
+
+	[ch flag] = false;
+
+      "wait"
+
+	[prevptrx] = [pointerxcoordinate];
+	[prevptry] = [pointerycoordinate];
+	[pointercommand] = readpointer;
+	isocall;
+      ? [pointerstatus] - pd in sight -> no crosshair;
+      ? [ch flag] = true -> previous ptr coords were in range;
+	[ch flag] = true;
+	[displayliveregion] = wholedisplay;
+	[displaycommand] = retrace;
+	isocall;
+      "previous ptr coords were in range"
+	=> draw crosshair;
+	=> show crosshair;
+	=> undo crosshair;
+	-> crosshair done;
+      "no crosshair"
+      ? [ch flag] = false -> crosshair done;
+	=> show crosshair;
+	[ch flag] = false;
+      "crosshair done"
+
+	[processcommand] = sleep;
+	[sleeptimeout] = 25;
+	isocall;
+
+      ? [pointerstatus] - pd right button down -> keep waiting;
+      "wait release"
+	[pointercommand] = readpointer;
+	isocall;
+      ? [pointerstatus] + pd right button down -> wait release;
+	-> allstop;
+      "keep waiting"
+
+	=> allow display dragging;
+
+	[consolecommand] = getconsoleinput;
+	isocall;
+
+      ? failed -> wait;
+
+      "allstop"
+	end;
+
+    "draw crosshair"
+    "undo crosshair"
+	[crosshair plus 0] = [pointerxcoordinate];
+	[crosshair plus 1] = [pointerycoordinate];
+	[crosshair plus 2] = [crosshair plus 0];
+	[crosshair plus 3] = [crosshair plus 1];
+	[crosshair plus 0] - 20;
+	[crosshair plus 2] + 20;
+
+	[regiontonormalize] = crosshair;
+	=> normalize region;
+
+	[rectangletargetlayer] = screen;
+	[rectangledisplayalignment] = [display width];
+	[rectanglebounds] = crosshair;
+	[rectangleeffect] = service fx negate;
+	[rectanglegradients] = vector dummy gradients;
+	=> rectangle;
+
+	[crosshair plus 0] = [pointerxcoordinate];
+	[crosshair plus 1] = [pointerycoordinate];
+	[crosshair plus 2] = [crosshair plus 0];
+	[crosshair plus 3] = [crosshair plus 1];
+	[crosshair plus 1] - 20;
+	[crosshair plus 3] + 20;
+
+	[regiontonormalize] = crosshair;
+	=> normalize region;
+
+	[rectangletargetlayer] = screen;
+	[rectangledisplayalignment] = [display width];
+	[rectanglebounds] = crosshair;
+	[rectangleeffect] = service fx negate;
+	[rectanglegradients] = vector dummy gradients;
+	=> rectangle;
+
+	end;
+
+    "show crosshair"
+	[crosshair plus 0] = [pointerxcoordinate];
+	[crosshair plus 1] = [pointerycoordinate];
+	[crosshair plus 2] = [crosshair plus 0];
+	[crosshair plus 3] = [crosshair plus 1];
+	[crosshair plus 0] - 20;
+	[crosshair plus 1] - 20;
+	[crosshair plus 2] + 20;
+	[crosshair plus 3] + 20;
+
+	[regiontoupdate] = crosshair;
+	[regionxvector] = [pointerxcoordinate]; [regionxvector] - [prevptrx];
+	[regionyvector] = [pointerycoordinate]; [regionyvector] - [prevptry];
+	=> updateregionbyvector;
+
+	[regiontonormalize] = crosshair;
+	=> normalize region;
+
+	[displayliveregion] = crosshair;
+	[displaycommand] = retrace;
+	isocall;
+
+	end;

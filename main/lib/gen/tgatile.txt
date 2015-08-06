@@ -1,0 +1,98 @@
+(
+
+    TGA tiling subroutine
+    Simply repeats a TGA picture to fill an area of the target layer.
+    Used by the post-1.13.2b iGUI library to tile some GUI elements.
+    --------------------------------------------------------------------------
+    | Weighs:		376 bytes *
+    | Allocates:	  0 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	Tile Region
+	    [TR Bounds]
+		pointer to a rectangular region in the common format
+		vector myregion = left; top; right; bottom;
+		4 units are needed in that vector.
+	    [TR Picture Data]
+		pointer to a block of memory - inside a display layer -
+		where the picture's file contents have been loaded.
+	    [TR Target Layer]
+		pointer to the display layer where is the area to fill.
+	    [TR Display Alignment]
+		number of pixels per scanline of the target layer.
+	    [TR Effect]
+		Pointer to a subroutine to trace each single pixel
+		from the characters' shapes. Those routines are
+		services provided in the PixelFX library.
+		By default it points to the "service FX Raw"
+		subroutine, which just plots the pixels as they are.
+		See PixelFX to find out the other possible effects.
+
+)
+
+"libraries"
+	tga;
+
+"variables"
+	TR Bounds = UNDEFINED;
+	TR Picture Data = UNDEFINED;
+	TR Target Layer = UNDEFINED;
+	TR Display Alignment = 256;
+	TR Effect = service FX Raw;
+
+"programme"
+
+"Tile Region"
+	A = [TR Bounds];
+	[TGA Effect] -->; [TGA Effect] = [TR Effect];
+	[TGA Target Layer] -->; [TGA Target Layer] = [TR Target Layer];
+	[TGA Display Alignment] -->; [TGA Display Alignment] = [TR Display Alignment];
+	[TGA Display Width] -->; [TGA Display Width] = [A plus 2]; [TGA Display Width]+;
+	[TGA Display Height] -->; [TGA Display Height] = [A plus 3]; [TGA Display Height]+;
+	[TGA Picture Data] -->; [TGA Picture Data] = [TR Picture Data];
+	[TGA Picture Left] -->; [TGA Picture Left] = [A plus 0];
+	[TGA Picture Top] -->; [TGA Picture Top] = [A plus 1];
+      "TR Y Tiling loop"
+	  [TGA Picture Left] -->;
+	"TR X Tiling loop"
+	    => Load TGA Picture;
+	    ? [LTP Pixels] <= 0 -> TR Failed loading tile so breaking loops;
+	    ? [LTP Scanlines] <= 0 -> TR Failed loading tile so breaking loops;
+	    [TGA Picture Left] + [LTP Pixels];
+	    A = [TR Bounds]; ? [TGA Picture Left] <= [A plus 2] -> TR X Tiling loop;
+	  <-- [TGA Picture Left];
+	  [TGA Picture Top] + [LTP Scanlines];
+	  A = [TR Bounds]; ? [TGA Picture Top] <= [A plus 3] -> TR Y Tiling loop;
+	-> TR End;
+    "TR Failed loading tile so breaking loops"
+	<-- [TGA Picture Left];
+    "TR End"
+	<-- [TGA Picture Top];
+	<-- [TGA Picture Left];
+	<-- [TGA Picture Data];
+	<-- [TGA Display Height];
+	<-- [TGA Display Width];
+	<-- [TGA Display Alignment];
+	<-- [TGA Target Layer];
+	<-- [TGA Effect];
+    "TR Do Nothing"
+	end;

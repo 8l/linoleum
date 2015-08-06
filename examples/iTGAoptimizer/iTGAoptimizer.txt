@@ -1,0 +1,219 @@
+(
+
+	=====================================
+	indexed TGA picture palette optimizer
+	=====================================
+
+	copyright 2003 by Alessandro Ghignola, Home Sweet Pixel software
+	made because painting tools, no matter how complex they are,
+	will be always lacking the specific option you'd need
+	cfr. Murphy's law of painting tools.
+
+	This program optimizes the palette of TGA pictures having 8-bit
+	indexed palette but using less than 256 colors; in facts, when
+	most of the colors' indexes don't occur in the image data, the
+	corresponding 24-bit entries of the palette are a pretty annyoing
+	waste of space. The program's usage is pretty simple: start with
+	a 256-color TGA picture file, and simply drag and drop the file's
+	icon onto the program's icon. The program will load it, analyze
+	it, see if the format is alright and if there are some colors to
+	cut; if the program realizes that the file can be optimized, it
+	saves the optimized image data back to the same file. A way to
+	check if optimization was successfull is checking the image file
+	size to see if it got shorter after dropping the file's icon onto
+	this program's icon.
+
+	Note: the image file is not requested to be in this program's
+	folder, it may be in any other folders, because the full path
+	is inherited from the command line parameters. Yep, this is the
+	only possible exception where a program may access a file outside
+	its work directory: when the full path is given.
+
+	Additional note: there is theoretically NOTHING WRONG in the files
+	saved back by this program but I noticed several graphics programs
+	are unable to load them properly, or claim invalid format. Since
+	I did follow the original TGA file format specification, in my
+	opinion those programs might be handling files produced by this
+	program wrong, but the TGA library still handles them properly.
+
+	This program was used to optimize the various graphics parts of
+	the iGUI's default skin. In this folder are provided original
+	24-bit truecolor versions of those parts, or 256-color unotimized
+	indexed versions, anyway. If you're having troubles loading the
+	optimized versions from the "main" folder with a painting tool,
+	try loading the corresponding TGA file provided in this folder.
+
+)
+
+"libraries"
+
+	tga II;
+
+"directors"
+
+	unit = 32;
+	symbolsmap = off;
+	programname = { iTGAoptimizer };
+	displaywidth = 0;
+	displayheight = 0;
+
+"workspace"
+
+	in = 256;
+	sizeofinfile = 1;
+	sizeofoutfile = 1;
+	inbuffer = 1000000;
+	outbuffer = 1000000;
+	screen = 1000000;
+	min = 1;
+	max = 1;
+	newcolormapsize = 1;
+
+"programme"
+
+	a = commandline;
+    "clparsefromstart"
+	? [a] = null -> allstop;
+	? [a] <= 32 -> clstrim;
+	? [a] = 34 -> clstrim;
+	-> clfoundstart;
+      "clstrim"
+	a +;
+	-> clparsefromstart;
+      "clfoundstart"
+	b = commandline plus 255;
+    "clparsefromend"
+	? [b] <= 32 -> cletrim;
+	? [b] = 34 -> cletrim;
+	-> clfoundend;
+      "cletrim"
+	b -;
+	-> clparsefromend;
+      "clfoundend"
+	c = in;
+    "clcopy"
+	[c] = [a];
+	a +; c +;
+	? a <= b -> clcopy;
+	[c] = null;
+
+	[filename] = in;
+	[filecommand] = test;
+	isocall; ? failed -> allstop;
+	[sizeofinfile] = [filesize];
+	? [sizeofinfile] > 4000000 -> allstop;
+
+	[filename] = in;
+	[filecommand] = read;
+	[fileposition] = zero;
+	[blockpointer] = inbuffer;
+	[blocksize] = [sizeofinfile];
+	isocall; ? failed -> allstop;
+	[filename] = in;
+	[filecommand] = read;
+	[fileposition] = zero;
+	[blockpointer] = outbuffer;
+	[blocksize] = [sizeofinfile];
+	isocall; ? failed -> allstop;
+
+	[tgapicturedata] = inbuffer;
+	[tgaeffect] = service FX Raw;
+	[tgatargetlayer] = screen;
+	[tgadisplaywidth] = 1;
+	[tgadisplayheight] = 1;
+	[tgadisplayalignment] = 1;
+	[tgapictureleft] = 0;
+	[tgapicturetop] = 0;
+	=> Load TGA Picture;
+
+	? failed -> allstop;
+	? [ltpcolormapsize] = 0 -> allstop;
+
+	[tgapicturedata] = inbuffer;
+	[tgaeffect] = service FX Raw;
+	[tgatargetlayer] = screen;
+	[tgadisplaywidth] = [ltppixels];
+	[tgadisplayheight] = [ltpscanlines];
+	[tgadisplayalignment] = [ltppixels];
+	[tgapictureleft] = 0;
+	[tgapicturetop] = 0;
+	=> Load TGA Picture;
+
+	[min] = 256;
+	[max] = 000;
+	a = zero;
+	b = [ltppixels];
+	b * [ltpscanlines];
+    "scanpicturedata"
+	? [a relating screen] >= [min] -> spd above;
+	[min] = [a relating screen];
+      "spd above"
+	? [a relating screen] <= [max] -> spd below;
+	[max] = [a relating screen];
+      "spd below"
+	a +; b ^ scanpicturedata;
+
+	[newcolormapsize] = [max];
+	[newcolormapsize] - [min];
+	[newcolormapsize] +;
+	? [newcolormapsize] <= zero -> allstop;
+
+	a = [newcolormapsize]; a < 8;
+	[outbuffer plus 1] & FF0000FFh;
+	[outbuffer plus 1] | a;
+
+	a = [min]; a < 24;
+	[outbuffer plus 0] & 00FFFFFFh;
+	[outbuffer plus 0] | a;
+
+	a = [min];
+	a * 24;
+	b = [ltpidblocksize];
+	b + 18;
+	b < 3;
+	a + b;
+	[bitfieldsize] = 24;
+    "copynewpalette"
+	[bitstreampointer] = inbuffer;
+	[startingbitnumber] = a;
+	a -->; b -->; => getbitfield; <-- b; <-- a;
+	[bitstreampointer] = outbuffer;
+	[startingbitnumber] = b;
+	a -->; b -->; => setbitfield; <-- b; <-- a;
+	a + [bitfieldsize];
+	b + [bitfieldsize];
+	[newcolormapsize] ^ copynewpalette;
+
+	a = [ltpidblocksize];
+	a + [ltpcolormapsize];
+	a + 18;
+	a < 3;
+	c = [ltppixels];
+	c * [ltpscanlines];
+	[bitfieldsize] = 8;
+    "copyimagedata"
+	[bitstreampointer] = inbuffer;
+	[startingbitnumber] = a;
+	a -->; b -->; c -->; => getbitfield; <-- c; <-- b; <-- a;
+	[bitstreampointer] = outbuffer;
+	[startingbitnumber] = b;
+	a -->; b -->; c -->; => setbitfield; <-- c; <-- b; <-- a;
+	a + [bitfieldsize];
+	b + [bitfieldsize];
+	c ^ copyimagedata;
+
+	[sizeofoutfile] = b;
+	[sizeofoutfile] > 3;
+
+	[filename] = in;
+	[filecommand] = write;
+	[fileposition] = zero;
+	[blockpointer] = outbuffer;
+	[blocksize] = [sizeofoutfile];
+	isocall;
+	[filename] = in;
+	[filecommand] = setsize;
+	[filesize] = [sizeofoutfile];
+	isocall;
+    "allstop"
+	end;

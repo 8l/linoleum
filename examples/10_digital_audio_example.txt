@@ -1,0 +1,447 @@
+
+      ( *** LINOLEUM Example 10: Digital Audio Example *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "10_digital_audio_example.TXT", WITH
+	   THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Emits a couple of sine waves in unison from both channels
+	of the audio card [well, providing the audio card is present
+	and it's got 2 channels, stereo output]. Refer to previous
+	example for more informations about the audio workspace. )
+
+      ( WARNING:
+	If the audio environment isn't ready to play, for whatever reason, the
+	flag READY of variable [PCM data Status] is NOT set. Your program may
+	check for that flag in the following way:
+
+	  ? [PCM data Status] - READY -> Tell the user you cant play;
+	  ? [PCM data Status] + READY -> Its alright;
+
+	before version 1.13.6b, the run-time module did that kind of check on
+	startup, and displayed a standard warning message on failure; starting
+	with the said version, this intrusive way to work was removed, and the
+	responsibility to eventually warn the user left to the application. )
+
+      ( FIRST APPEARENCE:
+	of a routing table. See the manual about them... )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Digital_Audio_Example };
+	unit = 32;
+
+	display width = 0;
+	display height = 0;
+
+	modular extensions = audio playback;
+
+"constants"
+
+	(constants used in waveform calculation)
+	PI	= 3.141592654f;
+	TwoPI	= PI plus PI;
+
+"variables"
+
+	Waveform Position	= 0f;
+	Waveform Frequency	= 440f;
+	Waveform Volume 	= 0.5f;
+	Waveform Duration	= 1f;
+
+	SW Delta Freq		= 0f;
+	SW Delta Radians	= 0f;
+	SW Current Radians	= 0f;
+	SW Duration in Samples	= 1;
+
+	Sample Channel		= 1;
+	Sample Volume		= 0f;
+	Sample Offset		= 0;
+
+	SPS Translation Routine = NULL;
+	SPS LoVolume Range	= minus 128;
+	SPS HiVolume Range	= plus 127;
+	SPS Volume Range	= 127f;
+
+ vector Push Sample Routings =
+	service PS Mono    8bit Ch1;
+	service PS Mono    8bit Ch1;
+	service PS Mono   16bit Ch1;
+	service PS Mono   16bit Ch1;
+	service PS Stereo  8bit Ch1;
+	service PS Stereo  8bit Ch2;
+	service PS Stereo 16bit Ch1;
+	service PS Stereo 16bit Ch2;
+
+	(NOTE: If you want to know what "vector" and "service" mean
+	when preceeding a variable or a code label declaration, have
+	a look to the troubleshooting guide and search those words. )
+
+"workspace"
+
+	Audio workspace = 176400; (needs 44100 units per second of playback)
+
+"programme"
+
+      ( To avoid hanging the program due to the wait loop at its end,
+	which would never finish if the playback didn't start, we'd
+	better check if the audio workspace is ready, and the related
+	modular extension was included correctly... if for some reason
+	the audio playback interface isn't ready to play, we exit NOW. )
+
+	? [PCM data Status] - READY -> End of program;
+
+      ( The following loads pointer and size of audio workspace
+	into the run-time module communications area: )
+
+	[PCM data Origin] = Audio workspace;
+	[PCM data Size] = 176400;
+
+      ( The following lines make two calls to the SW subroutine,
+	to build two sounds. The first sound is emitted from audio channel
+	number 1, the second goes to channel 2. The second sound has a
+	frequency of 440 Hertz, giving note A of the central octave, or
+	the same sound emitted by a diapason. The other sound is A of the
+	octave below. Both sounds start together, a half second after
+	beginning of playback. Please note the volumes: 0.45 and 0.45,
+	because their sum is 0.9, or below 1. The total volume of all sounds
+	emitted together, must NEVER get above 1, or you will hear heavy
+	distortions in the resulting waveform. Er... for metal freaks -
+	like for example me - this is an UNWANTED distortion. To add "real"
+	distortion, add a certain RANDOM amount to the volume of each sample,
+	that's how it effectively works, technically... but you will first
+	need one or more subroutines for generating pseudo-random numbers. )
+
+	[Waveform Position] = 0.5f;
+	[Waveform Frequency] = 220f;
+	[Waveform Volume] = 0.45f;
+	[Waveform Duration] = 3f;
+	[Sample Channel] = 1;
+	=> Sine Wave;
+	[Waveform Position] = 0.5f;
+	[Waveform Frequency] = 440f;
+	[Waveform Volume] = 0.45f;
+	[Waveform Duration] = 3f;
+	[Sample Channel] = 2;
+	=> Sine Wave;
+
+      ( Start playback... )
+
+	[PCM data Command] = PLAY CONTINUOUSLY;
+	isocall; ? failed -> End of program;
+
+      ( The following lines will wait for playback to finish.
+	A, within the loop, is assigned to the actual time since the
+	playback was started (that is, approximately, since this same
+	program was started). To find out the time in seconds, A is
+	first assigned to the currently-playing sample offset, then
+	divided in floating-point by the sample rate, loaded in B.
+	The result is how many seconds have passed since playback began.
+	The program, therefore, loops until 3.5 seconds have passed.
+	That's because the two sounds start from 0.5 seconds since the
+	beginning of playback, and will both last exactly 3 seconds. )
+
+    "Nail"
+	[PCM data Command] = GET DATA OFFSET; isocall;
+	A ,= [PCM data Offset];
+	B ,= [PCM data Samples Per Sec];
+	A // B; ?? A < 3.5f -> Nail;
+
+    "End of program"
+	end;
+
+"Sine Wave"
+    ( Emits a sine audio waveform, using the "Push Sample" subroutine.
+	[Waveform Position] = floating-point relative position in seconds;
+	[Waveform Frequency] = floating-point FREQUENCY in Hertz;
+	[Waveform Volume] = floating-point VOLUME ranging from 0 to 1;
+	[Waveform Duration] = floating-point DURATION in seconds;
+	[Sample Channel] = int. number of channel from which emitting sample )
+    ( Initialization )
+	=> Start Pushing Samples;
+	? failed -> SW Fail;
+    ( Checking if waveform parameters contain legal values. )
+	A ,= [PCM data Samples Per Sec];
+	A ** [Waveform Duration];
+	[SW Duration in Samples] =, A;
+	? [SW Duration in Samples] <= 0 -> SW Fail;
+	? [Waveform Frequency] <= 0f -> SW Fail;
+    ( Positioning sample offset )
+	A ,= [PCM data Samples Per Sec];
+	A ** [Waveform Position];
+	[Sample Offset] =, A;
+    ( Initialization of construction loop )
+	[SW Delta Freq] ,= [PCM data Samples Per Sec];
+	[SW Delta Freq] // [Waveform Frequency];
+	[SW Delta Radians] = TwoPI;
+	[SW Delta Radians] // [SW Delta Freq];
+	[SW Current Radians] = 0f;
+    "SW Construction Loop"
+	? [SW Current Radians] < TwoPI -> SWOK;
+	[SW Current Radians] -- TwoPI; "SWOK"
+	[Sample Volume] = [SW Current Radians]; ~[Sample Volume];
+	[Sample Volume] ** [Waveform Volume];
+	=> Push Sample;
+	[SW Current Radians] ++ [SW Delta Radians];
+	[SW Duration in Samples] ^ SW Construction Loop;
+    "SW Fail"
+	fail;
+
+"Start Pushing Samples"
+    ( Initializes the "Push Sample" subroutine.
+      To be called at least once before "Push Sample".
+      Fails when the audio environment hasn't been properly setup.
+	[Sample Channel] = number of channel from which samples will
+			   be emitted - allowed channels: 1 and 2. )
+	? [PCM data Size]		>  0 -> SPS Start F0;
+	? [PCM data Origin]		!= 0 -> SPS Start F0;
+	-> SPS Fail;
+    "SPS Start F0"
+	? [PCM data Channels]		=  1 -> SPS Start F1;
+	? [PCM data Channels]		=  2 -> SPS Start F1;
+	-> SPS Fail;
+    "SPS Start F1"
+	? [PCM data Bits Per Sample]	=  8 -> SPS Start F2;
+	? [PCM data Bits Per Sample]	= 16 -> SPS Start F2;
+	-> SPS Fail;
+    "SPS Start F2"
+	? [Sample Channel]		=  1 -> SPS Start F3;
+	? [Sample Channel]		=  2 -> SPS Start F3;
+	-> SPS Fail;
+    "SPS Start F3"
+    ( Calculating volume ranges )
+	A = SMALLEST SIGNED INTEGER; A <@ [PCM data Bits Per Sample];
+	A+-; [SPS LoVolume Range] = A; A+-;
+	A-; [SPS HiVolume Range] = A;
+	A ,= A; [SPS Volume Range] = A;
+    ( Selecting proper translation subroutine (aka flow routing) )
+	C = [PCM data Bits Per Sample]; C > 4; C < 1;
+	D = [PCM data Channels]; D-; D < 2; C + D;
+	D = [Sample Channel]; D-; C + D;
+	[SPS Translation Routine] = [C plus vector Push Sample Routings];
+	end;
+    "SPS Fail"
+    ( Upon failure, warns the Push Sample subroutine
+      that no samples can be translated yet. )
+	[SPS Translation Routine] = NULL;
+	fail;
+
+"Push Sample"
+    ( Pushes a single sample to the audio workspace.
+      Does nothing if "Start Pushing Samples" has not been called first.
+	[Sample Volume] = floating-point volume in range -1 to 1;
+	[Sample Offset] = integer pointer to current sample,
+			  automatically re-arranged if needed
+			  and automatically increased by one. )
+    ( Checking validity of previous call to Start Pushing Samples )
+	? [SPS Translation Routine] != NULL -> PSOK; end; "PSOK"
+    ( Calculating sample volume(=A) )
+	A = [SPS Volume Range];
+	A ** [Sample Volume];
+	A =, A;
+    ( Calculating sample offset(=B) )
+	B = [Sample Offset];
+	B % [PCM data Size];
+    ( Incrementing offset for next sample to be pushed )
+	[Sample Offset]+;
+    ( Calling waveform translator )
+	=> [SPS Translation Routine];
+    ( Upon return from the waveform translator, registers are as follows:
+      A holds the sample value, eventually shifted by 8 or 16 bytes to
+	the left, if we're streaming on audio channel number 2;
+      B holds the offset to the memory unit which is containing current
+	sample, within audio workspace, so it must be added PCM data Origin
+	to find out the actual pointer;
+      C is not used by the translation routines,
+	and it's intended to be a scratch pad during the mixing process;
+      D is the number of the least significant bit, within the memory unit
+	containing current sample, where the sample value is: naturally,
+	the amount of bits forming that value is PCM data Bits Per Sample;
+      E is a bitmask in which all the bits referring to current sample have
+	been set to 1 by the translation routine. i.e. the first bit set to
+	one in register E is bit number D. )
+    ( Finally mixing foreground waveform with background )
+	B + [PCM data Origin];		(make a pointer out of the offset)
+	C = [B]; C & E; C > D;		(get current background volume in C)
+	C-[PCM data Silence Threshold]; (get absolute volume)
+	C + A;				(mix them, a simple addition will do)
+	? C >= [SPS LoVolume Range] -> PSLOW; C = [SPS LoVolume Range]; "PSLOW"
+	? C <= [SPS HiVolume Range] -> PSHIG; C = [SPS HiVolume Range]; "PSHIG"
+	C+[PCM data Silence Threshold]; (consider the threshold)
+	A = [B];			(get current background volume in A)
+	!E; A & E; !E;			(ZERO all memory bits of the sample)
+	C < D; C & E; A | C;		(merge bitfields to set new value)
+	[B] = A;			(put back the modified sample to the audio ws)
+	end;				(end of Push Sample subroutine)
+    ( Waveform data translation subroutines )
+    "service PSMono8bitCh1"	E=000000FFh;D=B;D&3;D<3;E<@D;B>2;end;
+    "service PSMono16bitCh1"	E=0000FFFFh;D=B;D&1;D<4;E<@D;B>1;end;
+    "service PSStereo8bitCh1"	E=000000FFh;D=B;D&1;D<4;E<@D;B>1;end;
+    "service PSStereo8bitCh2"	E=0000FF00h;D=B;D&1;D<4;E<@D;A<8;B>1;end;
+    "service PSStereo16bitCh1"	E=0000FFFFh;D=0;end;
+    "service PSStereo16bitCh2"	E=FFFF0000h;D=16;end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+( Some things you should notice from this example...
+
+	The size of the audio workspace is set to 176,400 units.
+	How many units are needed per SECOND in the audio playback
+	is given by the following simple calculation:
+
+		UNITS = 44100 x SECONDS
+
+	...because 44100 samples per second is the maximum value
+	allowed by the runtime module for the playback environment.
+	As stated by example 9, 44100 will always be more than sufficient.
+	So, this program's audio workspace is capable of holding upto 4
+	seconds of audio data at a time, because 44100 x 4 = 176400.
+	In effects, the data finishes at 3.5 seconds, so you'd need only
+	154,350 units, but the extra units are suggested when using loops
+	to wait for the playback to finish, because otherwise the line:
+
+		?? A < 3.5f -> Nail;
+
+	for approximation reasons, would turn to an always true condition
+	and the loop would never end, because A in that loop is calculated
+	as the number of seconds that passed since the playback began.
+	It is in fact a slightly crappy way to end a program, but it was
+	chosen here to also demonstrate how to gather the actual position
+	of the playback. In reality, you may simply do a:
+
+		[Process Command] = SLEEP;
+		[Sleep Timeout] = 3500; (milliseconds)
+		isocall;
+
+	and then end the program, or, if it has to go on with no further
+	sounds but with other stuff, or with a completely different wave,
+	stop the present playback with an even simpler:
+
+		[PCM data Command] = STOP;
+		isocall;
+
+	The routine used to build the waveform is probably understandable,
+	while the other (Push Sample) is probably not. "Push Sample" uses
+	advanced features of the Linoleum language, such as routing tables,
+	along with complex manipulations of a binary stream, which is the
+	audio workspace memory. More than an example, "Push Sample" could
+	be considered as a fundamental function for using Linoleum's audio
+	playback: "Push Sample" is an universal interpreter for translating
+	the amplitude of the waveform, espressed in floating-point, to the
+	format the current audio card is capable of playing. "Push Sample"
+	supports any audio cards using 8 or 16 bits per sample, 1 or 2
+	audio channels, and any sampling rates. Of course better cards will
+	result in better audio playback quality, but if your audio card is
+	working with digital surround, 6 channels, 128 bits or some other
+	pratically-useless-but-cool-to-have-features (laughs) like those,
+	the runtime module will setup the card to play with 16 bits and 2
+	channels and 44,1 KHz anyway.
+
+	You don't need, unless you're curious, to understand how "Push Sample"
+	really works, and I have to warn you it's difficult. If you're not
+	curious (at least for now), just use "Push Sample" in your programs,
+	as described by the following comments. About the speed, "Push Sample"
+	is pratically as fast as possible: if you've got a decent processor
+	starting from a Pentium-60MHz, your programs will be surely able to
+	call "Push Sample" some hundred thousands times per second. (Note this
+	program is given a small delay of only 0.5 seconds to build the two
+	waveforms, by setting "[Waveform Position] = 0.5f;" before calling
+	the "Sine Wave" subroutine: in only half a second, pratically in
+	real time, the program streams all of the needed samples to those
+	176,400 units reserved for the audio workspace.)
+
+	Before calling "Push Sample", you should:
+
+	     1. make a call to "Start Pushing Samples":
+		that will initialize the SPS... variables
+		which will be then used by "Push Sample";
+		the "Start Pushing Samples" subroutine requires
+		the caller to setup only one parameter, which
+		is the number of the audio channel from which
+		samples will be emitted. It can be 1 or 2, and
+		is passed thru the variable [Sample Channel].
+
+	     2. check if "Start Pushing Samples" returned
+		successfully. The user running your program may
+		have no audio card at all, and if this happens,
+		"Start Pushing Samples" will fail. It will also
+		fail if you provided an illegal channel number.
+
+	Then you can call "Push Sample" for a number of times,
+	to build your waveform. "Push Sample" will store a single
+	sample into the audio workspace (the memory area pointed by
+	[PCM data Origin] and extending for [PCM data Size] units).
+	So, in order to build a waveform, you must call "Push Sample"
+	repeatedly, until the last sample. "Push Sample" will need
+	the following parameter to be setup at each call:
+
+	[Sample Volume] = floating-point volume in range -1 to 1
+
+	The volume represents the amplitude of the wave in that point.
+	Another parameter is:
+
+	[Sample Offset] = integer pointer to current sample
+
+	The sample offset is the number of the sample to be affected
+	by the routine: it is a progressive number going from zero to
+	[PCM data Size] minus 1. It may exit this range, but in such
+	cases the final pointer will be refitted to the said range by
+	"Push Sample", meaning that if you should set:
+
+		[Sample Offset] = [PCM data Size];
+
+	it would mean, to "Push Sample", the same as:
+
+		[Sample Offset] = ZERO;
+
+	because the audio workspace is handled like a "loop tape",
+	as explained by example number 9 (you did read it, didn't you?).
+	[Sample Offset] is also incremented by "Push Sample" each time
+	you call that routine, for your program's commodity.
+	So, the [Sample Offset] should be loaded once before your
+	program begins to build the waveform by repeatedly calling
+	"Push Sample". Then, your program needs not altering [Sample
+	Offset] anymore during construction of the waveform.
+
+	One last thing: the "Sine Wave" subroutine is, like "Plot",
+	another example of a 100% fault-tolerant subroutine. No matter
+	if you use legal or illegal values, it will never crash or behave
+	in weird ways, because it performs a lot of checks, like every
+	serious subroutines should do. Well, of course the waveform will
+	sound distorted when you use volumes over 1.0 in floating-point,
+	written in Linoleums as 1f or 1.0f, but that's really unavoidable.
+
+	Want to understand what it means to control the wave form at such
+	a low level? Try placing this line, for instance...
+
+	[SW Delta Radians] -- 0.00000025f;
+
+	... right after [SW Current Radians] ++ [SW Delta Radians];
+	... and you'll get the sine wave to reduce its frequency as it
+	plays. It's some cheap fun, but it might give an idea. )

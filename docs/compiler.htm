@@ -1,0 +1,152 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>	<title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body	leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link	rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+	<a href = "index.htm">Terms of use</a><br>
+	<a href = "programs.htm">Programming</a><br>
+	Compiling<br>
+	<a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+	<a href = "librarie.htm">libraries</a><br>
+	<a href = "stockfil.htm">stockfile</a><br>
+	<a href = "director.htm">directors</a><br>
+	<a href = "constant.htm">constants</a><br>
+	<a href = "variable.htm">variables</a><br>
+	<a href = "workspac.htm">workspace</a><br>
+	<a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+	<a href = "process.htm">Process</a><br>
+	<a href = "subrouti.htm">Subroutines</a><br>
+	<a href = "dynaheap.htm">Dynamic heap</a><br>
+	<a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+	<a href = "glossary.htm">Glossary</a><br>
+	<a href = "punct_qr.htm">Punctuators</a><br>
+	<a href = "ltags_qr.htm">Tags</a><br>
+	<a href = "instr_qr.htm">Instructions</a><br>
+	<a href = "ikrnl_qr.htm">IsoKernel</a><br>
+	<a href = "error_qr.htm">Errors</a><br>
+	<a href = "warns_qr.htm">Warnings</a><br>
+	<a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+	SHORT DESCRIPTION OF THE L.in.oleum COMPILER
+	<hr size = 1 width = "100%" color = "white">
+</center>
+
+The current version of the L.in.oleum compiler is 1.13.11 beta.
+The compiler is an MS-DOS application and is also able to run
+on Windows 3.1, 95, 95SE, 98, NT4, ME, 2000, NT5, WindowsXP. However,
+the programs produced by the compiler need <i>at least</i> Windows95.
+Beta testing of compiler and applications has been successfully performed
+on Windows95, 95SE, 98, ME, XP. But please note: if you have a different
+version it doesn't mean the compiler or its programs won't work for you;
+it simply means it's not been tested yet.
+
+<br><br><br>
+<center>
+	HOW TO RUN THE L.in.oleum COMPILER
+	<hr size = 1 width = "100%" color = "white">
+</center>
+
+Before attempting to compile a L.in.oleum program, you should
+make sure you have extracted all the files contained in the
+LINOLEUM.ZIP package to the folder C:\LINOLEUM, eventually
+creating a new folder with that name in the root directory
+of your C hard drive.
+Compiling is extremely easy: you just have to select the
+program's source code icon (a program's source code, in Lino,
+is ALWAYS a very common, plain text file, having TXT extension)
+using the right mouse button. Providing you have launched INSTALL.REG to
+add the compiler option as described on the <a href="index.htm">intro</a> page, the pop-up
+menu for all text files will show the option "<u>C</u>ompile as L.in.oleum
+source code". Select the option an the compiler will do the rest... that's all.
+
+<br><br><br>
+<center>
+<img src = "wg/way2.gif" width = 330 height = 116 border = 0 alt = "LAUNCHING THE COMPILER">
+<br>The above picture shows what appears in the popup menu after right-clicking a text file...
+</center>
+
+<br><br><br>
+<center>
+<img src = "wg/way3.gif" width = 560 height = 242 border = 0 alt = "WHAT THE COMPILER SAYS">
+</center>
+Now, if all goes well, the compiler will start parsing the source code
+and when it's done, the compiler's output window will look similar to the
+above picture. Of course the most interesting informations are given
+by the very last messages, claiming there were no errors, no warnings,
+and no compatibility warnings. Errors, warnings and compatibility warnings
+are three distinct categories of messages: if there WERE some, you would
+find them listed inside a file called ERRORLOG and placed into the same
+folder where the source code is.
+
+<br><br><br>
+<center>
+<img src = "wg/way4.gif" width = 210 height = 70 border = 0 alt = "...AND FINALLY THE RESULTING FILES">
+</center>
+If, at that point, you look inside the folder where the source code was
+(in the example, the folder is &quot;C:\LINOLEUM\EXAMPLES&quot;) you will
+find a couple of new files, which are ALWAYS called &quot;PROGRAM&quot;
+and &quot;SMBLSMAP&quot;. PROGRAM is the compiled program, and it's ready
+to run. PROGRAM can be also renamed to reflect the real name of your
+application; the default icon can be changed using the &quot;Icon Editor&quot;,
+one of the tools included in the &quot;Examples&quot; folder of the package.
+SMBLSMAP is a text file reporting a full listing of all the symbols
+(constants, variables, labels) declared in the source code. You will be
+understanding more of this file after you learned some L.in.oleum programming;
+the symbols' map is provided by the compiler as a facility for in-depth
+debugging of the applications.
+If there are serious errors in the source code, the compiler does not create
+those two files, and instead creates another file called ERRORLOG.
+
+<br><br>
+Note: PROGRAM can be renamed, its icon can be changed by the Icon Editor,
+but MOST OF ALL, it does NEVER need any support files to run. It will run
+everywhere, it will run in any folders, it doesn't need to be &quot;installed&quot;
+in some crappy way. Just double-click the icon and it will run. Just move
+the icon and the whole program will move along with it. THE ICON YOU SEE
+<i>IS</i> THE PROGRAM, and there's nothing more than it: that ought to make
+your applications rather easy to use.
+
+<br><br>
+Additional note for WindowsXP users (but also valid in general): the DOS virtual
+machine where the compiler is running on WindowsXP, by default closes the black DOS
+window right after the compiler terminates execution, making it impossible to read
+the final status messages. To determine wether the program compiled successfully or
+with serious errors, you will have to see if the ERRORLOG.TXT file has been created.
+If it has been created, it means there were errors, and you should open ERRORLOG.TXT
+to read about those errors and in which lines they have been found. While, if the
+program compiled successfully, the ERRORLOG.TXT will be erased and the rest of
+the informations about how many lines were compiled, the size of the various
+components of the application, etc, can be found echoed at the end of SMBLSMAP.TXT.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

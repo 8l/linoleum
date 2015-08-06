@@ -1,0 +1,389 @@
+(
+
+    VARIABLE LZ/LZ77 - DECOMPRESSOR ONLY [TAKES MUCH LESS MEMORY/SMALLER CODE]
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:	       3628 bytes *
+    | Allocates:    4179376 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      See "lz.txt" library, where there's also the compression algorithm.
+      If you suppose that your program only has to extract stuff LZ packets,
+    this is what you will want to include in place of "lz.txt", cutting lots
+    of memory requirements and shortening the code and physical size of your
+    application. It's probably what you want for a self-extractor, that is...
+      There is no compressor-only library, it's pratically useless: it's very
+    strange that you'd want to compress without being able to decompress, and
+    it's also probably a worthless effort. Decompression code and RAM needed,
+    once the compressor's buffers are kept allocated, are mostly shared, and
+    they really take but a few hundred bytes more in the application's code.
+      IMPORTANT: if you used the Lizzie application to apply DHC compression
+    to the already compressed LZ packet, you then need to include also the DHC
+    library. For what concerns an unDHC decompressor-only library, it would be
+    useless for the same reason as above: the whole DHC library only takes 2Kb
+    of code and less than 40Kb of RAM, including the compression algorithm, so
+    it's worthless to try and separate it. The only other valuable library is
+    this one here: just have a look at the memory requirements for LZ and unLZ
+    and compare them. I'm sure you'll agree this time it's right to separate
+    at least the decompressor, which doesn't need all those megabytes for that
+    kind of quick indexing of the Lempel-Ziv dictionary.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      The behaviour of "LZ" and of "unLZ" is very similar to that seen in the
+    DHC library, for which details I'd suggest reading dhc.txt commentary. In
+    short, here's a scheme of entry/exit values to and from the two routines.
+    The only difference is that you have [lz chnksize] to initialize in place
+    of an unsupported [lz wordsize], because this library was made to compress
+    byte-aligned data only, so the wordsize is implicitly 8 bit, although it's
+    still possible to insert padding bits between words via [lz wordfill].
+
+	Synopsis for unLZ:
+
+    <step 1 - loading input parameters>
+	[lz datagram] = pointer to compressed bitstream;
+	[lz take bit] = n. of the 1st bit of the datagram to start from;
+	[lz wordfill] = void bits separating words in the original data;
+	[lz datasize] = number of words in the original datagram;
+	[lz chnksize] = number of words per chunk;
+    <step 2 - loading output parameters>
+	[lz data out] = pointer to bitstream to receive uncompressed data;
+	[lz give bit] = n. of 1st bit of above bitstream to start writing to;
+	[lz size out] = total size in bits of the bitstream provided above;
+    <step 3 - calling decompressor, retrieving uncompressed bitstream size>
+	=> unLZ;
+      ? ok -> alright;
+      ? failed -> invalid parameters or unLZ ran out of destination buffer;
+    "alright"
+	[resulting uncompressed data size in bytes] = [lz bits out];
+
+      One further difference to be considered is that, not being intended for
+    brief strings' cheap compression, LZ and unLZ don't allow to specify zero-
+    terminated datagrams by setting [lz datasize] to zero, which is instead
+    possible with DHC library's functions. LZ/unLZ take the number of words in
+    the input datagram as it is: if it's zero, it results in a void stream, it
+    doesn't cause these functions to stop when the first null code is found.
+      So, if you wish to encode L.in.oleum strings this way, you have to count
+    the characters forming the strings, and tell LZ/unLZ about that value via
+    [lz datasize], other than setting [lz wordfill] to 24.
+
+    --------------------------------------------------------------------------
+    SEE ALSO
+    --------------------------------------------------------------------------
+    DHC.txt
+    LZ.txt
+
+)
+
+"libraries"
+
+	bits;
+
+"constants"
+
+	z77 table size = 46;
+	lz window size = 8192;
+	lz dictstart = minus z77 table size mtp 16;
+
+"variables"
+
+ vector z77 itab =
+    (LZ index)	  (offset bits)   (counter bits)
+    (------- variable LZ77 repeat codes -------)
+       (00)	       13;		6;
+       (01)	       13;		5;
+       (02)	       13;		4;
+       (03)	       13;		3;
+       (04)	       12;		6;
+       (05)	       12;		5;
+       (06)	       12;		4;
+       (07)	       12;		3;
+       (08)	       11;		6;
+       (09)	       11;		5;
+       (10)	       11;		4;
+       (11)	       11;		3;
+       (12)	       10;		6;
+       (13)	       10;		5;
+       (14)	       10;		4;
+       (15)	       10;		3;
+       (16)		9;		6;
+       (17)		9;		5;
+       (18)		9;		4;
+       (19)		9;		3;
+       (20)		8;		6;
+       (21)		8;		5;
+       (22)		8;		4;
+       (23)		8;		3;
+       (24)		7;		6;
+       (25)		7;		5;
+       (26)		7;		4;
+       (27)		7;		3;
+       (28)		6;		6;
+       (29)		6;		5;
+       (30)		6;		4;
+       (31)		6;		3;
+    (------- "repeat last offset" codes -------)
+ (i=i%4+32)		0;		6;
+       (33)		0;		5;
+       (34)		0;		4;
+       (35)		0;		3;
+    (------- "repeat last length" codes -------)
+ (i=i/4+36)	       13;		0;
+       (37)	       12;		0;
+       (38)	       11;		0;
+       (39)	       10;		0;
+       (40)		9;		0;
+       (41)		8;		0;
+       (42)		7;		0;
+       (43)		6;		0;
+    (---- "repeat offset and length" code -----)
+     (i=44)		0;		0;
+    (----------- "end of data" code -----------)
+     (i=45)	       (?)	       (?)
+
+"workspace"
+
+    (unLZ input parameters)
+	lz datagram = 1;
+	lz take bit = 1;
+	lz wordfill = 1;
+	lz datasize = 1;
+	lz chnksize = 1;
+	lz data out = 1;
+	lz give bit = 1;
+	lz size out = 1;
+
+    (unLZ output parameters)
+	lz bits out = 1;
+
+    (internal variables)
+	lz fail = 1;	(failure flag, set to 1 if out of destination buffer)
+	lz cwin = 1;	(Current Words IN, determines when a chunk is over)
+	lz dlen = 1;	(Dictionary LENgth, actually)
+	lz inow = 1;	(Index bits NOW, bits to identify dictionary entries)
+	lz imax = 1;	(Index MAX, kept equal to 2 ^ inow, gives dlen limits)
+	lz blen = 1;	(Block LENgth, of last match found in dictionary)
+	lz bend = 1;	(Block's END pointer, useful to update the dictionary)
+	lz wpos = 1;	(Window POSition, of next free unit of sliding window)
+	lz wlen = 1;	(Window LENgth, how many units the window contains)
+	lz wmst = 1;	(Window Match STart, the negative offset to be saved)
+	lz wmat = 1;	(Window MATch size, n. of bytes forming said match)
+	lz lmst = 1;	(Last Match STart, for use with "repeat last" codes)
+	lz lmat = 1;	(Last MATch size, for use with "repeat last" codes)
+	lz wmto = 1;	(Window Match Table Offset, wmto = index*2 + z77 itab)
+	lz dumb = 1;	(dumb unit where to trash latest read word if needed)
+
+    (internal vectors - words' indexing used to speed up dictionary searchs)
+	lz ilen = 256;					(word indexs' length)
+	lz dict = 4097 minus z77 table size mtp 16;	(the LZ dictionary)
+	lz wind = lz window size;			(LZ77 sliding window)
+
+"programme"
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"unLZ"
+	[lz fail] = false;
+	[bit stream pointer] = [lz datagram];
+	[starting bit number] = [lz take bit];
+	[lz bits out] = [lz give bit];
+	[lz cwin] = 0;
+	[lz wpos] = 0;
+	[lz wlen] = 0;
+	=> unlz reset;
+    "unlz data loop"
+	[bit field size] = [lz inow];
+	=> get bit field;
+	[starting bit number] + [lz inow];
+      ? [bit field content] = 45 -> unlz complete; (end of data)
+      ? [bit field content] >= z77 table size -> unlz no repeat sequence;
+	[lz wmto] = [bit field content];
+	[lz wmto] < 1;
+	[lz wmto] + vector z77 itab;
+	c = [lz wmto];
+	[bit field size] = [c plus 0];
+      ? [bit field size] != zero -> unlz really read wmst;
+	[lz wmst] = [lz lmst];
+	-> unlz used last wmst;
+      "unlz really read wmst"
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[lz wmst] = [bit field content];
+	[lz lmst] = [bit field content];
+      "unlz used last wmst"
+	a = [lz wpos];
+	a - [lz wmst]; a -;
+	a & lz window size minus 1;
+	b = [lz bend];
+	[b] = [a relating lz wind];
+	[lz bend] = lz dumb;
+	c = [lz wmto];
+	[bit field size] = [c plus 1];
+      ? [bit field size] != zero -> unlz really read wmat;
+	[lz wmat] = [lz lmat];
+	-> unlz used last wmat;
+      "unlz really read wmat"
+	a -->; => get bit field; <-- a;
+	[starting bit number] + [bit field size];
+	[lz wmat] = [bit field content];
+	[lz lmat] = [bit field content];
+      "unlz used last wmat"
+	[lz wmat] +;
+	b = [lz wmat];
+	[bit stream pointer] -->;
+	[starting bit number] -->;
+	[bit stream pointer] = [lz data out];
+	[starting bit number] = [lz bits out];
+    "unlz copy sequence"
+	[bit field content] = [a relating lz wind];
+	[bit field size] = 8;
+	=> unlz stream code;
+	=> unlz update window;
+	[bit field content] = 0;
+	[bit field size] = [lz wordfill];
+	=> unlz stream code;
+	a +;
+	a & lz window size minus 1;
+	b ^ unlz copy sequence;
+	[lz bits out] = [starting bit number];
+	<-- [starting bit number];
+	<-- [bit stream pointer];
+	[lz cwin] + [lz wmat];
+	[lz datasize] - [lz wmat];
+      ? [lz fail] = true -> unlz complete;
+      ? [lz datasize] = 0 -> unlz complete;
+      ? [lz cwin] < [lz chnksize] -> unlz data loop;
+	[lz cwin] - [lz chnksize];
+	=> unlz reset;
+	-> unlz data loop;
+    "unlz no repeat sequence"
+	[bit stream pointer] -->;
+	[starting bit number] -->;
+	[bit stream pointer] = [lz data out];
+	[starting bit number] = [lz bits out];
+	a = [bit field content];
+      (anti-crash provision)
+      ? a < [lz dlen] -> unlz ac jump;
+	[lz fail] = true;
+	$ + 2; -> unlz complete;
+      "unlz ac jump"
+      (end anti-crash provision)
+	a < 4;
+	b = [lz bend];
+	[b] = [a plus lz dictstart plus 1 relating lz dict];
+	b = [lz dlen];
+	b < 4;
+	b + lz dictstart plus lz dict;
+	c = [a plus lz dictstart relating lz dict];
+	[b] = c;
+	[b] +;
+	[lz blen] = c;
+    "unlz output block"
+	[bit field size] = 8;
+	[bit field content] = [a plus lz dictstart plus 1 relating lz dict];
+	=> unlz stream code;
+	=> unlz update window;
+	[bit field size] = [lz wordfill];
+	[bit field content] = 0;
+	=> unlz stream code;
+	[b plus 1] = [a plus lz dictstart plus 1 relating lz dict];
+	a +;
+	b +;
+	c ^ unlz output block;
+	[lz bits out] = [starting bit number];
+	[lz bend] = b; [lz bend] +;
+	<-- [starting bit number];
+	<-- [bit stream pointer];
+	[lz cwin] + [lz blen];
+	[lz datasize] - [lz blen];
+      ? [lz fail] = true -> unlz complete;
+      ? [lz datasize] = 0 -> unlz complete;
+      ? [lz cwin] < [lz chnksize] -> unlz keep chunk size;
+	[lz cwin] - [lz chnksize];
+	=> unlz reset;
+	-> unlz data loop;
+    "unlz complete"
+	[lz bits out] - [lz give bit];
+      ? [lz fail] = true -> unlz failure;
+	end;
+      "unlz failure"
+	fail;
+    "unlz keep chunk size"
+      ? [lz dlen] = 4096 -> unlz data loop;
+      ? [lz blen] = 15 -> unlz data loop;
+	[lz dlen] +;
+      ? [lz dlen] <= [lz imax] -> unlz data loop;
+	[lz inow] +;
+	[lz imax] < 1;
+	-> unlz data loop;
+    "unlz update window"
+	a -->;
+	a = [lz wpos];
+	[a relating lz wind] = [bit field content];
+	<-- a;
+	[lz wpos] +;
+	[lz wpos] & lz window size minus 1;
+      ? [lz wlen] = lz window size -> unlz window is full;
+	[lz wlen] +;
+    "unlz window is full"
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"unlz reset"
+	a = z77 table size mtp 16;
+	b = 0;
+	c = 256;
+    "unlz init dictionary"
+	[a plus lz dictstart plus 0 relating lz dict] = 1;
+	[a plus lz dictstart plus 1 relating lz dict] = b;
+	a + 16;
+	b +;
+	c ^ unlz init dictionary;
+	[lz inow] = 9;
+	[lz imax] = 512;
+	[lz dlen] = z77 table size plus 256;
+	[lz bend] = lz dumb;
+	end;
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"unlz stream code"
+	a -->;
+	a = [starting bit number];
+	b -->;
+	a + [bit field size];
+	c -->;
+      ? a > [lz size out] -> unlz out of buffer;
+	=> set bit field;
+	[starting bit number] + [bit field size];
+	<-- c;
+	<-- b;
+	<-- a;
+	end;
+    "unlz out of buffer"
+	[lz fail] = true;
+	<-- c;
+	<-- b;
+	<-- a;
+	fail;

@@ -1,0 +1,322 @@
+(
+
+  =================================================================
+  TARGET PLATFORM:
+  Intel Pentium processors, late 486s, and later or compatibles
+  =================================================================
+  _________________________________________________________________
+ |								   |
+ | PLATFORM-SPECIFIC SOURCE CODE * DECLARATION OF NON-PORTABILITY: |
+ |								   |
+ |	This program contains native machine language fragments,   |
+ |	designed EXCLUSIVELY for the abovely mentioned platform,   |
+ |	and SOLELY for that platform! Attempting to use portions   |
+ |	provided within this program in applications intended to   |
+ |	be fully cross-platform will UNRECOVERABLY COMPELL those   |
+ |	applications to be executable only on the said platform.   |
+ |								   |
+ |	Should you need porting your application to systems other  |
+ |	than the indicated TARGET PLATFORMS of this program, then  |
+ |	you MUST CHANGE THIS PROGRAM to reflect the corresponding  |
+ |	operations for all pieces of pure machine language code.   |
+ |								   |
+ |  Also, projects built by including this program SHOULD INHERIT  |
+ |  THIS WARNING MESSAGE. Please do, this is very very important!  |
+ |  This declaration might be placed at the top of a source file.  |
+ |_________________________________________________________________|
+
+ INTEL 586 AND LATER/COMPATIBLES MICROPROCESSOR-SPECIFIC UTILITIES
+ --------------------------------------------------------------------------
+ Written by Alessandro Ghignola as a helper for the cputest.txt example and
+ also meant as a general example showing how to insert ML fragments in your
+ programs, but remember that doing so MAKES THE PROGRAM NO LONGER PORTABLE!
+ --------------------------------------------------------------------------
+   This library is free software;  you can redistribute it and/or modify it
+ under the terms of the  GNU Lesser General Public License  as published by
+ the  Free Software Foundation;  either version 2.1  of the License, or, at
+ your option, any later version.
+   This  library  is  distributed  in the hope	that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU Lesser General Public License for more details.
+   You should have received a copy of the GNU Lesser General Public License
+ along with this library;  if not,  write to the  Free Software Foundation,
+ Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+
+)
+
+"constants"
+
+    (subroutine "getcpuid" - cpu capabilities bitmask)
+	BUILTIN FPU				= 00000001H;
+	VIRTUAL MODE EXTENSION PRESENT		= 00000002H;
+	DEBUGGING EXTENSIONS SUPPORTED		= 00000004H;
+	FOUR MEGABYTES PAGING SUPPORTED 	= 00000008H;
+	TIME STAMP COUNTER PRESENT		= 00000010H;
+	PENTIUM COMPATIBLE STATUS REGISTERS	= 00000020H;
+	PHYSICAL ADDRESS EXTENSION SUPPORTED	= 00000040H;
+	MACHINE CHECK EXTENSION SUPPORTED	= 00000080H;
+	CMPXCHG8B INSTRUCTION SUPPORTED 	= 00000100H;
+	LOCAL APIC ON CHIP			= 00000200H;
+	FAST SYSTEM CALL FEATURES		= 00000800H;
+	MEMORY TYPE RANGE REGISTERS SUPPORTED	= 00001000H;
+	PAGE GLOBAL FEATURE SUPPORT		= 00002000H;
+	MACHINE CHECK ARCHITECTURE		= 00004000H;
+	CMOV INSTRUCTION SUPPORTED		= 00008000H;
+	PAGE ATTRIBUTE TABLE PRESENT		= 00010000H;
+	MMX SUPPORTED				= 00800000H;
+	FXRS OPCODE SUPPORTED			= 01000000H;
+
+"variables"
+
+    (subroutine "getcpuid")
+	GCPUID target = GCPUID string;
+
+"workspace"
+
+    (subroutine "getcpuid")
+	GCPUID string = 12 div BYTESPERUNIT;
+	GCPUID family = 1;
+	GCPUID mpcaps = 1;
+
+    (subroutine "getcpuspeed")
+	cpumhz = 1;
+
+    (subroutines "start tsc", "stop tsc", "tsc recal")
+	tsctime = 1;
+	tsc hi	= 1;
+	tsc lo	= 1;
+	tsc ct	= 1;
+
+"programme"
+
+    (getcpuid:
+     ========================================================================
+     input:  nothing
+     output: [GCPUID string], 12-character ASCII string/8 bytes per character
+	     [GCPUID family], processor family info bitmask, see notes below
+	     [GCPUID mpcaps], processor capabilities bitmask, see constants
+     regs:   destroyed
+     ========================================================================)
+
+    "getcpuid"
+      (i386 machine language fragment, for testing a flip of bit #21 of eflags register:
+       if the said bit can be toggled then the processor supports the cpuid instruction,
+       this is exactly a piece of what the Win32 run-time module also does, in facts...
+       except for the first part checking for eflags' bit 21 toggling ability, this code
+       wouldn't need be entirely formed of machine language: the rest could be regularly
+       coded with L.in.oleum instructions, however this is also given as an example, and
+       shows how to manage symbols and code labels from within ML fragments: doing so is
+       generally possible BUT very hard, but then as I said, it would be rarely needed.)
+	{
+	   (machine code)				(intel assembly)			(comments)
+	    9C						(pushfd 				get eflags			       )
+	    58						(pop	eax								       )
+	    8B D8					(mov	ebx,eax 			preserve original eflags	       )
+	    35 00002000 				(xor	eax,00200000			toggle bit 21			       )
+	    50						(push	eax				store eflags			       )
+	    9D						(popfd									       )
+	    9C						(pushfd 				get eflags back 		       )
+	    58						(pop	eax								       )
+	    8B C8					(mov	ecx,eax 			preserve modified eflags	       )
+	    35 00002000 				(xor	eax,00200000			restore bit 21 by re-toggling it       )
+	    50						(push	eax				store eflags again		       )
+	    9D						(popfd									       )
+	    81 E3 00002000				(and	ebx,00200000			isolate bit 21 of original eflags in b )
+	    81 E1 00002000				(and	ecx,00200000			isolate bit 21 of modified eflags in c )
+	    3B D9					(cmp	ebx,ecx 			see if they're equal		       )
+	    74 <+1 bCpuIDNotSupported>			(je	CpuIDNotSupported		if yes perform a jump to label: offset
+												must take a single byte and it must be
+												relative to program counter plus 1, so
+												it will be based at 2 bytes after "je" )
+	    33 C0					(xor	eax,eax 			zero eax for cpuid to return id string )
+	    0F A2					(cpuid					execute cpuid: result is ebx..edx..ecx )
+	    8B B7 <dGCPUIDtarget mtp bytesperunit>	(mov	esi,[edi+offset gcpuidtarget*4] load target string's ptr in edi        )
+	    C1 E6 02					(shl	esi,2				multiply the pointer by 4 via a shift  )
+	    89 1C 37					(mov	[edi+esi],  ebx 		store 1st part of id string	       )
+	    89 54 37 04 				(mov	[edi+esi+4],edx 		store 2nd part of id string	       )
+	    89 4C 37 08 				(mov	[edi+esi+8],ecx 		store 3rd part of id string	       )
+	    B8 01000000 				(mov	eax,1				set eax=1 for cpuid to return flags    )
+	    0F A2					(cpuid					execute cpuid: result is eax, edx      )
+	    89 87 <dGCPUIDfamily mtp bytesperunit>	(mov	[edi+offset GCPUIDfamily*4],eax return family informations bitmask     )
+	    89 97 <dGCPUIDmpcaps mtp bytesperunit>	(mov	[edi+offset GCPUIDmpcaps*4],edx return capabilities' bitmask	       )
+	    BD 646F6E65 				(mov	ebp,'done'			simulates an "end" tag: return state   )
+	    C3						(ret					return to the caller		       )
+	}
+	(
+	    Returned informations of:
+		MOV EAX,1
+		CPUID
+	    EAX - informative flags:
+		bits	description
+		0 to 3	stepping ID number
+		4 to 7	model ID number
+		8 to 11 family:
+			3 = 386, 4 = 486, 5 = 586 and so on...
+		12...15 CPU type:
+			0 = original OEM processor;
+			1 = overdrive;
+			2 = dual.
+	      * any other bits are Intel-reserved [0].
+	    EDX - compatibility flags:
+		bit	description when bit is set
+		0	FPU is built in
+		1	Virtual Mode Extension is present
+		2	Debugging Extensions supported
+		3	4MB paging supported
+		4	TSC present
+		5	Pentium-compatible status registers
+		6	Physical address extension supported
+		7	Machine Check extension supported
+		8	CMPXCHG8B instruction supported
+		9	Local APIC on chip
+		11	Fast System Call features
+		12	Memory Type Range Registers supported
+		13	Page Global Feature support
+		14	Machine Check Architecture
+		15	supports CMOV instruction
+		16	Page Attribute Table present
+		23	CPU supports MMX
+		24	CPU supports FXRS opcode [MMX-2]
+	      * any other bits are Intel-reserved [0].
+	)
+      "CpuIDNotSupported"
+	{
+	    8B B7 <dGCPUIDtarget mtp bytesperunit>	(mov	esi,[edi+offset gcpuidtarget*4] load target string's ptr in edi        )
+	    C1 E6 02					(shl	esi,2				multiply the pointer by 4 via a shift  )
+	    C7 04 37 4E6F7441				(mov	[edi+esi],'AtoN'		store 1st part of fake id string: NotA )
+	    C7 44 37 04 7661696C			(mov	[edi+esi+4],'liav'		store 2nd part of fake id string: vail )
+	    C7 44 37 08 61626C65			(mov	[edi+esi+8],'elba'		store 3rd part of fake id string: able )
+	    C7 87 <dGCPUIDfamily mtp bytesperunit> <d0> (mov	[edi+offset GCPUIDfamily*4], 0	zero family informations bitmask       )
+	    C7 87 <dGCPUIDmpcaps mtp bytesperunit> <d0> (mov	[edi+offset GCPUIDmpcaps*4], 0	zero capabilities' bitmask	       )
+	    BD 6C696166 				(mov	ebp,'fail'			simulates a "fail" tag: return state   )
+	    C3						(ret					return to the caller		       )
+	}
+
+
+
+    (getcpuspeed:
+     ========================================================================
+     input:  nothing, but you need calling "getcpuid" before calling this
+     output: [cpumzh], microprocessor speed, integer, expressed in megahertz
+     regs:   destroyed
+     ========================================================================)
+
+    "getcpuspeed"
+      ? [GCPUID mpcaps] - TIME STAMP COUNTER PRESENT -> cannot determine cpu speed;
+	[timercommand] = read time;
+	isocall;
+	A = [second];
+      "wait start second"
+	[timercommand] = read time;
+	isocall;
+      ? A = [second] -> wait start second;
+	A = [second];
+	=> tsc start;
+      "wait stop second"
+	[timercommand] = read time;
+	isocall;
+      ? A = [second] -> wait stop second;
+	=> tsc stop;
+	[cpumhz] = [tsctime];
+	[cpumhz] '/ 1 000 000;
+	end;
+      "cannot determine cpu speed"
+	[cpumhz] = 0;
+	fail;
+
+
+
+    (tsc start:
+     ========================================================================
+     input:  nothing, but you need calling "getcpuid" before calling this
+     output: nothing, but loads up the actual TSC value for later comparison
+     regs:   preserved
+     ========================================================================)
+    "tsc start"
+      ? [GCPUID mpcaps] - TIME STAMP COUNTER PRESENT -> cannot start tsc;
+	---->;
+	{
+	    0F 31 (rdtsc)
+	}
+	[tsc hi] = D;
+	[tsc lo] = A;
+	<----;
+	end;
+      "cannot start tsc"
+	fail;
+
+
+
+    (tsc stop:
+     ========================================================================
+     input:  nothing, but call both "getcpuid" and "tsc start" before this
+     output: [tsctime], elapsed amount of cpu cycles since last => tsc start
+     notes:  fails if [tsctime] is out of the 32-bit unsigned integer range,
+	     in which case returns [tsctime] = GREATEST UNSIGNED INTEGER:
+	     this happens when too much time has passed and in the meantime
+	     the CPU performed more than over 4 billion cycles.
+     regs:   preserved
+     ========================================================================)
+    "tsc stop"
+      ? [GCPUID mpcaps] - TIME STAMP COUNTER PRESENT -> cannot stop tsc;
+	---->;
+	{
+	    0F 31 (rdtsc)
+	}
+	C = [tsc hi];
+	B = [tsc lo];
+	{
+	    2B C3 (64-bit subtraction, part 1: sub eax, ebx)
+	    1B D1 (64-bit subtraction, part 2: sbb edx, ecx)
+	}
+      ? D != 0 -> tsc out of range;
+	[tsctime] = A;
+	[tsctime] - [tsc ct];
+      ? [tsctime] > 0 -> tsc stop done;
+	[tsctime] = 0;
+      "tsc stop done"
+	<----;
+	end;
+      "tsc out of range"
+	<----;
+	[tsctime] = GREATEST UNSIGNED INTEGER;
+	fail;
+      "cannot stop tsc"
+	[tsctime] = 0;
+	fail;
+
+
+
+    (tsc recal:
+     ========================================================================
+     input:  nothing, but you need calling "getcpuid" before calling this
+     output: nothing, but remembers the pure amount of cpu cycles necessary
+	     for the calls to "tsc start" and "tsc stop": the value will be
+	     subtracted from [tsctime] on return from "tsc stop" to improve
+	     the precision in measurement of very small intervals, typically
+	     those of just a few cycles for timing instructions' execution;
+	     in reality, it will execute the said two calls in sequence for
+	     1024 times, then make out an average to try and reduce possible
+	     interferences from memory, call stack delays, branch prediction,
+	     accessory loop code; it's not necessary to call this routine
+	     before making measurements with "tsc start" and "tsc stop", but
+	     it's better to do so if you're going to measure small intervals:
+	     if you don't call this, [tsc ct] simply remains set to zero.
+     regs:   preserved
+     ========================================================================)
+    "tsc recal"
+      ? [GCPUID mpcaps] - TIME STAMP COUNTER PRESENT -> cannot calibrate tsc;
+	A = 1024;
+	B = zero;
+      "tsc recal loop"
+	=> tsc start;
+	=> tsc stop;
+      ? failed -> cannot calibrate tsc;
+	B + [tsctime];
+	A ^ tsc recal loop;
+	[tsc ct] = B;
+	[tsc ct] > 10;
+	end;
+      "cannot calibrate tsc"
+	fail;

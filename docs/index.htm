@@ -1,0 +1,160 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>	<title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body	leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link	rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+	Terms of use<br>
+	<a href = "programs.htm">Programming</a><br>
+	<a href = "compiler.htm">Compiling</a><br>
+	<a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+	<a href = "librarie.htm">libraries</a><br>
+	<a href = "stockfil.htm">stockfile</a><br>
+	<a href = "director.htm">directors</a><br>
+	<a href = "constant.htm">constants</a><br>
+	<a href = "variable.htm">variables</a><br>
+	<a href = "workspac.htm">workspace</a><br>
+	<a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+	<a href = "process.htm">Process</a><br>
+	<a href = "subrouti.htm">Subroutines</a><br>
+	<a href = "dynaheap.htm">Dynamic heap</a><br>
+	<a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+	<a href = "glossary.htm">Glossary</a><br>
+	<a href = "punct_qr.htm">Punctuators</a><br>
+	<a href = "ltags_qr.htm">Tags</a><br>
+	<a href = "instr_qr.htm">Instructions</a><br>
+	<a href = "ikrnl_qr.htm">IsoKernel</a><br>
+	<a href = "error_qr.htm">Errors</a><br>
+	<a href = "warns_qr.htm">Warnings</a><br>
+	<a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+	L.IN.O.L.E.U.M
+	<hr size = 1 width = "15%" color = "white">
+	Low-level-INterfaced OverLanguage for Extremely Universal Machine-coding
+	<br>
+	Technical reference guide to <i>the universal programming language</i>
+	<br>
+	<br>
+	<hr size = 1 width = "100%" color = "white">
+	Release 1.13.11b<br>February 1st, 2004
+	<hr size = 1 width = "15%" color = "white">
+	L.in.oleum's homepage is at <a href="http://anywhere.i.am">http://anywhere.i.am</a>,<br>
+	also responding to <a href="http://www.anywherebb.com">http://www.anywherebb.com</a>,<br>
+	and a site known as The WebTerritory Of Fottifoh
+	<hr size = 1 width = "100%" color = "white">
+</center>
+
+<br>NOTE ON iGUI SKIN DEVELOPEMENT (IGS library):<br>
+<blockquote>
+For directions and tips: <a href="../main/lib/igui/igs.txt">Linoleum/main/lib/igui/igs.txt</a><br>
+The DefStyle model is: <a href="../main/lib/igui/defstyle.txt">Linoleum/main/lib/igui/defstyle.txt</a><br>
+Application using IGS: <a href="../examples/network_node/node.txt">Linoleum/examples/network_node/node.txt</a>
+</blockquote>
+
+<br>SETTING UP L.in.oleum's ENVIRONMENT - IMPORTANT!!<br>
+<blockquote>
+In order to use the compiler in the most comfortable way, you need to
+extract the contents of the "linoleum.zip" archive inside the folder
+"C:\Linoleum". Then choose the 'install "compile as L.in.oleum source" option'
+from the installation menu; alternatively, you may double-click the registry
+icon ("install.reg" in the "docs" folder) and confirm when asked. This operation
+will "activate" the compiler, making it ready for use throught a simple right-button
+click on a text file's icon. You <u><i>might</i></u> restart Windows after that, to let changes to the
+system register take effect in full. For more details about how to compile a program,
+see <a href="compiler.htm">Compiling</a>. If you need to install in a different folder,
+you can, but you have to change the path to the compiler in the "docs/install.reg" file,
+where on the last line it reads:
+<pre>
+"" = "C:\\LINOLEUM\\MAIN\\COMPILER.EXE %1"
+</pre>
+...and where you'd have to place your personalized path, usually changing the "C:\\LINOLEUM"
+part to whatever you extracted the ZIP file contents to. But do NOT change the structure of
+the "main" directory within that path. For example, "main/lib" has to be there because it's
+what the compiler looks for as the default libraries' root directory. For the same reason,
+"main/sys" and "main/cpu" must be directories existing in the directory that contains the
+"compiler.exe" file. The only vital part to the L.in.oleum package is indeed the "main"
+folder: all the others could be deleted and the compiler would still work.
+</blockquote>
+
+<br>UNINSTALLING:<br>
+<blockquote>
+   Just remove the following folder:
+	<blockquote>
+	C:\LINOLEUM
+	</blockquote>
+   Well, to be sincere, I don't see any good reasons why you should
+   uninstall L.in.oleum after having installed it: it takes very little space (about 4 MB),
+   and it does not alter system files; it merely adds a key to the system registry, the one
+   mentioned in the paragraph below, and for the rest, it's just a folder and its files;
+   even if you don't use it, it won't significantly interfere with the system's activity
+   and could be kept in its installation folder for future use, should you think back.
+</blockquote>
+
+<br>REMOVING THE "<u>C</u>ompile as L.in.oleum Source" option:<br>
+<ol>
+<li>select START&nbsp;&gt;&gt;&gt;&nbsp;Run</li>
+<li>type "RegEdit" and press ENTER</li>
+<li>you'll have to delete the following key; to do that, find the key in RegEdit's
+tree, where it appears like a little folder; once you've found it, highlight it throught
+a mouse click, then press the "Delete" key on your keyboard, and confirm the operation -
+the key to delete is "HKEY_CLASSES_ROOT/TXT_SRC/shell/compile"</li>
+<li>quit RegEdit, restart Windows, and that's all...</li>
+</ol>
+
+<hr size = 1 width = "100%" color = "white">
+
+L.in.oleum Compiler Package version 1.13.11b
+
+<br><br>
+
+The contents of this archive are subject to the WTOF Public License;
+you may not use this archive except in full compliance with the License. You should
+have received a copy of the License within this archive; if not, you may obtain a
+copy of the License at <a href="http://anywhere.i.am">http://anywhere.i.am</a><br><br>
+The Original Product (and related code)<br>is Copyright (C) 2001-2004 Alessandro Ghignola (Home Sweet Pixel software)<br>
+All Rights Reserved.
+
+<br><br>
+
+IN A NUTSHELL:
+<blockquote>
+	Remember this software package is UNDER COPYRIGHT.
+	You are free to use this compiler the way you want, providing
+	you're not going to break any laws and any of these terms of use.
+	You may charge money on any programs you may code using L.in.oleum.
+	You are not authorized to charge money for THIS PACKAGE ITSELF.
+	And finally, if something goes wrong, it's your own problem.<br><br>
+	You may <a href="wpl.htm">click here</a> to display the full license in legal terms.
+</blockquote>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

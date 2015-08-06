@@ -1,0 +1,276 @@
+(DynaHeap.txt: Managing a dynamic heap.
+(c)2003 by Peterpaul Klein Haneveld)
+
+(** 
+ *   &lib Dynaheap:Managing a dynamic heap.<BR>
+ * This lib has routines for managing a dynamic heapspace for the lock-
+ * lib. It uses routines from the lock.txt and the reserve.txt file. The
+ * heapspace is dynamically allocated by use of the reserve lib. So, be
+ * carefull when you want to use the PCM-interface of linoleum, for more read
+ * the remarks in the linoleum manuel.<P>
+ * This lib also contains wrappers for the three basic object routines
+ * lock, free and resize. When the operation fails because there isn't enough
+ * space to allocate or resize an object, the heapspace is resized, so that
+ * there is enough space. The new size of the heapspace is calculated in the
+ * following way:<P>
+ *
+ * {[old heap size] + [requested object size]} * 1.10<P>
+ *
+ * So, there will be 10% extra space reserved for new objects.<P>
+ *
+ *   &rem To use the dynaheap lib, you'll have to store a slightly
+ * different version of the lock lib into the working directory of the project
+ * you're working on. The changes are:
+ * <LI>rename "lock" to "ll lock"
+ * <LI>rename "reserve" to "ll reserve"
+ * <LI>rename "free" to "ll free"
+ * <P>
+ * Remember to save the file as: "Lock.txt"
+ *
+ *   &include Lock:lockdoc.htm, Reserve:../reserve.txt
+ *
+ *   &authors Peterpaul Klein Haneveld:pp_kl_h@hotmail.com
+ *
+ *   &copyright 2003 by Peterpaul Klein Haneveld
+ *
+ *   &license LGPL:
+ *         This lib is free software; you can redistribute it and/or
+ *         modify it under the terms of the GNU Lesser General Public
+ *         License as published by the Free Software Foundation; either
+ *         version 2.1 of the License, or (at your option) any later version.
+ *             <p>
+ *         This lib is distributed in the hope that it will be useful,
+ *         but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *         Lesser General Public License for more details.
+ *             <p>
+ *         You should have received a copy of the GNU Lesser General Public
+ *         License along with this lib; if not, write to the Free Software
+ *         Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *)
+
+(----------------------------------------------------------------------------)
+"libraries"
+(----------------------------------------------------------------------------)
+           Lock;
+           Reserve;
+(----------------------------------------------------------------------------)
+"variables"
+(----------------------------------------------------------------------------)
+(       func lock                       = 00000000h;
+        func free                       = 00000001h;
+        func resize                     = 00000002h;
+        func set lock                   = 00000003h;
+        func release lock               = 00000004h;
+        func resize lock                = 00000005h;
+
+        func success                    = 00000000h;
+        func illegal request            = 00000001h;
+        func not enough memory          = 00000002h;
+        func fragmented                 = 00000003h;
+        func empty                      = 00000004h;
+        func not found                  = 00000005h;
+        func stack hit                  = 00000006h;
+)
+(----------------------------------------------------------------------------)
+        vector DH Lock Errors =
+                (func lock)
+                service DH Ok;
+                service DH Fail;
+                service DHL Resize;
+                service DHL Resize;
+                service DH Null;
+                service DH Null;
+                service DH Null;
+                service DHL Resize;
+                (func free)
+                service DH Ok;
+                service DH Null;
+                service DH Null;
+                service DH Null;
+                service DH Fail;
+                service DH Fail;
+                service DH Null;
+                service DH Null;
+                (func resize)
+                service DH Ok;
+                service DH Fail;
+                service DHR Resize;
+                service DHR Resize;
+                service DH Fail;
+                service DH Fail;
+                service DH Ok;
+                service DHR Resize;
+(----------------------------------------------------------------------------)
+"programme"
+(----------------------------------------------------------------------------)
+(** &fun Init Heap: Initializes the heap.
+ *     &param 1 in reg A:Initial size of the heap,
+ *                 2 out reg A:pointer to heapspace
+ *)
+"Init Heap"
+(IN:    a = initial size of heap
+OUT:    a = pointer to heap)
+           [Size Of Block To Reserve] = A;
+           => Reserve Memory;
+           ? failed -> IH Failed1;
+           b-->; c-->;
+           A = [Reserved Block Pointer];
+           B = [Size Of Block To Reserve];
+           C = 0;
+           => set lock;
+           ? failed -> IH Failed2;
+           c<--; b<--;
+           end;
+
+           "IH Failed2"
+           c<--; b<--;
+           "IH Failed1"
+           fail;
+(----------------------------------------------------------------------------)
+(** &fun Resize Heap: Resizes the heap.
+ *     &param 1 in reg A:New size of the heap
+ *)
+"Resize Heap"
+(IN:    a = new size of heap
+OUT:    a = DESTROYED)
+           ? A < [lock total] -> RH Smaller;
+           ? A > [lock total] -> RH Larger;
+           end;
+
+           "RH Smaller"
+           [lock total]-->;
+           [Size Of Block To Free]<--;
+           => resize lock;
+           ? failed -> RHS Failed;
+           [Size Of Block To Free] - A;
+           => Free Memory;
+           ? failed -> RHS Failed;
+           end;
+
+           "RHS Failed"
+           fail;
+
+           "RH Larger"
+           [Size Of Block To Reserve] = A;
+           [Size Of Block To Reserve] - [lock total];
+           => Reserve Memory;
+           ? failed -> RHL Failed;
+           => resize lock;
+           ? failed -> RHL Failed;
+           end;
+
+           "RHL Failed"
+           fail;
+(----------------------------------------------------------------------------)
+(** &fun Free Heap: Destroys the heap.
+ *     &rem This routine doesn't need any input.
+ *)
+"Free Heap"
+(IN:    nothing
+OUT:    a, b, c = DESTROYED)
+           => release lock;
+           [Size Of Block To Free] = B;
+           => Free Memory;
+           end;
+(----------------------------------------------------------------------------)
+(lock lib wrappers)
+(----------------------------------------------------------------------------)
+"lock"
+(** &fun lock: Reserves heapspace for an object.
+ *     &rem This routine is just a wrapper for the original lock fun from
+ *     the lock-lib. It adds a check to the fun, if the requested amount of
+ *     units cannot be allocated because the heap isn't large enough, it resizes
+ *     the heap and tries again. Now This routine will always succeed unless the
+ *     heap is released or the physical and virtual memory of your computer is full.
+ *     &param 1 in reg A:Amount of units requested,
+ *                 2 out reg A:Pointer to locked units
+ *)
+        a-->;
+        => ll lock;
+        ? failed -> lock Failed;
+        $ + 1;
+        end;
+
+        "lock Failed"
+        a<--;
+        -> lock wrapper Failed;
+(----------------------------------------------------------------------------)
+(** &fun resize: Resizes the allocated space for an object.
+ *     &rem This routine is just a wrapper for the original resize fun from
+ *     the lock-lib. It adds a check to the fun, if the requested amount of
+ *     units cannot be allocated because the heap isn't large enough, it resizes
+ *     the heap and tries again.
+ *     &param 1 in reg A:Pointer to object,
+ *                 2 in reg B:New size of object,
+ *                 3 out reg A:Pointer to locked units
+ *)
+"resize"
+(IN:    a = pointer to locked units vector
+        b = new size
+OUT:    a = pointer to locked units vector
+        b = UNCHANGED
+FAIL:   a, b = UNCHANGED)
+        a-->; b-->;
+        => ll resize;
+        ? failed -> resize Failed;
+        $ + 2;
+        end;
+
+        "resize Failed"
+        b<--; a<--;
+        -> lock wrapper Failed;
+(----------------------------------------------------------------------------)
+(** &fun free: Frees the allocated space for an object.
+ *     &rem This routine is just a wrapper for the original free fun from
+ *     the lock-lib.
+ *     &param 1 in reg A:Pointer to object
+ *)
+"free"
+(IN:    a = pointer to locked units vector
+OUT:    a = UNCHANGED)
+        => ll free;
+        ? failed -> lock wrapper Failed;
+        end;
+(----------------------------------------------------------------------------)
+"lock wrapper Failed"
+        e-->;
+        e = [func];
+        e < 3; (e * 8;)
+        e | [msg];
+        => [e plus vector DH Lock Errors];
+        ? failed -> lock wrapper Failed Failed;
+        e<--;
+        end;
+
+        "lock wrapper Failed Failed"
+        e<--;
+        fail;
+(----------------------------------------------------------------------------)
+"service DH Ok"
+"service DH Null"
+        end;
+(----------------------------------------------------------------------------)
+"service DH Fail"
+        fail;
+(----------------------------------------------------------------------------)
+"service DHL Resize"
+        a-->;
+        a + [lock total];
+        a * 110;
+        a / 100;
+        => Resize Heap;
+        a<--;
+        -> lock;
+(----------------------------------------------------------------------------)
+"service DHR Resize"
+        a-->; b-->;
+        b-->; a<--; (a = b;)
+        a + [lock total];
+        a * 110;
+        a / 100;
+        => Resize Heap;
+        b<--; a<--;
+        -> resize;
+(----------------------------------------------------------------------------)

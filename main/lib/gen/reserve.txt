@@ -1,0 +1,97 @@
+(
+
+    Dynamic memory allocation routines.
+    --------------------------------------------------------------------------
+    | Weighs:		128 bytes *
+    | Allocates:	 12 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+    --------------------------------------------------------------------------
+    SEE ALSO THE "LOCK" LIBRARY IN THE "VK" FOLDER: THAT'S MUCH BETTER,
+    THIS LIBRARY IS ONLY PROVIDED FOR EVENTUAL BACKWARD-COMPATIBILITY.
+
+	Reserve Memory
+	    [Size Of Block To Reserve] - input
+		Amount of memory units to be reserved.
+	    [Reserved Block Pointer] - output
+		Pointer to the first unit of reserved block.
+	    Status
+		Error status signalled in case there's not
+		enough memory in the system to reserve
+		the specified amount of units.
+
+	Free Memory
+	    [Size Of Block To Free] - input
+		Amount of memory units to be freed.
+	    Status
+		Error status signalled in case there were
+		not enough reserved memory units to free.
+		This is no error, in reality, but should account
+		for a possible mistake while managing memory.
+
+	Remember to FREE ALL memory blocks in reverse
+	order. If you allocate blocks X, Y, Z then first free
+	block Z, then Y, then X. You may free all of them
+	together by passing in [Size Of Block To Free] the
+	sum of their individual sizes.
+
+	Note: this is not something to be taken lightly, see
+	warnings in isokernel quick reference. Ideally, variation
+	of [RamTOP] is allowed to provide an underlying low-level
+	expansion of the workspace, BUT managing memory this way
+	could cause incompatibility and many difficulties specially
+	if used in *libraries*. The best solution might be building
+	a common floor, a library that other libraries and their
+	applications refer to for managing dynamically allocated
+	parts of the workspace, following a convenient model; it
+	might be, in practice, some sort of underlying memory
+	manager, resembling that of a real operating system.
+
+)
+
+"workspace"
+(entry parameters for Reserve Memory)
+	Size Of Block To Reserve = 1;
+
+(output parameters from Reserve memory)
+	Reserved Block Pointer = 1;
+
+(entry parameters for Free Memory)
+	Size Of Block To Free = 1;
+
+"programme"
+"Reserve Memory"
+	[Reserved Block Pointer] = [RAM Top];
+	[RAM Top] + [Size Of Block To Reserve];
+	isocall;
+	? [RAM Top] != [Reserved Block Pointer] -> OK Reserve;
+	fail;
+    "OK Reserve"
+	end;
+
+"Free Memory"
+	[RAM Top] - [Size Of Block To Free];
+	[Reserved Block Pointer] = [RAM Top];
+	isocall;
+	? [RAM Top] = [Reserved Block Pointer] -> OK Free;
+	fail;
+    "OK Free"
+	end;

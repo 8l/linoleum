@@ -1,0 +1,520 @@
+(
+
+    iGUI skin/style switcher
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:	       3220 bytes *
+    | Allocates:     524300 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      This library allows iGUI-based applications to import/export graphics
+    sets, friendly known as "skins", for the user interface's visual look
+    along with colors/effects combinations.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      To setup the parent application so that it could import and export skins
+    you might do the following:
+
+	1. include this library in the application's "libraries" period:
+	   ------------------------------------------------------------------
+	   "libraries"
+	       ...
+	       igui/igs;
+	       ...
+	   ------------------------------------------------------------------
+	   note that this library includes "DefStyle" on itself.
+	   Programs which skin is not to be imported/exported, because they
+	   use their own fully-declared style, such as the Icon Editor, can't
+	   use this library. See later notes for how to change "DefStyle".
+
+	2. include a couple of menu options in the application's menu, which
+	   will be opening appropriate file selectors and handle files via
+	   the "Import Skin" and "Export Skin" routines of this library:
+	   ------------------------------------------------------------------
+	   "variables"
+	       ...
+	   01000000h; OPTION TYPE SUBMENU;	 { <Skin      }; NULL;
+	   01010000h; OPTION TYPE FILE SELECTOR; {    <Import }; Import Skin;
+	   01020000h; OPTION TYPE FILE SELECTOR; {    <Export }; Export Skin;
+	       ...
+	   ------------------------------------------------------------------
+	   ... where you might change the option codes at the beginning of
+	   each declaration to match your existing menu layout, and reflect
+	   the position of those options in the same menu. The above options
+	   may be equally placed in an existing submenu, if you see fit.
+	   See "Linoleum/Examples/icon_editor/iconed.txt" for informations
+	   about the syntax of menu options' codes.
+
+	3. right after the call to "Initialize Integrated GUI", place a call
+	   to the "Import Preferred Skin" routine provided by this library:
+	   ------------------------------------------------------------------
+	   "programme"
+	       ...
+	       => Initialize Integrated GUI;
+	       => Import Preferred Skin;
+	       ...
+	   ------------------------------------------------------------------
+	   because the function of "Import Preferred Skin" is that of loading
+	   the skin which file's name has been saved into a "Global K" by the
+	   "Import Skin" routine of this library, in case the user chosen the
+	   option called "Set as preferred".
+
+	To create a custom skin, that could be exported, the programmer might
+	start from "main/lib/igui/defstyle.txt" and the TGA files placed into
+	the same "igui" Directory. By manipulating that file and the images,
+	it is possible to influence the iGUI's interface look and feel. A few
+	facts might be pointed out about making changes to DefStyle.txt: that
+	file is a default library, placed in the main/lib/igui folder. Ideally,
+	before making changes to it, the file might be copied to the directory
+	where your specific project's source code resides. Or more precisely,
+	you have to duplicate the structure of the "main/lib" folder by
+	creating a "igui" folder into your application's source code folder,
+	and place in your new "igui" folder the changed files such as defstyle
+	and the custom TGA files.
+
+	After changing the said copies, the program has to be recompiled to
+	apply the new skin. At that point, selecting the option to EXPORT the
+	skin, the program's specific skin may be exported to a file for other
+	iGUI-based programs to import the new skin. Skins must be exported to
+	files having ".IGS" extension, however there's a limit to the total
+	amount of data that could be saved into one of those files for it to
+	be imported, later, by other programs. The limit is 512 Kb: if a skin
+	set, packaged into an IGS file, come out larger than 512 Kb, then the
+	corresponding skin must be further optimized, or made non-exportable.
+	A non-exportable skin means a skin that will be specifically compiled
+	with its parent application, but that the application will not allow
+	to export, since no other program could then import it anyway. This
+	limit is due to this same library's IGS file buffer called
+	"SX Graphics", which must be allocated statically to avoid interfering
+	with eventual memory managers being used by the parent application.
+	A half megabyte might be enough for this kind of skins, which don't
+	really need very large graphical parts; at the same time, 512 Kb might
+	not weigh too much on the final application's memory requirements. Of
+	course it's easy to size the "SX Buffer" to any amounts of memory, by
+	changing this same file, and the checks on limits when it reads the
+	skin into memory, but you're discouraged from doing that, because for
+	skins to be peacefully exchanged between different applications, some
+	conventional limit might be respected.
+
+	One note about those shadows cast by elements such as the balloon
+	help, question boxes and pulldown menus: those shadows are formed by
+	a few parts that get visually "mounted" like the pieces of a puzzle;
+	considering light to always be coming from the top left corner of the
+	application's display, the shadow parts are:
+		tcshadow - top corner shadow			- 10x10 px
+		lcshadow - left corner shadow			- 10x10 px
+		brshadow - bottom right corner shadow		- 10x10 px
+		phshadow - parallel, straight horizontal shadow - ??x10 px
+		pvshadow - parallel, straight vertical shadow	- 10x?? px
+	Those parts have to be fit for composing shadows which thickness must
+	be strictly 10 pixels, because constant 10 is hard-coded in several
+	of the iGUI library routines. Corners are pratically compelled to be
+	10 by 10 pixels, while horizontal and vertical parts, where the table
+	says "??", may have a different size along the corresponding axis,
+	although you'd rarely need more than 1 single pixel in place of "??".
+	So, if you need bigger shadows, it's actually impossible, however it
+	could be possible to REDUCE them. Shadows' parts are ALWAYS traced by
+	reducing RGB components of the background, as the "alpha dim" effect
+	does, and so, if you need to make them smaller, you may simply leave
+	some black pixels in the unused parts of the above graphical parts.
+	If you wish to have a look at the default parts of the shadows, their
+	unoptimized TGA versions are found in "Linoleum/Main/iTGAoptimizer".
+
+	And to conclude with the topic of IGS skin packets developement, as
+	you will probably notice, the IGS library's "import skin" routine
+	prompts the user if the latest imported skin is to be set as the
+	"preferred" skin. This means, if the user clicks "Set as preferred",
+	that the absolute path to the IGS file having been just imported will
+	be saved into a global K, specifically the key "IGS_preferred_skin",
+	to be recovered if an application, on startup, calls the routine to
+	"Import Preferred Skin" right after "Initialize Integrated GUI". Now,
+	from the skin's user side, this is a comfortable shortcut, but from
+	the skin's developer side, it would OVERRIDE eventually new skins
+	embedded into the application. The solutions for the developer are:
+
+	- never setting a preferred skin;
+	- moving or deleting the file pointed as the preferred skin;
+	- using the system registry editor "regedit" to delete the key:
+	  "HKEY_CURRENT_USER/Software/Linoleum_shared/IGS_preferred_skin".
+
+	--------------------------------------------
+	Notes on [unsupported] internationalization:
+	--------------------------------------------
+	Although the L.in.oleum environment has no native support for
+	internationalization, if you really need to translate at least dialog
+	box messages and balloon help descriptions, you may create slightly
+	different versions of this library and of the "DefStyle.txt" library
+	where those strings are declared, but please note that if translation
+	requires use of characters out of the ASCII set, it is your own duty
+	to manage visualization and processing of extended character sets,
+	and that such solutions involve deep changes to other libraries such
+	as "stdfont.txt", and some way to mark special characters in strings
+	declared in the code, for the compiler itself only understands ASCII;
+	oh, and not to mention that L.in.oleum's run-time modules only know
+	ASCII/ANSI keystrokes when a keystroke is gathered via the [Console
+	Command] interface. I have no idea how the console would react when
+	confronted with very particular keyboard layouts. Sincerely speaking,
+	this environment has been designed to comply only with ASCII, the
+	run-time modules are designed to handle ASCII file names, ASCII paths
+	and ASCII resources. All API calls on Windows, for instance, involve
+	the ANSI implementations of a function, not Unicode. I suppose it is
+	theoretically possible to create fully Unicode versions of L.in.oleum
+	but don't look at me for a near-future effort in that sense. When I
+	say a program is "an internation version", I mean it's in English...
+	if I were to say a program is "a national version" I'd mean Italian.
+
+	--------------------------------------------------------------------
+	Technical notes on computing an area size the way this library does:
+	--------------------------------------------------------------------
+	   [IGSheadersize] = pragma SX Blockend minus SX Blockstart;
+	This basically means the compiler takes the pointer to "SX Blockend"
+	and sutracts from it the pointer to SX Blockstart, both expressed in
+	units, to obtain the size, also given in units, of the area of memory
+	enclosed between the two labels. Such labels are declared as "void
+	vectors", via the syntaxes:
+	   my marker = 0 *** 0; ...if you're in the "variables" period
+	   my marker = 0;	...if you're in the "workspace" period
+	ok, to be sincere the first zero before "*** 0" in the first syntax
+	is uninfluent, what counts is the "replications count", which is 0.
+	So far, the manual says the same things about possible void vectors,
+	but I mostly added this note to point out WHY such an area size gets
+	computed as a variable, while it would be pratically a constant.
+	Well, that's because of a limitation in the current implementation of
+	the L.in.oleum compiler. The actual compiler, which will be finally
+	translated to L.in.oleum and redesigned sooner or later, would print
+	an error, "Nonsensical use of pointers", if you declared that value,
+	called "IGSheadersize" in the above instance, as a constant. However,
+	despite the bizarre way to use pointers in the computation, such an
+	expression was INTENDED to be legal, although it would give a warning
+	if it wasn't "pragma"-tized. Unfortunately, the actual compiler gives
+	wrong values to the resulting constant if the computation is done in
+	the "constants" period; or better, it MAY give wrong results, and it
+	depends on the order different libraries are included.
+	Specifically it gives a wrong result if the library whose "constants"
+	period contains such a pointer-based expression, is included BEFORE
+	the library declaring the markers involved in the expression. It's a
+	question of "forward referencing", that is.
+	This problem will be hopefully fixed upon translating the compiler.
+
+)
+
+"libraries"
+
+	DefStyle; (automatically includes DefStyle, and therefore iGUI)
+
+"constants"
+
+	SX EFFECTS COUNT = 28;
+
+"variables"
+
+	IS Be Quiet	= YES;
+	IGS Extension	= { .igs };
+	SX Preference K = { IGS_preferred_skin };
+
+ vector SX Effects table =
+	service FX Null;			   0;
+	service FX Raw; 			   1;
+	service FX Negate;			   2;
+	service FX Superimpose; 		   3;
+	service FX Semi Transparent;		   4;
+	service FX Semi Transparent Superimpose;   5;
+	service FX Alpha Light; 		   6;
+	service FX Alpha Light Superimpose;	   7;
+	service FX Alpha Dim;			   8;
+	service FX Alpha Dim Superimpose;	   9;
+	service FX Filter;			  10;
+	service FX Filter Alpha Lit;		  11;
+	service FX Filter Alpha Lit Superimpose;  12;
+	service FX Filter Alpha Dim;		  13;
+	service FX Filter Alpha Dim Superimpose;  14;
+	service FX Glow;			  15;
+	service FX Smooth;			  16;
+	service FX DoubleStrike Smooth; 	  17;
+	service FX Antialiasing Lit;		  18;
+	service FX Antialiasing Dim;		  19;
+	service FX Doublestrike Antialiasing Lit; 20;
+	service FX Doublestrike Antialiasing Dim; 21;
+	service FX Antialiasing Lit Superimpose;  22;
+	service FX Antialiasing Dim Superimpose;  23;
+	service FX Negate Superimpose;		  24;
+	service FX Filter Superimpose;		  25;
+	service FX Glow Superimpose;		  26;
+	service FX Smooth Superimpose;		  27;
+
+ vector SX Parts by size =
+	Size of btnclose; Size of btnsleep; Size of btnflunf;
+	Size of btnmaxim; Size of btnfulls; Size of btnresiz;
+	Size of menulogo; Size of mpointer; Size of mpshadow;
+	Size of wcaption; Size of pmfiller; Size of tcshadow;
+	Size of lcshadow; Size of brshadow; Size of phshadow;
+	Size of pvshadow; Size of dbfiller; Size of toolsbar;
+	Size of tbbutton; Size of scrollth; Size of scrollph;
+	Size of scrolltv; Size of scrollpv;
+	53444E45h; ( 'ENDS' signature for .IGS skin packets )
+	SX Partsend = 0 *** 0;
+
+	On Skin Export Success = { SKIN_EXPORTED };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ ___Ok___ };		  NULL;
+		NULL;
+
+	On Skin Export Failure = { FILE_ERROR \cr\lf (EXPORTING_SKIN) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Retry };		  service Export Skin;
+		{ Cancel };		  NULL;
+		NULL;
+
+	On Skin Import Success = { SKIN_IMPORTED };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Ok }; 		  NULL;
+		{ Set_as_preferred };	  IS Set As Preferred Skin;
+		NULL;
+
+	On Skin Import Failure = { FILE_ERROR \cr\lf (IMPORTING_SKIN) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Retry };		  service Import Skin;
+		{ Cancel };		  NULL;
+		NULL;
+
+	IS No Blockstart signature = { SKIN_ERROR \cr\lf (iGUI_SIGNATURE) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Cancel };		  NULL;
+		NULL;
+
+	IS No Effects signature = { SKIN_ERROR \cr\lf (EFEX_SIGNATURE) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Cancel };		  NULL;
+		NULL;
+
+	IS No Blockend signature = { SKIN_ERROR \cr\lf (SKIN_SIGNATURE) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Cancel };		  NULL;
+		NULL;
+
+	IS No Parts signature = { SKIN_ERROR \cr\lf (ENDS_SIGNATURE) };
+		(POSSIBLE REPLIES ------- CORRESPONDING ACTIONS)
+		{ Cancel };		  NULL;
+		NULL;
+
+"workspace"
+
+	IGSheadersize = 1;
+	IGSpartssize  = 1;
+
+	SX Graphics   = 524288 div BYTESPERUNIT;
+	SX EX Limit   = 1;
+
+"programme"
+
+"Import Preferred Skin"
+	[Global K Command] = K READ;
+	[Global K Name] = SX Preference K;
+	[Global K Data] = vector Selected File Name;
+	isocall;
+	[IS Be Quiet] = YES;
+	=> service Import Skin;
+	end;
+
+"Import Skin"
+	[File Selector Filter] = IGS Extension;
+	[On File Select] = service Import Skin;
+	[IS Be Quiet] = NO;
+	end;
+    "service Import Skin"
+	[IGSheadersize] = pragma SX Blockend minus SX Blockstart mtp BYTESPERUNIT;
+	[IGSpartssize]	= pragma SX Partsend minus vector SX Parts by size mtp BYTESPERUNIT;
+	[File Name]	= vector Selected File Name;
+	[File Command]	= READ;
+	[File Position] = ZERO;
+	[Block Pointer] = SX Graphics;
+	[Block Size]	= 524288;
+	isocall;
+	[SX EX Limit]	= [Block Size];
+	[SX EX Limit]	/ BYTESPERUNIT;
+	[SX EX Limit]	+;
+	[Question Datascript] = On Skin Import Failure;
+	? [File Status] + ERROR -> IS Skin import failed;
+	? [File Size] > 524288 -> IS Skin import failed;
+	[Question Datascript] = IS No blockstart signature;
+	? [SX Graphics] != [SX Blockstart signature] -> IS Skin import failed;
+	[Question Datascript] = IS No effects signature;
+	A = SX Graphics;
+	B = pragma SX Blockstart;
+	C = pragma SX Effects start minus SX Blockstart minus 1;
+	D = [SX EX Limit];
+      "IS Copy primary header data"
+	? [A] = [SX Effects signature] -> IS Found effects block;
+	[B] = [A]; A+; B+;
+	D-; ? D <= ZERO -> IS Skin import failed;
+	C ^ IS Copy primary header data;
+      "IS Find effects block"
+	? [A] = [SX Effects signature] -> IS Found effects block;
+	A+; D ^ IS Find effects block;
+	-> IS Skin import failed;
+      "IS Found effects block"
+	[Question Datascript] = IS No blockend signature;
+	A +;
+	B = pragma SX Effects start;
+	C = pragma SX Blockend minus SX Effects start minus 1;
+      "IS Copy effects data"
+	? [A] = [SX Blockend signature] -> IS Found parts block;
+	E = SX EFFECTS COUNT minus 1 mtp 2;
+      "IS Find effect"
+	? [E relating vector SX Effects table plus 1] = [A] -> IS Found effect;
+	E-; ? E >= ZERO -> IS Find effect;
+	[A] = service FX Raw; -> IS Effect not found;
+      "IS Found effect"
+	[A] = [E relating vector SX Effects table];
+      "IS Effect not found"
+	[B] = [A]; A+; B+;
+	D-; ? D <= ZERO -> IS Skin import failed;
+	C ^ IS Copy effects data;
+      "IS Find parts block"
+	? [A] = [SX Blockend signature] -> IS Found parts block;
+	A+; D ^ IS Find parts block;
+	-> IS Skin import failed;
+      "IS Found parts block"
+	[Question Datascript] = IS No parts signature;
+	A +;
+	B = vector SX Parts by size;
+	C = ZERO;
+      "IS Copy parts data"
+	? [A] = 53444E45h -> IS No further parts;
+	? [B] = 53444E45h -> IS Too many parts;
+	[B] = [A]; A+; B+;
+	D-; ? D <= ZERO -> IS Skin import failed;
+	C+; -> IS Copy parts data;
+      "IS Too many parts"
+	? [A] = 53444E45h -> IS No further parts;
+	A+; D ^ IS Too many parts;
+	-> IS Skin import failed;
+      "IS No further parts"
+	[B] = 53444E45h;
+	A+;
+	B = SX Pointers;
+	D = vector SX Parts by size;
+      "IS Fill pointers"
+	[B] = A;
+	E = [D];
+	E % BYTESPERUNIT;
+	? E = ZERO -> IS FP Unitaligned;
+	E +-;
+	E + BYTESPERUNIT;
+      "IS FP Unitaligned"
+	E + [D];
+	E / BYTESPERUNIT;
+	A + E; B+; D+; C ^ IS Fill pointers;
+	? [IS Be Quiet] = YES -> IS Dont confirm;
+	[Question Datascript] = On Skin Import Success;
+	=> Question;
+    "IS Dont confirm"
+	end;
+    "IS Skin import failed"
+	? [IS Be Quiet] = YES -> IS Dont complain;
+	=> Question;
+    "IS Dont complain"
+	end;
+    "IS Set As Preferred Skin"
+	[Global K Command] = K WRITE;
+	[Global K Name] = SX Preference K;
+	[Global K Data] = vector Selected File Name;
+	isocall;
+	end;
+
+"Export Skin"
+	[File Selector Filter] = IGS Extension;
+	[On File Select] = service Export Skin;
+	end;
+    "service Export Skin"
+	[IGSheadersize] = pragma SX Blockend minus SX Blockstart mtp BYTESPERUNIT;
+	[IGSpartssize]	= pragma SX Partsend minus vector SX Parts by size mtp BYTESPERUNIT;
+	[File Name]	= vector Selected File Name;
+	A = pragma SX Effects start;
+	B = pragma SX Blockend minus SX Effects start minus 1;
+      "ES Encode effects"
+	[A] -->; (>>>)
+	C = vector SX Effects table;
+	D = SX EFFECTS COUNT;
+      "ES EE Find effect"
+	? [A] = [C] -> ES EE Found;
+	C + 2; D ^ ES EE Find effect;
+	[A] = ZERO; -> ES EE Not found;
+      "ES EE Found"
+	[A] = [C plus 1];
+      "ES EE Not found"
+	A+; B ^ ES Encode effects;
+	[File Command]	= WRITE;
+	[File Position] = ZERO;
+	[Block Pointer] = pragma SX Blockstart;
+	[Block Size]	= [IGSheadersize];
+	isocall;
+	B = pragma SX Blockend minus SX Effects start minus 1;
+      "ES Restore effects"
+	A-; <-- [A]; (<<<)
+	B ^ ES Restore effects;
+	? [File Status] + ERROR -> ES Skin export failed;
+	? [Block Size] != [IGSheadersize] -> ES Skin export failed;
+	[File Command]	= WRITE;
+	[File Position] = [IGSheadersize];
+	[Block Pointer] = vector SX Parts by size;
+	[Block Size]	= [IGSpartssize];
+	isocall;
+	? [File Status] + ERROR -> ES Skin export failed;
+	? [Block Size] != [IGSpartssize] -> ES Skin export failed;
+	A = ZERO;
+	B = RGFX PARTS COUNT;
+	[File Position] = [IGSheadersize];
+	[File Position] + [IGSpartssize];
+      "ES Save graphics"
+	[File Command] = WRITE;
+	[Block Pointer] = [A relating SX Pointers];
+	[Block Size] = [A relating vector SX Parts by size];
+	[Block Size] % BYTESPERUNIT;
+	? [Block Size] = ZERO -> ES SG Unitaligned;
+	[Block Size] +-;
+	[Block Size] + BYTESPERUNIT;
+      "ES SG Unitaligned"
+	[Block Size] + [A relating vector SX Parts by size];
+	[Block Size] -->; isocall; <-- C;
+	? [File Status] + ERROR -> ES Skin export failed;
+	? [Block Size] != C -> ES Skin export failed;
+	[File Position] + [Block Size];
+	A+; B ^ ES Save graphics;
+	[File Command] = SET SIZE;
+	[File Size] = [File Position];
+	isocall;
+	? [File Status] + ERROR -> ES Skin export failed;
+	[Question Datascript] = On Skin Export Success;
+	=> Question;
+	end;
+    "ES Skin export failed"
+	[File Command] = DESTROY;
+	isocall;
+	[Question Datascript] = On Skin Export Failure;
+	=> Question;
+	end;

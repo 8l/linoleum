@@ -1,0 +1,1062 @@
+(zlib.txt: zlib [de]compressor.
+
+This library conforms to the zlib specification version 3.3,
+which can be found at the URL
+ftp://ftp.uu.net/graphics/png/documents/zlib/zdoc-index.html
+
+The routines perform compression and decompression of a
+valid zlib stream.
+
+- sorry, at the moment only decompression,	-
+- but that will change. 			-
+
+Although the zlib format is designed to allow progressive
+reading of the file, used for example by browsers, to show
+images which haven't been loaded completely. This library
+doesn't have this enabled. It needs the complete data stream
+[which means file in most cases] in memory before calling 
+the desired routine.
+
+The code is -in my oppinion- rather well documented and
+readable, but in order to understand completely what's
+happening i recommend reading the zlib specification and 
+the deflate specification first.
+
+For bugs, additions or remarks, mail me at:
+pp_kl_h@hotmail.com
+
+Authors website:
+http://home.hetnet.nl/~ptkleinhaneveld
+
+License LGPL
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or [at your option] any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+USA
+
+(C) 2003 by Peterpaul Klein Haneveld.
+)
+
+"libraries"
+	bytes;
+	/gen/bits;   (Author: Alex.tg)
+	/vk/lock;    (Author: Vladimir K.)
+
+"variables"
+	vector zlib btype table =
+		zlib inflate no compression;
+		zlib inflate compressed fixed;
+		zlib inflate compressed dynamic;
+		zlib inflate reserved;
+
+	vector zlib code offsets	=
+		16; 17; 18; 0; 8; 7; 9; 6; 10; 5; 11; 4; 12; 3; 13; 2; 14; 1; 15;
+
+	vector zlib len table	=
+		00 03 00 02h; 00 03 00 03h; 00 0b 00 07h; ([offset; length])
+		
+	vector zlib hlit table	= 00 00 00 00h;
+		00 03 00 00h; 00 04 00 00h;
+		00 05 00 00h; 00 06 00 00h;
+		00 07 00 00h; 00 08 00 00h;
+		00 09 00 00h; 00 0a 00 00h;
+		00 0b 00 01h; 00 0d 00 01h;
+		00 0f 00 01h; 00 11 00 01h;
+		00 13 00 02h; 00 17 00 02h;
+		00 1b 00 02h; 00 1f 00 02h;
+		00 23 00 03h; 00 2b 00 03h;
+		00 33 00 03h; 00 3b 00 03h;
+		00 43 00 04h; 00 53 00 04h;
+		00 63 00 04h; 00 73 00 04h;
+		00 83 00 05h; 00 a3 00 05h;
+		00 c3 00 05h; 00 e3 00 05h;
+		01 02 00 00h;
+		
+	vector zlib hdist table =
+		00 01 00 00h; 00 02 00 00h;
+		00 03 00 00h; 00 04 00 00h;
+		00 05 00 01h; 00 07 00 01h;
+		00 09 00 02h; 00 0d 00 02h;
+		00 11 00 03h; 00 19 00 03h;
+		00 21 00 04h; 00 31 00 04h;
+		00 41 00 05h; 00 61 00 05h;
+		00 81 00 06h; 00 c1 00 06h;
+		01 01 00 07h; 01 81 00 07h;
+		02 01 00 08h; 03 01 00 08h;
+		04 01 00 09h; 06 01 00 09h;
+		08 01 00 0ah; 0c 01 00 0ah;
+		10 01 00 0bh; 18 01 00 0bh;
+		20 01 00 0ch; 30 01 00 0ch;
+		40 01 00 0dh; 60 01 00 0dh;
+		
+"workspace"
+	zlib CM 		= 1; (CM = Compression Method)
+	zlib CINFO		= 1; (CINFO = Compression Info)
+	zlib FCHECK		= 1; (FCHECK = check bits for CMF = <CINFO, CM> and
+					FLG = <FLEVEL, FDICT, FCHECK>)
+	zlib FDICT		= 1; (FDICT = Preset Dictionary)
+	zlib FLEVEL		= 1; (FLEVEL = Compression Level)
+	
+	zlib DICTID		= 1; (DICTID = identifier of a known preset dictionary)
+
+	(zlib inflate/deflate)
+	zlib bfinal		= 1;
+	zlib btype		= 1;
+	zlib len		= 1;
+	zlib nlen		= 1;
+	zlib hlit		= 1;
+	zlib hdist		= 1;
+	zlib hclen		= 1;
+	zlib stream		= 1;
+	zlib stream ptr 	= 1;
+	zlib output		= 1;
+	zlib output ptr 	= 1;
+	zlib code cnt		= 1;
+	zlib code table 	= 1;
+	zlib symbol		= 1;
+	zlib code len ptr	= 1;
+	zlib code len vector	= 1;
+	zlib code len cnt	= 1;
+	zlib max code len	= 1;
+	zlib hclen table	= 1;
+	zlib hdist table	= 1;
+	zlib hlit table 	= 1;
+	zlib bl count		= 1;
+	zlib next code		= 1;
+	zlib length		= 1;
+	zlib distance		= 1;
+	zlib code len table	= 1;
+
+	vector zlib code length = 19;
+
+	zlib input		= 1;
+	zlib input ptr		= 1;
+	zlib input len		= 1;
+
+"programme"
+(----------------------------------------------------------------------------)
+	(main routines)
+(----------------------------------------------------------------------------)
+("ZLIB DECOMPRESS"
+
+This is the main decompress routine.
+)
+(----------------------------------------------------------------------------)
+"zlib decompress"
+(main decompress routine.)
+(IN:	[zlib output]		= pointer to vector to store the result in
+	[zlib output ptr]	= number of first bit to write result to,
+				this must be the first bit of a byte.
+	[zlib stream]		= pointer to the input stream with the zlib stream
+	[zlib stream ptr]	= number of first bit of the zlib stream,
+				this must be the first bit of a byte.)
+
+	(initialisations)
+	[bit stream pointer] = [zlib stream];
+	[starting bit number] = [zlib stream ptr];
+
+	(read flags from stream)
+(OUT:	[zlib CM]
+	[zlib CINFO]
+	[zlib FCHECK]
+	[zlib FDICT]
+	[zlib FLEVEL])
+	[bit field size] = 4;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib CM] = [bit field content];
+
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib CINFO] = [bit field content];
+
+	[bit field size] = 5;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib FCHECK] = [bit field content];
+
+	[bit field size] = 1;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib FDICT] = [bit field content];
+
+	[bit field size] = 2;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib FLEVEL] = [bit field content];
+
+	? [zlib FDICT] - 1h -> zlib get flags end;
+		[bit field size] = 32;
+		=> get bit field;
+		[starting bit number] + [bit field size];
+		[zlib DICTID] = [bit field content];
+	"zlib get flags end"
+
+	? [zlib CM] = 8 -> zlib inflate;
+	fail;
+(----------------------------------------------------------------------------)
+("ZLIB INFLATE"
+
+This is the routine which decompresses a stream which is compressed with the
+deflate algorithm; at the moment the only official format. It requires little
+input, just a pointer to where the zlib stream starts, and a pointer to where
+the decompressed data must be stored. Since the linoleum environment doesn't
+know bytes, the data vector must be given together with the offset of the
+first bit of the data. NOTE: This bit must be the first bit of a byte for
+both [zlib output ptr] and [starting bit number].
+)
+(----------------------------------------------------------------------------)
+"zlib inflate"
+(main decompress routine.)
+(IN:	[zlib output]		= pointer to vector to store the result in
+	[zlib output ptr]	= number of first bit to write result to,
+				this must be the first bit of a byte.
+	[bit stream pointer]	= pointer to the input stream with the deflate 
+				stream.
+	[starting bit number]	= number of first bit of the deflate stream,
+				this must be the first bit of a byte.)
+
+	(main loop)
+	"zlib inflate block"
+	(read header of block)
+	[bit field size] = 3;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib bfinal] = [bit field content];
+	[zlib bfinal] & 1b;
+	[zlib btype] = [bit field content];
+	[zlib btype] > 1;
+	(call corresponding routine to decode this block)
+	a = [zlib btype];
+	=> [a plus vector zlib btype table];
+	? failed -> zlib inflate error;
+	? [zlib bfinal] = NO -> zlib inflate block;
+	end;
+
+
+
+
+	"zlib inflate error"
+	"zlib inflate reserved"
+	fail;
+
+
+
+
+
+"zlib inflate no compression"
+	(set ptr to byte boundary)
+	[starting bit number]-;
+	[starting bit number] > 3;
+	[starting bit number]+;
+	[starting bit number] < 3;
+	[bit field size] = 16;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib len] = [bit field content];
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib nlen] = [bit field content];
+	[bit field content] # [zlib len];
+	? [bit field content] != ff ffh -> zlib inc len error;
+	(copy [zlib len] bytes to output buffer)
+	a = [zlib stream];
+	b = [starting bit number]; b > 3;
+	c = [zlib len];
+	d = [zlib output];
+	e = [zlib output ptr]; e > 3;
+	=> zlib bytes copy;
+	a = [zlib len];
+	a < 3;
+	[starting bit number] + a;
+	[zlib output ptr] + a;
+	end;
+
+	"zlib inc len error"
+	fail;
+
+
+
+
+"zlib inflate compressed fixed"
+	-> zlib inflate compressed data;
+
+
+
+
+
+"zlib inflate compressed dynamic"
+	[bit field size] = 5;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib hlit] = [bit field content];
+	[zlib hlit] + 257;
+
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib hdist] = [bit field content];
+	[zlib hdist] + 1;
+
+	[bit field size] = 4;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib hclen] = [bit field content];
+	[zlib hclen] + 4;
+
+	(read code length alphabet)
+	[zlib code cnt] = 0;
+	[bit field size] = 3;
+
+	"zlib icd loop 1"
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	a = [zlib code cnt];
+	a = [a plus vector zlib code offsets];
+	[a plus vector zlib code length] = [bit field content];
+	[zlib code cnt]+;
+	? [zlib code cnt] < [zlib hclen] -> zlib icd loop 1;
+	? [zlib code cnt] = 19 -> zlib icd loop 2 finished;
+
+	(clear rest of vector)
+	a = [zlib code cnt];
+	"zlib icd loop 2"
+	b = [a plus vector zlib code offsets];
+	[b plus vector zlib code length] = 0;
+	a +;
+	? a < 19 -> zlib icd loop 2;
+	"zlib icd loop 2 finished"
+
+	(at this point the lengths of the code
+	length alphabet are read from te input
+	stream. These must be translated to
+	the code length alphabet/lookup table
+	before the next parts can be read.)
+	[zlib code len vector] = vector zlib code length;
+	[zlib code len cnt] = 19;
+	=> zlib from length to table;
+	[zlib hclen table] = [zlib code table];
+
+	(the code length lookup table is
+	generated, now read the code lengths
+	for the literal/length and distance
+	alphabets.)
+
+	(read hlit table)
+	[zlib code len cnt] = [zlib hlit];
+	=> zlib stream to table;
+	[zlib hlit table] = [zlib code table];
+
+	(read hdist table)
+	[zlib code len cnt] = [zlib hdist];
+	=> zlib stream to table;
+	[zlib hdist table] = [zlib code table];
+
+	(now read the actual compressed data)
+
+	=> zlib inflate compressed data;
+	(all data is decompressed, free
+	remaining objects, and end)
+	[zlib code table] = [zlib hclen table];
+	=> zlib free table;
+
+	[zlib code table] = [zlib hlit table];
+	=> zlib free table;
+
+	[zlib code table] = [zlib hdist table];
+	=> zlib free table;
+	end;
+
+
+
+
+(----------------------------------------------------------------------------)
+	(subroutines)
+(----------------------------------------------------------------------------)
+"zlib reverse bit order"
+	(this routine reverses the bit order of a
+	bit field read from the input stream.
+	registers aren't preserved.)
+(IN:	[bit field content]
+	[bit field size]
+OUT:	[bit field content] = reversed
+	[bit field size] = unchanged)
+	a = [bit field content];
+	b # b; (b = 0;)
+	c = [bit field size];
+	"zlib rbo loop"
+	d = a;
+	b < 1;
+	d & 1b;
+	a > 1;
+	b | d;
+	c ^ zlib rbo loop;
+	[bit field content] = b;
+	end;
+(----------------------------------------------------------------------------)
+"zlib get reverse bit field"
+	=> get bit field;
+	=> zlib reverse bit order;
+	end;
+(----------------------------------------------------------------------------)
+"zlib set reverse bit field"
+	=> zlib reverse bit order;
+	=> set bit field;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib get symbol from stream"
+	(This routine reads the next symbol from
+	the input stream. IE. it reads a code and
+	translates it to a symbol with the specified
+	table.)
+(IN:	[zlib code table]
+OUT:	[zlib symbol])
+	[bit field size] = 9;
+	=> zlib get reverse bit field;
+	a = [zlib code table];
+	a + [bit field content];
+	a = [a];
+	? a + 80 00 00 00h -> zlib gsft secondary table;
+	[zlib symbol] = a;
+	[zlib symbol] > 16;
+	a & ff ffh;
+	[starting bit number] + a;
+	end;
+
+	"zlib gsft secondary table"
+	[starting bit number] + 9;
+	a & 7f ff ff ffh;
+	a-->;
+	[bit field size] = 6;
+	=> zlib get reverse bit field;
+	a<--;
+	a + [bit field content];
+	a = [a];
+	[zlib symbol] = a;
+	[zlib symbol] > 16;
+	a & ff ffh;
+	[starting bit number] + a;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib free table"
+	(frees all memory hold by table)
+(IN:	[zlib code table])
+	a = [zlib code table];
+	b = [a minus 1];
+	"zlib ft loop"
+	? [a] - 80 00 00 00h -> zlib ft loop next;
+	a-->;
+	a = [a];
+	a & 7f ff ff ffh;
+	=> free;
+	a<--;
+	"zlib ft loop next"
+	a+;
+	b^zlib ft loop;
+	a = [zlib code table];
+	=> free;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib from length to table"
+	(this routine takes a vector with lengths
+	and translates it to a lookup table
+	for the symbols. The tables entries are 
+	the following: [symbol; length] but
+	use the "zlib get symbol from stream"
+	routine to read from the input stream.)
+(IN:	[zlib code len vector]
+	[zlib code len cnt]
+OUT:	[zlib code table])
+	(I. find the maximum length.)
+	a = [zlib code len vector];
+	b = [zlib code len cnt];
+	c # c; (c = 0;)
+	"zlib fltt loop 1"
+	? [a] <= c -> zlib fltt loop 1 next;
+	c = [a];
+	"zlib fltt loop 1 next"
+	a+;
+	b ^ zlib fltt loop 1;
+	[zlib max code len] = c;
+
+	(II. create object to hold the number
+	of occurrences of a length.)
+	a = [zlib max code len];
+	a+;
+	=> lock;
+	? failed -> zlib fltt error 1a;
+	[zlib bl count] = a;
+	(clear that object)
+	b # b; (b = 0;)
+	c = [a minus 1];
+	=> zlib units set;
+
+	(III. count the number of occurrences for
+	each length.)
+	a = [zlib bl count];
+	b = [zlib code len vector];
+	c = [zlib code len cnt];
+	"zlib fltt loop 2"
+	? [b] = 0 -> zlib fltt loop 2 next;
+	d = [b];
+	d + a;
+	[d]+;
+	"zlib fltt loop 2 next"
+	b+;
+	c ^ zlib fltt loop 2;
+
+	(IV. find the nummerical value of the
+	smallest code for each code length)
+	(create object [next code])
+	a = [zlib max code len];
+	a+;
+	=> lock;
+	? failed -> zlib fltt error 2a;
+	[zlib next code] = a;
+
+	[a] = 0;
+	a+;	(next_code[bits])
+	b = 1;	(bits)
+	c # c;	(c = 0; code)
+	"zlib fltt loop 3"
+	d = b;
+	d-;
+	d + [zlib bl count];
+	c + [d];
+	c < 1;
+	[a] = c;
+	a+;
+	b+;
+	? b <= [zlib max code len] -> zlib fltt loop 3;
+
+	(V. assign numerical values to all codes,
+	do this in the source vector at
+	the 3rd byte: [code; length])
+	a = [zlib code len vector];
+	b = [zlib code len cnt];
+	"zlib fltt loop 4"
+	c = [a];
+	? c = 0 -> zlib fltt loop 4 next;
+	c + [zlib next code];
+	d = [c];
+	d < 16;
+	[a] | d;
+	[c]+;
+	"zlib fltt loop 4 next"
+	a+;
+	b ^zlib fltt loop 4;
+
+	(VI. free [bl count] and [next code])
+	a = [zlib bl count];
+	=> free;
+
+	a = [zlib next code];
+	=> free;
+
+	(VII. create primary table for codes)
+	a = 1;
+	a < 9;
+	=> lock;
+	? failed -> zlib fltt error 4a;
+	[zlib code table] = a;
+	(clear table)
+	b # b; (b = 0;)
+	c = [a minus 1];
+	=> zlib units set;
+
+	(IIX. for each entry in [zlib code len vector],
+	fill the table)
+	a # a; (a = 0;)
+	"zlib fltt loop 5"
+	a-->;
+	c = a;
+	c + [zlib code len vector];
+	c = [c];
+	? c = 0 -> zlib fltt loop 5 next;
+	d = c;
+	d & ff ffh; (d = code length)
+	c > 16; (c = code)
+	? d > 9 -> zlib fltt loop 5 secondary;
+	(fill values in primary table)
+	d-->;
+	d - 9;
+	|d|;
+	e = 1;
+	e < d; (e = entries to fill)
+	c < d; (c = offset of first entry)
+	d<--;
+	c + [zlib code table];
+	a < 16;
+	a | d; (a = entry)
+	"zlib fltt loop 5 subloop"
+	[c] = a;
+	c+;
+	e^zlib fltt loop 5 subloop;
+	a > 16;
+	"zlib fltt loop 5 next"
+	a<--;
+	a+;
+	? a < [zlib code len cnt] -> zlib fltt loop 5;
+	end;
+
+	"zlib fltt loop 5 secondary"
+	(IX. check if secondary table already exists)
+	b = c;
+	d-->;
+	d - 9;
+	b > d;
+	d<--;
+	b + [zlib code table];
+	? [b] != 0 -> zlib fltt loop 5 s table exists;
+	(create secondary table)
+	a-->;
+	a = 1;
+	a < 6;
+	=> lock;
+	? failed -> zlib fltt error a;
+	[b] = a;
+	[b] | 80 00 00 00h;
+	(clear table)
+	b-->; c-->;
+	b # b; (b = 0;)
+	c = [a minus 1];
+	=> zlib units set;
+	c<--; b<--;
+
+	a<--;
+	"zlib fltt loop 5 s table exists"
+	b = [b];
+	b & 7f ff ff ffh;
+	d-->;
+	d - 15;
+	|d|;
+	c < d;
+	c & 3fh;
+	e = 1;
+	e < d;
+	d<--;
+	b + c;
+	d - 9;
+	a < 16;
+	a | d;
+	"zlib fltt loop 5 s subloop"
+	[b] = a;
+	b+;
+	e^zlib fltt loop 5 s subloop;
+	a > 16;
+	-> zlib fltt loop 5 next;
+
+	"zlib fltt error a"
+	a<--;
+	a = [zlib code table];
+	=> zlib free table;
+	"zlib fltt error 4a"
+	fail;
+
+	"zlib fltt error 2a"
+	a = [zlib bl count];
+	=> free;
+	"zlib fltt error 1a"
+	fail;
+(----------------------------------------------------------------------------)
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib stream to table"
+	(This routine creates a lookup table from
+	the data of the input stream.)
+(IN:	[zlib code len cnt]
+OUT:	[zlib code table])
+	(I. create object to hold lengths)
+	a = [zlib code len cnt];
+	=> lock;
+	? failed -> zlib stt error;
+	[zlib code len vector] = a;
+	(clear table)
+	b # b; (b = 0;)
+	c = [a minus 1];
+	=> zlib units set;
+
+	(II. read the lengths from the stream)
+	[zlib code len ptr] = 0;
+	[zlib code table] = [zlib hclen table];
+	"zlib stt loop"
+	=> zlib get symbol from stream;
+	? [zlib symbol] >= 16 -> zlib stt rle decode;
+	(write symbol to len vector)
+	a = [zlib code len ptr];
+	a + [zlib code len vector];
+	[a] = [zlib symbol];
+	[zlib code len ptr]+;
+	"zlib stt loop next"
+	? [zlib code len ptr] < [zlib code len cnt] -> zlib stt loop;
+	(translate len table to lookup table)
+	=> zlib from length to table;
+	? failed -> zlib stt error 1;
+	(free len vector)
+	a = [zlib code len vector];
+	=> free;
+	end;
+
+	"zlib stt error 1"
+	a = [zlib code len vector];
+	=> free;
+	"zlib stt error"
+	fail;
+
+	"zlib stt rle decode"
+	? [zlib symbol] >= 17 -> zlib stt rle decode zero;
+	(decode rle symbol)
+	a = [zlib symbol];
+	a - 16;
+	[zlib symbol] = [a plus vector zlib len table];
+	[bit field size] = [zlib symbol];
+	[bit field size] & ff ffh;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	a = [zlib code len ptr];
+	a + [zlib code len vector];
+	b = a;
+	b-;
+	b = [b];
+	c = [zlib symbol];
+	c > 16;
+	c + [bit field content];
+	[zlib code len ptr] + c;
+	=> zlib units set;
+	-> zlib stt loop next;
+	
+	"zlib stt rle decode zero"
+	(decode rle symbol)
+	a = [zlib symbol];
+	a - 16;
+	[zlib symbol] = [a plus vector zlib len table];
+	[bit field size] = [zlib symbol];
+	[bit field size] & ff ffh;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	a = [zlib code len ptr];
+	a + [zlib code len vector];
+	b # b; (b = 0;)
+	c = [zlib symbol];
+	c > 16;
+	c + [bit field content];
+	[zlib code len ptr] + c;
+	([zlib code len ptr] +;)
+	=> zlib units set;
+	-> zlib stt loop next;
+
+	("zlib stream to table"
+	must only be used to generate the 
+	length/literal table and the
+	distance table.)
+(----------------------------------------------------------------------------)
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib inflate read fixed symbol"
+	(this routine reads a literal/length symbol from
+	a fixed huffman input stream)
+	[bit field size] = 9;
+	=> zlib get reverse bit field;
+	[zlib symbol] = [bit field content];
+	? [zlib symbol] < 0 0110 0000b -> zlib irfs first;
+	? [zlib symbol] < 1 1000 0000b -> zlib irfs second;
+	? [zlib symbol] < 1 1001 0000b -> zlib irfs third;
+	("zlib irfs fourth")
+	[zlib symbol] - 1 1001 0000b;
+	[zlib symbol] + 144;
+	[starting bit number] + 9;
+	end;
+
+	"zlib irfs first"
+	[zlib symbol] > 2;
+	[zlib symbol] + 256;
+	[starting bit number] + 7;
+	end;
+
+	"zlib irfs second"
+	[zlib symbol] > 1;
+	[zlib symbol] - 11 0000b;
+	[starting bit number] + 8;
+	end;
+
+	"zlib irfs third"
+	[zlib symbol] > 1;
+	[zlib symbol] - 1100 0000b;
+	[zlib symbol] + 280;
+	[starting bit number] + 8;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib inflate read fixed distance"
+	(this routine reads a distance symbol from
+	a fixed huffman input stream)
+	[bit field size] = 5;
+	=> zlib get reverse bit field;
+	[starting bit number] + [bit field size];
+	[zlib symbol] = [bit field content];
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib inflate compressed data"
+	(this routine can be called for both
+	dynamic and fixed huffman trees)
+	(read symbol from stream)
+	? [zlib btype] = 01b -> zlib infl cd fixed;
+	[zlib code table] = [zlib hlit table];
+	=> zlib get symbol from stream;
+	-> zlib infl cd lit ok;
+	"zlib infl cd fixed"
+	=> zlib inflate read fixed symbol;
+	"zlib infl cd lit ok"
+	? [zlib symbol] >= 256 -> zlib infl cd length;
+	(write symbol to output)
+	a = [zlib output];
+	b = [zlib output ptr];
+	b > 3;
+	c = [zlib symbol];
+	=> set byte;
+	[zlib output ptr] + 8;
+	-> zlib inflate compressed data;
+	
+	"zlib infl cd length"
+	? [zlib symbol] = 256 -> zlib infl cd end;
+	a = [zlib symbol];
+	a - 256;
+	a = [a plus vector zlib hlit table];
+	[zlib length] = a;
+	[zlib length] > 16;
+	[bit field size] = a;
+	[bit field size] & ff ffh;
+	? [bit field size] = 0 -> zlib infl cd len ok;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib length] + [bit field content];
+	"zlib infl cd len ok"
+	(read distance)
+	? [zlib btype] = 01b -> zlib infl cd dist fixed;
+	[zlib code table] = [zlib hdist table];
+	=> zlib get symbol from stream;
+	-> zlib infl cd dist read;
+	"zlib infl cd dist fixed"
+	=> zlib inflate read fixed distance;
+	"zlib infl cd dist read"
+	a = [zlib symbol];
+	a = [a plus vector zlib hdist table];
+	[zlib distance] = a;
+	[zlib distance] > 16;
+	[bit field size] = a;
+	[bit field size] & ff ffh;
+	? [bit field size] = 0 -> zlib infl cd dist ok;
+	=> get bit field;
+	[starting bit number] + [bit field size];
+	[zlib distance] + [bit field content];
+	"zlib infl cd dist ok"
+	(copy bytes)
+	a = [zlib output];
+	b = [zlib output ptr];
+	b > 3;
+	c = [zlib length];
+	d = a;
+	e = b;
+	b - [zlib distance];
+	=> zlib bytes copy;
+	a = [zlib length];
+	a < 3;
+	[zlib output ptr] + a;
+	-> zlib inflate compressed data;
+
+	"zlib infl cd end"
+	end;
+(----------------------------------------------------------------------------)
+
+(----------------------------------------------------------------------------)
+	"zlib bytes copy loop"
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    b+; e+;
+	    "zlib bytes copy"
+	    c-->;
+	    => get byte;
+	    a-->; b-->; d-->; e-->;
+	    b<--; a<--; e<--; d<--;
+	    => set byte;
+	    c<--;
+	    c^zlib bytes copy loop;
+	end;
+(----------------------------------------------------------------------------)
+	"zlib units set loop"
+	    a+;
+	    "zlib units set"
+	    [a] = b;
+	c^zlib units set loop;
+	end;
+(----------------------------------------------------------------------------)
+
+
+
+
+
+
+(----------------------------------------------------------------------------)
+"zlib compress"
+(IN:	[zlib input]
+	[zlib input ptr]
+	[zlib input len]
+	[zlib stream]
+	[zlib stream ptr])
+
+	(This routine just makes an uncompressed zlib stream.)
+	[zlib CM] = 8;
+	[zlib CINFO] = 7;
+
+	[zlib FLEVEL] = 0;
+	[zlib FDICT] = 0;
+
+	a = [zlib CINFO];
+	a < 4;
+	a | [zlib CM];
+	a < 2;
+	a | [zlib FLEVEL];
+	a < 1;
+	a | [zlib FDICT];
+	a < 5;
+	b = a;
+	b % 31;
+	c = 31;
+	c - b;
+	[zlib FCHECK] = c;
+	a > 8;
+	c < 8;
+
+	(write flags to stream)
+	[bit field content] = a;
+	[bit field content] | c;
+	[bit stream pointer] = [zlib stream];
+	[starting bit number] = [zlib stream ptr];
+	[bit field size] = 16;
+	=> set bit field;
+	[starting bit number] + [bit field size];
+
+	[PNG Note] = [zlib input len];
+=> PNG Return Integer;
+	[PNG Note] = PNG String Crlf;
+=> PNG Return Text;
+=> PNG Return Text;
+
+	"zlib compress loop"
+		? [zlib input len] <= ff ffh -> zlib compress final block;
+		[zlib LEN] = ff ffh;
+		[zlib BFINAL] = 0;
+		-> zlib compress ok;
+
+		"zlib compress final block"
+		[zlib BFINAL] = 1;
+		[zlib LEN] = [zlib input len];
+
+		"zlib compress ok"
+		[zlib input len] - [zlib LEN];
+		[zlib NLEN] = [zlib LEN];
+		![zlib NLEN];
+		[zlib BTYPE] = 0;
+
+	[PNG Note] = [zlib LEN];
+=> PNG Return Integer;
+	[PNG Note] = PNG String Crlf;
+=> PNG Return Text;
+
+		(write block header)
+		[bit field content] = [zlib BTYPE];
+		[bit field content] < 1;
+		[bit field content] | [zlib BFINAL];
+		[bit field size] = 3;
+		=> set bit field;
+		[starting bit number] + [bit field size];
+		[starting bit number] -;
+		[starting bit number] > 3;
+		[starting bit number] +;
+		[starting bit number] < 3;
+
+		(write len/nlen)
+		[bit field content] = [zlib NLEN];
+		[bit field content] < 16;
+		[bit field content] | [zlib LEN];
+		[bit field size] = 32;
+		=> set bit field;
+		[starting bit number] + [bit field size];
+
+		(write uncompressed data)
+		a = [zlib input];
+		b = [zlib input ptr];
+		b > 3;
+		c = [zlib LEN];
+		d = [zlib stream];
+		e = [starting bit number];
+		e > 3;
+		=> zlib bytes copy;
+
+		c = [zlib LEN];
+		c < 3;
+		[starting bit number] + c;
+		[zlib input ptr] + c;
+
+		? [zlib input len] != 0 -> zlib compress loop;
+
+	(write checksum)
+	[bit field content] = 0;
+	[bit field size] = 32;
+	=> set bit field;
+	[starting bit number] + [bit field size];
+	end;
+
+(----------------------------------------------------------------------------)
+(----------------------------------------------------------------------------)
+

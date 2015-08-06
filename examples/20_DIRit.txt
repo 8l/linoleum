@@ -1,0 +1,341 @@
+(
+
+	---------------------------------
+	DIRit - directory listing example
+	---------------------------------
+
+	This commented source code is presented to learn from, so feel free
+	to use this code the way you want, even for your own things... just
+	copy, paste and modify it to fit your needs. This application comes
+	with the L.in.oleum compiler package - it is part of the "examples"
+	folder - not for sale. Written by Alessandro Ghignola.
+
+	---------------------------------------------------------
+	abstract: L.IN.OLEUM 1.13.6b and the File System Paradigm
+	---------------------------------------------------------
+
+	Version 1.13.6b of the L.IN.OLEUM compiler package introduces file
+	system commands that operate on "objects" outside the application's
+	"ambient", an ambient formerly confined to the executable program's
+	directory. The choice that lead to confine the file system functions
+	so that applications would have completely ignored the existence of
+	mass-memory resources outside the application's one, was due to the
+	lack of an universal "syntax" for path+file access, capable at least
+	of smoothing, when not completely solving, the many probable troubles
+	that L.IN.OLEUM cross-platform source code could have been subject
+	to upon recompiling the sources using a port of the run-time module
+	made for another operating system. What I've got here is the need for
+	a conventional way to address drives, all their directories, and the
+	files within; in practice, something like a internet U.R.L., or like
+	an intranet shared resource path, having uniform, universal syntax,
+	but applied to the range of a single machine which may be running any
+	operating system.
+
+	The solution had to consider the possible LACK of a file system that
+	supported directories, and even the presence of more than one drive
+	shouldn't have been granted; to the other extreme, there may be file
+	systems that support both multiple drives and nested subdirectories,
+	but still, they would have managed absolute and relative paths using
+	different syntax rules.
+
+	With this version, 1.13.6b, I think I've finally found an acceptable
+	solution in some sort of derivate of a UN*X-like file system, where
+	you have an "overall root directory", the system root, all the drives
+	and other storage devices eventually being branches of that root.
+	This makes it possible to identify the drives and the other resources
+	as the system calls them, while applications follow and "understand"
+	file names and paths throught an universal syntax.
+
+	In practice if a "system root" was present in the underying operating
+	system's environment, then the run-time module could simply base its
+	file access commands on that root; otherwise, the run-time module has
+	to SIMULATE the presence of a system root directory, and list all the
+	resources, whatever the operating system calls them, as directories
+	of the root. Also, and in any cases, the run-time module must convert
+	paths to and from the universal syntax, working as an interpreter.
+
+	The universal syntax, which rules have been fixed in version 1.13.6b
+	of the run-time module, indeed reminds that of an UN*X derivate. The
+	rules are listed below, in detail:
+
+	1. the system root directory is identified by a single forward slash,
+	   when that slash is the only component of the path;
+	2. different directories in paths are separated by a single forward
+	   slash, the forward slash being the only possible separator;
+	3. using the SETDIR command, paths are allowed to end by a terminal
+	   single slash, although the terminal slash is not required;
+	4. paths returned by a GETDIR command NEVER end by a terminal slash,
+	   except for the system root directory, whose name IS the slash;
+	5. all local drives and directories must be accessible starting from
+	   the top-level directory, called the system root directory;
+	6. the system root directory may not be an effective memory space on
+	   certain systems, and so it might not be used to store informations
+	   such as files; it might not be possible to create subdirectories
+	   in the system root; anything that is not a drive, either physical
+	   or logical, might not be listed or accessed as part of the root;
+	7. any directory, except the system root directory, "includes" three
+	   special entries, even if the directory is totally void: these are
+	   not effective subdirectories of the said directory, they're links
+	   to operate with the file system structure; the entries must be:
+	     /	- system root directory link
+	     .	- current directory link
+	     .. - parent directory link
+	   the system root directory, instead, doesn't include those entries;
+	   furthermore, an attempt to operate with the parent directory link,
+	   that is, to set the directory to "..", while current directory is
+	   the system root, must result in a failure, because the root has no
+	   parent directory; however, a SETDIR to "." and "/" links might not
+	   fail while current directory is the root: it just does nothing.
+	8. relative paths, paths to files accessed basing on what the system
+	   considers the "current directory" for the application to work in,
+	   are given as they are, f. ex. "a_sub_directory/myfile.txt", which
+	   would result in the following absolute path:
+	     /mydrive/..?../mycurrentdirectory/a_sub_directory/myfile.txt
+	   a relative path may be also made relative to a directory of higher
+	   level throught the use of the parent directory link, for example
+	   "../mycurrentdirectory/a_sub_directory/myfile.txt", which would
+	   pratically result in exactly the same absolute path seen above.
+	9. absolute paths are those paths based on the system root directory,
+	   therefore they MUST begin with a forward slash, in order for the
+	   "paths intepreter" to distinguish them from relative paths; such
+	   absolute paths allow to access the specified object regardless of
+	   which is considered to be the "current directory".
+
+	The duty of the "paths interpreter", a section of the file management
+	routines of the run-time module, is to translate such universal paths
+	to a form that the underlying OS can understand, other than simulate
+	the presence of a system root directory, where appropriate; finally,
+	the "paths interpreter" must care to "adjust" commands behaviour when
+	the behaviour of the OS doesn't match the above rules.
+
+	There still is one very last "almost rule": if the paths interpreter,
+	other than translating universal paths, works in an environment that
+	allows to preserve the compatibility with the underlying file system
+	paths, then this compatibility might be preserved. In this specific
+	L.IN.OLEUM distribution, which target OS is the Win32 family, it has
+	been possible to mantain the said compatibility. However, this fact
+	is mostly meant to facilitate the use of file names passed by the OS
+	via the command line parameters: internally, programs are recommended
+	to use universal syntax rules. An example of a program using a file's
+	path+name passed as a parameter is the "iTGAoptimizer", included as
+	part of the "Linoleum/main" directory because it could be useful to
+	optimize definitive versions of an iGUI skin's component images.
+
+	-------------------------------------------------------------
+	Applying the File System Paradigm to DOS/Windows file systems
+	-------------------------------------------------------------
+
+	Considering the above scheme, the result is that the system root,
+	which presence must be simulated by the run-time module, contains
+	all physical drives and logical partitions, and the names of those
+	drives will be given by the letters the system associates to them,
+	as in the following examples:
+
+	  /C/Linoleum/Examples - is a subdirectory of drive C
+	  /C/ - or - /C - is the "device root" of drive C
+	  /C - is also a SUBDIRECTORY of the system root directory
+	  / - is the system root directory
+
+	When I mean that /C is a subdirectory of the system root, I mean that
+	it'll behave exactly like it was a simple directory of a "superdrive"
+	that contains all of the computer's drives: for instance, setting the
+	current directory to the system root, and -then- setting the current
+	directory to just "C" will in facts set the current directory to the
+	device root of drive C. Vice-versa while the current directory is /C
+	and a SETDIR refers to the parent directory, "..", the result will be
+	the same as setting the system root directory.
+
+	This program shows some sample code to use most of the extended file
+	system commands. To recap them all as in v1.13.6b, here is the list:
+
+	commands operating on files	commands operating on directories
+
+	  TEST				  GET DIR
+	  READ				  SET DIR
+	  WRITE 			  MKDIR
+	  SET SIZE			  RMDIR
+	  DESTROY			  GET FIRST FILE
+	  RUN				  GET NEXT FILE
+					  GET FIRST DIR
+					  GET NEXT DIR
+
+	and a note: there are absolutely no new RTM control variables for the
+	extended file system command set - all operations on directories that
+	require a pointer to the target directory name, or to a buffer where
+	a directory name must be returned, simply use the [FileName] pointer.
+
+	For details about the VCons library, see the library code itself,
+	included in the Linoleum/main directory.
+
+	For details about the iGUI library, see the library AND the source
+	code of the Icon Editor, included in Linoleum/examples/icon_editor.
+
+)
+
+"libraries"
+
+	igui/defstyle; (INTEGRATED G.U.I - using default style)
+	igui/vcons;    (virtual text console, string converters)
+
+"directors"
+
+	unit = 32;
+	symbols map = off;
+	program name = { DIRit };
+
+"constants"
+
+	INITIAL WIDTH		= 320;
+	INITIAL HEIGHT		= 384;
+	MINIMUM WIDTH		= 288;
+	MINIMUM HEIGHT		= 100;
+	MAXIMUM WIDTH		= 512;
+	MAXIMUM HEIGHT		= 384;
+	MAX MENU OPTIONS	= 100;
+	MAX ONSCREEN OPTIONS	= 100;
+	MAX LEVELS IN SHOW	=   4;
+	MAX FILES IN SELECTOR	=   0;
+	MAX FILES IN SHOW	=   0;
+	MAX OPTIONS IN QUESTION =   0;
+	MAX FIELDS IN QUESTION	=   0;
+
+"variables"
+
+	title = { DIRit };
+	curr  = { Current_directory_is:_ };
+	dest  = { Setting_directory_to:_ };
+	mydir = { /C };
+	dirof = { Directory_listing_of:_ };
+	sdir  = { [DIR]\ta };
+	size  = { Kb\ta };
+	crlf  = { \cr\lf };
+	ermsg = { Failed_to_set_directory.\cr\lf };
+	menu  = { ... };
+	 01000000h; OPTIONTYPE NORMAL; { Goodbye_(quit) }; quitme; ENDOFMENU;
+
+"workspace"
+
+	console text buffer = 10001;
+	name = 256;
+
+"programme"
+
+	=> initialize integrated gui;
+
+	[menu to install] = menu;
+	=> install menu;
+
+	[window title] = title;
+	[small caption] = title;
+
+	[control loop] = service control loop;
+	[work area manager] = service repaint window;
+
+	[text interline spacing] = 1;
+
+	[conout] = console text buffer;
+	[ccolor] = FF8844h;
+	[cosize] = 10000;
+
+	[filecommand] = getdir;
+	[filename] = name;
+	isocall;
+	[szcout] = curr; => cout;
+	[szcout] = name; => cout;
+	[szcout] = crlf; => cout;
+
+	[szcout] = dest; => cout;
+	[szcout] = mydir; => cout;
+	[szcout] = crlf; => cout;
+	[filecommand] = setdir;
+	[filename] = mydir;
+	isocall;
+	? failed -> no such dir;
+
+	=> print current directory listing;
+	-> exit;
+
+      "no such dir"
+	[szcout] = ermsg; => cout;
+
+      "exit"
+	=> enter integrated gui;
+	end;
+
+"service repaint window"
+	=> show console;
+	end;
+
+"service control loop"
+	=> control console;
+	end;
+
+"print current directory listing"
+	[szcout] = dirof; => cout;
+	[filecommand] = getdir;
+	[filename] = name;
+	isocall;
+	[szcout] = name; => cout;
+	[szcout] = crlf; => cout;
+	[szcout] = crlf; => cout;
+	[filecommand] = getfirstdir;
+	[filename] = name;
+	isocall;
+      "list next dir"
+	? [filestatus] + error -> list files;
+	[szcout] = sdir; => cout;
+	[szcout] = name; => cout;
+	[szcout] = crlf; => cout;
+	[filecommand] = getnextdir;
+	[filename] = name;
+	isocall;
+	-> list next dir;
+      "list files"
+	[filecommand] = getfirstfile;
+	[filename] = name;
+	isocall;
+      "list next file"
+	? [filestatus] + error -> no more files;
+	[filecommand] = test;
+	[filename] = name;
+	isocall;
+	? failed -> file not accessible;
+	[dwcout] = [filesize]; [dwcout] > 10; => uicout;
+	[szcout] = size; => cout;
+	[szcout] = name; => cout;
+	[szcout] = crlf; => cout;
+      "file not accessible"
+	[filecommand] = getnextfile;
+	[filename] = name;
+	isocall;
+	-> list next file;
+      "no more files"
+	end;
+
+"quitme"
+	[quit now] = yes;
+	end;
+
+(
+	This was my last example...
+	now you're alone, SO YOU'RE FREE to do whatever you want.
+
+	Enjoy LINOLEUM!!!
+	And may your PATIENCE and WILL TO LEARN
+	never end into BASIC... or the world will soon lack programmers.
+
+		Alex The Great.
+
+	P.S.
+
+	Wanna write menu and dialog-box based applications,
+	such as this one? Take a look at "IGUICLI.TXT"...
+	and for details, at "icon_editor/iconed.txt"...
+
+	Looking for 3D graphics?
+	See "pitagora_scenery_editor"...
+
+	Dealing with the internet?
+	Try "network_node"...
+
+)

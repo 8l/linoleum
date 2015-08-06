@@ -1,0 +1,339 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        Programming<br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE POWER OF L.in.oleum
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+L.in.oleum's speed is almost identical to assembly's speed:
+the majority of L.in.oleum's instructions, especially when using the CPU
+registers, are executed <i>in a single machine cycle</i>, which means that
+if your CPU is running at 200 MHz, it will be capable of performing 200
+millions of L.in.oleum instructions per second. The instruction set has been
+deeply optimized: indirect addresses are calculated using the CPU's hardware
+address generator, and pairable stack operations are used whenever possible.
+It doesn't matter if you have understood or if this looks like a lot of
+techno-bla-bla to your eyes: just try this programming language; the ONLY
+thing faster than L.in.oleum is native assembly, which by the way is something
+like 10 times more difficult to learn, and is NOT universal...
+
+<br><br><br>
+<center>
+        WRITING L.in.oleum PROGRAMS
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+To write a L.in.oleum program the author needs to write its main source code,
+and eventually the source code to the program's specific libraries. Also, the
+author may create additional support files (logical tables, graphics, digital
+audio records, multimedia data) of any kind. It is VERY IMPORTANT to PLACE
+ALL THE FILES, including the whole source code along with its specific libraries,
+into the SAME folder (or directory, or TOC, or whatever else your system is using
+to group files). Eventually, you should create a separate folder for each of your
+projects. The compiler will not be able to access the files correctly otherwise.
+
+<br><br><br>
+<center>
+        WHAT A L.in.oleum PROGRAM LOOKS LIKE?
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+To the programmer, owning the source code and the original support files,
+it looks like a folder containing all those files, as stated by the previous
+paragraph. To the USER, the program appears as a single file, a STAND-ALONE
+application, and working like a self-extract archive. When the author writes
+the source code, he/she specifies the files to be linked to the single
+executable file, and the compiler manages the process in a totally automated
+way, setting up some constants for allowing the program to know where the
+files have been linked. You will understand this better after reading about
+the &quot;<a href = "stockfil.htm">stockfile</a>&quot; period. For now,
+consider that, thanks to the ability of creating stand-alone applications,
+you and your users will never need separate programs to install/uninstall
+the applications themselves.
+
+<br><br><br>
+<center>
+        WRITING THE MAIN SOURCE CODE
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+The main source code to a program is a PLAIN TEXT FILE having &quot;.TXT&quot; extension.
+The programs to create text files are called text editors. The most common text editors are
+Windows' Notepad (on non-NT based versions it's limited to 64Kb of text data, and thus it's
+not recommended, unless you're using Windows NT or XP), Microsoft WordPad (providing you're
+going to save the file as plain text, and -not- as a Word document), and the MS-DOS "EDIT"
+command. The source code is structured in SEVEN PERIODS:
+<a href = "librarie.htm">libraries</a>,
+<a href = "stockfil.htm">stockfile</a>,
+<a href = "director.htm">directors</a>, 
+<a href = "constant.htm">constants</a>, 
+<a href = "variable.htm">variables</a>, 
+<a href = "workspac.htm">workspace</a> and
+<a href = "programm.htm">programme</a>.
+The periods' names must be enclosed between QUOTES, written in lowercase, and placed
+in the EXACT ORDER you can see in the above list or in the navigation bar to the left.
+If you misplace the periods, the compiler will report an error and will not compile
+the program. Here follows an example showing the skeleton structure of a L.in.oleum program
+that does nothing but compiles successfully:
+
+<br><blockquote>
+&quot;libraries&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;stockfile&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;directors&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unit = 32;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;constants&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;variables&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;workspace&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)<br><br>
+&quot;programme&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(...)
+</blockquote>
+
+The (...) signs appearing between periods represent the CONTENTS of the corresponding
+period. Each period has its own syntax rules (all of the periods are very similar for
+what concerns those rules, but there are some differences, mainly because some of the
+syntaxes cannot be used in certain periods), but the rules mentioned by the following
+paragraph apply to the whole source code.
+
+<br><br><br>
+<center>
+        GENERAL SYNTAX RULES
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+INSTRUCTIONS (actions, for the compiler to perform) are always separated by semi-colons
+(;) for the compiler to know where a certain instruction ends and the next instruction
+begins. INSTRUCTIONS follow flexible syntax rules: basically, the compiler looks for a
+couple of OPERANDS and one or more signs forming the &quot;symbolic instruction code&quot;.
+An example will certainly explain all this better than many words...
+
+<br><blockquote>
+&quot;constants&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Square root of 2 = 1.414213562f;
+</blockquote>
+
+Square root of 2<br>
+...is an operand. Specifically, it's the name of a constant,
+or the name we associate to a certain value given by the other operand.
+Please note flexible syntax rules allow you to place blank spaces inside
+the name of an operand, for better clearance while reading the source code.<br><br>
+
+=<br>
+...the &quot;equal&quot; sign is, in this case, what L.in.oleum calls the
+symbolic instruction code. Note such codes may be formed by more than one
+sign. In facts, the compiler considers any signs placed between the operands
+as part of the symbolic instruction code (except, of course, the trailing
+semi-colon which is just a separator, even though it's very important anyway).<br><br>
+
+1.414213562f<br>
+...is another operand. That's the value associated with the constant's name.
+It ends with a lowercase &quot;f&quot; to signal the compiler that the value
+is of floating-point type, and not of integer type. Floating-point values may
+contain decimals, while integer values (declared without the trailing lowercase
+&quot;f&quot;) can't.<br><br>
+
+LOWERCASE AND UPPERCASE:<br>
+since version 1.12b, the Linoleum compiler is not case-sensitive: when
+you write the name of that constant, it doesn't matter where you use
+lowercase letters and where you use uppercase ones.
+
+<br><br><br>
+<center>
+        *** BIBLICAL REVELATIONS ***
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+Here are explained the fundamental concepts behind all of L.in.oleum's syntax.
+YOU MUST UNDERSTAND this or you'll just be messing up your head with useless efforts.
+
+<br><br>
+The compiler calls every sequence of letters a SYMBOL.
+Variables, constants, and some other special things called
+"workspace area labels" you will learn of later... well, variables,
+constants and workspace area labels ARE ALL SYMBOLS.
+
+<br><br>
+When some sequences of letters are enclosed between quotes,
+they are called "period names" or "code labels". There are
+only SEVEN periods. After declaring the "programme" period,
+you are free to use the quotes to declare your own CODE LABELS.
+Code labels are like bookmarks in a book, for at any time the
+CPU can be told to jump to the code indicated by a code label.
+Such jumps can be performed directly and unconditionally,
+or they can be performed ONLY if a certain condition is met,
+or your application can use a special instruction (represented
+by the sign <span class="inverse">=&gt;</span>
+and named CALL), to reserve the right of getting back to continue
+execution from the instruction immediately following the call.
+
+<br><br>
+EVERY SYMBOL is associated by the compiler to A VALUE.
+The value of the symbol can be a pure number (if the symbol
+is a constant), or a memory pointer (the number of a certain
+memory cell associated with that name). Read again and MEMORIZE.
+
+<br><br>
+Imagine memory cell as if they were little boxes,
+each box containing a single value. The value can
+change at any time if you want it to change. More
+than a box can be used to hold complex data, such as
+text strings. For instance, HELLO is a string formed
+by 5 characters: hence, it would take 5 boxes (variables)
+one after the other to be contained.
+
+<br><br>
+NOW THE TWO MOST IMPORTANT THINGS:
+<br><br>
+1. Whenever you write the name of a symbol,
+the compiler translates it to the NUMBER that is
+associated with that name, NO MATTER IF THE SYMBOL
+is a variable, a constant, whatever...
+<br><br>
+2. Whenever you write the name of a symbol
+BETWEEN square brackets, the compiler translates
+it to the CONTENT OF THE MEMORY CELL INDICATED BY
+THE VALUE THAT IS ASSOCIATED WITH THAT NAME.
+
+<br><br>
+Example:<br>
+imagine you have a variable whose name is SOUP,
+imagine the variable is associated with memory cell
+number 10283, imagine memory cell 10283 contains the
+value 776. Now...<br><br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SOUP means 10283 to the compiler;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[SOUP] means 776 to the compiler.
+
+<br><br>
+This is how the compiler really works.
+This is the KEY to understanding and developing L.in.oleum programs.
+I can't explain it more clearly than this. I will be back on this
+concept a lot of times until you'll get bored of it.
+Read again and again until you have understood, and when you're done
+understanding this, please have a look to the <a href = "compiler.htm">compiling</a> section,
+so you will know how to test what you learn by letting the compiler understand
+what you wrote. After that, you should start learning about each period separately.
+Whenever you find unknown terms, try searching them in the <a href = "glossary.htm">glossary</a>.
+
+<br><br><br>
+<center>
+        NOTES ABOUT THE FIVE CPU REGISTERS
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+Apart from variables and vectors, which ARE perfectly sufficient to write
+any kind of applications, in L.in.oleum you can also take advantage of the
+CPU registers. Five general-purpose registers are made available to
+applications: the capacity of those registers is ALWAYS the same of a
+memory unit, and actually this means they're ALL 32-bit registers.
+
+<br><br>
+
+The SYNTAX for registers is the only exception to the rules presented in
+the above paragraph. Registers are not "real" symbols: their names are
+A, B, C, D and E. A sixth register called $ is called "stack pointer" and
+is sometimes accessible throught a few special intructions (read the
+paragraph about <a href = "subrouti.htm">the subroutines</a> for advanced
+informations). Anyway, a register's name can be used to memorize values
+without needing for the square brackets. Also, registers' names can be
+used in <i>indirect addressing mode</i> when square brackets are placed
+around the name of the registers plus an eventual relative displacement.
+You will be understanding what I said after you've got a lot of practice,
+but for now you can surely learn how to use registers to hold simple values:
+from this point of view, registers behave like variables EXCEPT for their
+intrinsic speed. Registers, when used in arithmetics, can be 2 to 3 times
+FASTER than variables, and this should account for the reason why you should
+learn how registers work... so go on, read and experiment what follows.
+
+<br><br>
+
+When referring to the actual value contained in a register, you don't
+need to use the square brackets. For example, if you want to store a value
+of 150 into register A, you just have to write:
+
+        <pre>
+        A = 150;
+        </pre>
+
+...and to perform operations, you can use them this way:
+
+        <pre>
+        D + E;
+        A * 4;
+        C - B;
+        B / A;
+        (etc...)
+        </pre>
+
+As you can see, in these cases they are never written between brackets.
+However, please be aware that they CAN be written between brackets: in
+such cases they perform <i>indirect addressing</i>, but before using this
+special way to access the memory, you should read about it; the chapter
+talking of the <a href = "variable.htm">variables</a> explains what
+indirect addressing means, along with a whole lot of other things you
+have to know, so please be patient and read all about it.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

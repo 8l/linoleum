@@ -1,0 +1,508 @@
+(
+
+    Virtual Console output [cout] and string converters
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		  ? bytes *
+    | Allocates:	  ? bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      This specific library's functions DO PRESERVE registers AND their entry
+    parameters passed throught related variables. Mostly because many of these
+    routines are often called in the middle of various tasks involving the use
+    of registers. See network node's source code for an example of use.
+    --------------------------------------------------------------------------
+    NOTE: This simulated text console will require the iGUI to work properly.
+
+)
+
+"libraries"
+
+	iGUI;
+
+"variables"
+
+    (this is the width of the vertical scroller: in general, we speak of the
+     thickness of a scroller, since those bars can be vertical OR horizontal;
+     the "verse" of the scroller will be determined by its bounds, following
+     the condition that if the scroller is wider than tall, it's considered an
+     horizontal scroller, and versa if it's taller than wide, it's considered
+     a vertical scroller; using the default "skin" of the iGUI, it's better to
+     keep scrollers' thickness below or equal to 22 pixels, because that's the
+     thickness of the tiles for the scroll pads: setting it greater than 22,
+     the tiles will repeat, which would make it look confusing, ugly; still,
+     you may reduce the scroller's thickness to earn a few more pixels for the
+     console's text window... oh, or change the scrollph.tga and scrollpv.tga
+     image files in the "Linoleum/main" directory)
+
+	console scroller thickness = 22; (in pixels)
+	console left padding = 0; (pixels between console left edge and text)
+	console right padding = 0; (pixels left between text and scroller)
+	console top padding = 0; (pixels between console top edge and text)
+	console bounds = vector work area; (region to bound the whole console)
+
+    (the color [of the console text] is by default assigned to a bright white,
+     ideally for displaying over a void [black] iGUI window, but this and the
+     other values may be changed by the application at any time: in effects,
+     it might be possible to manipulate all of the initialized data you see
+     here, and the display's "work area" to temporarily assign them to reflect
+     the properties of a certain console, making it possible, throught a set
+     of simple routines, to switch between multiple consoles in the same
+     application display, but for how VCons works now, you have to design
+     those routines yourself, and then eventually place them in an additional
+     library; it's just a random idea...)
+
+	ccolor = 98A0A8h; (hex color value, RRGGBB)
+	consfx = service fx raw;
+
+    (in this library the parts that control the console scroller are very well
+     documented, in the hope that this single scroller could provide a good
+     example to understand how the iGUI's scrollers are generally supported:
+     because such general-purpose scrollers are often affected by application-
+     specific behaviour, the iGUI does NOT provide fully automatic control of
+     scrollers; they don't work via a callback mechanism, such as the pulldown
+     menus and menu's file selectors - instead, iGUI provides one subroutine
+     to CONTROL scrollers and one to RETRACE them: the function that CONTROLS
+     a scroller is "check scroller", the function that RETRACES a scroller is
+     "draw scroller"; one last function, called "update scroller position from
+     readout", is occasionally used when the scroller's pad position might be
+     re-synchronized with the actual "readout", or even forced to take a given
+     position without the user's intervention)
+
+ vector console scroller =
+	5555555 plus SB NOREDRAW ON CHANGE plus SB WHEEL MULTIPLY;
+			 (above: control identity: any value but "undefined")
+	0; 0; 0; 0;	 (bounds: filled depending on work area's bounds)
+	zero;		 (initial position of pad, in pixels, usually zero)
+	undefined;	 (scope: size of entity to be scrolled, loaded on occasion)
+	undefined;	 (window: size of visible part of the entity, loaded on occasion)
+	zero;		 (initial readout: pad's position in "scope units")
+	undefined;	 (memorizes last known scroller track's length)
+	undefined;	 (memorizes last known scroller scope)
+
+    (the above "datascript" is what describes a single scroller: we won't use more than
+     one scroller in this code, we only have a vertical scroller, given that the text
+     will eventually word-wrap at the end of the text window's space - the datascript
+     is composed of an "identity", an identification code that the iGUI will use to
+     disambiguate the scrollers, followed by 4 units giving the left, top, right and
+     bottom coordinates of the visible area of the scroller, then there's the pad's
+     initial position; following that value, the "scope" is the LENGTH of the ENTITY
+     that the scroller is supposed to scroll, in our case the height of the whole text
+     actually showen by the console; in our case the scope is given in pixels, but it's
+     not necessarily so, it depends on the units of measurement of the said entity, and
+     it's in pixels here because the "stdwrite" function returns the height of the text
+     expressed in pixels; after "scope" there's "window": the window is the span of the
+     entity, in entity's same units of measurement, which is visible in the part of the
+     display that is scrolled by the scroller, and in our case this is the height of
+     the "work area"; following "window" is the "readout": this is what we want to read
+     from the scroller when we decide to retrace the part of the display that gets
+     scrolled by that scroller, the value of "readout" being pratically the equivalent,
+     in entity's units, of the pad's position in pixels; finally, a couple units are
+     provided as a scratch space for the iGUI to keep track of the last known values
+     giving the scroller track's length and its scope, because whenever you RETRACE the
+     scroller, the iGUI will detect changes in those values and eventually update the
+     position of the pad, whenever at least one of those values is found to have changed)
+
+"workspace"
+
+	expanded work area = 4; (a region to bound text -only- horizontally)
+	text bottom to window bottom = 1; (used while retracing the scroller)
+
+	conout = 1; (load here a pointer to the console output buffer: the buffer
+		     might be a workspace area of given size, FOLLOWED by a single
+		     null unit, which will not be counted in the "cosize" variable)
+	cosize = 1; (size of console output buffer, NOT including null-terminator)
+	coutcp = 1; (console cursor position, within buffer)
+
+	xicout = 11; (temporary for "icout" integer conversions)
+	sicout = 11; (final string from "icout")
+	szcout = 1; (ptr to null-term. string to output by "cout")
+	dwcout = 1; (number to convert and output by "uicout")
+
+	source string = 1; (for fourbyte <--> ascii conversion routines)
+	target string = 1; (for fourbyte <--> ascii conversion routines)
+	string length = 1; (for fourbyte <--> ascii conversion routines)
+	string binary = 1; (result of "convert ascii to binary")
+
+"programme"
+
+"show console"
+    (mount console text area: the area is "bottomless" to allow stdwrite to keep writing
+     regardless of the actual text window's height; later, we'll eventually scroll it;
+     oh, and the area is also a BIT less wide than the work area, to account for those
+     pixels taken by the scroller)
+	a = [console bounds];
+	[LEFT MARGIN   relating expanded work area] = [a plus LEFT MARGIN];
+	[LEFT MARGIN   relating expanded work area] + [console left padding];
+	[TOP MARGIN    relating expanded work area] = [a plus TOP MARGIN];
+	[TOP MARGIN    relating expanded work area] + [console top padding];
+	[RIGHT MARGIN  relating expanded work area] = [a plus RIGHT MARGIN];
+	[RIGHT MARGIN  relating expanded work area] - [console scroller thickness];
+	[RIGHT MARGIN  relating expanded work area] - [console right padding];
+	[BOTTOM MARGIN relating expanded work area] = GREATEST SIGNED INTEGER;
+    (set stdwrite parameters, and call stdwrite in ghost mode to calculate text's size)
+	[string] = [conout];
+	[ink] = [ccolor];
+	[textx] = zero;
+	[texty] = zero;
+	[texteffect] = [consfx];
+	[textdisplaywidth] = [displaywidth];
+	[textdisplayheight] = [displayheight];
+	[textdisplayorigin] = backdrop layer;
+	[textregion] = null;
+	[textwindow] = expanded work area;
+	[textwordwrap] = on;
+	[textghostmode] = on;
+	=> stdwrite;
+    (with the following line, we begin to care about re-tracing the scroller: the
+     following subroutine just determines the scroller's edges in relation to the actual
+     window's edges, or better, in relation to the CLIENT area of the window, known in
+     the iGUI's environment as the "work area")
+	=> assemble console scroller data;
+    (set scroller datascript scope to the height of the text; move the text's top margin up
+     to reflect the position of the scroller's pad: when the pad moves down, text moves up)
+	[SCROLLER SCOPE relating vector console scroller] = [height of latest form];
+	[SCROLLER SCOPE relating vector console scroller] + [console top padding];
+	[TOP MARGIN relating expanded work area] - [SCROLLER READOUT relating vector console scroller];
+    (check if the scroller's pad matches the lower limit of the text: if it doesn't, we'll
+     need to "retouch" the actual readout, and then update the pad's on-screen position in
+     relation to the changed readout; if we didn't check such a limit, the scroller would
+     scroll past the text under particular circumstances, such as when resizing the window,
+     because scrollers' limits ARE controlled by the iGUI *while the scroller is moved*,
+     but *not while the window is resized*, and a resize -does- cause a variation in the
+     length of a scroller's track)
+	a = [console bounds];
+	[text bottom to window bottom] = [TOP MARGIN relating expanded work area];
+	[text bottom to window bottom] + [height of latest form];
+	[text bottom to window bottom] - [a plus BOTTOM MARGIN];
+	? [text bottom to window bottom] >= zero -> alright not scrolling past last line;
+    (here it goes: altering the scroller's readout to fit the text's last line, BUT beware
+     that there is ANOTHER particular circumstance where it would be unelegant to re-align
+     the last text line with the bottom of the window: when there are too few lines to
+     fill the window - this condition is checked below)
+	[SCROLLER READOUT relating vector console scroller] + [text bottom to window bottom];
+	? [SCROLLER READOUT relating vector console scroller] >= zero -> console was full;
+	[text bottom to window bottom] - [SCROLLER READOUT relating vector console scroller];
+	[SCROLLER READOUT relating vector console scroller] = zero;
+      "console was full"
+    (we have altered the readout of the scroller: when we force the pad's position to
+     change, we might always echo the said change to the visible representation of the
+     scroller, that is, we might physically move the scroller, and to do this, we re-
+     synchronize the readout with the pad's position using the following call)
+	[scroller datascript] = vector console scroller;
+	=> update scroller position from readout;
+    (after altering the readout, we also have to "renormalize" the top margin of the text
+     so that its last line TOUCHES, but doesn't come BEFORE, the window's bottom edge: we
+     calculated this before)
+	[TOP MARGIN relating expanded work area] - [text bottom to window bottom];
+      "alright not scrolling past last line"
+    (all of what remains to do, after the pad has been eventually moved to fit any limits
+     of the scope, is effectively re-tracing the scroller, done by the following calls:
+     the instructions before [scroller datascript] = vector console scroller; will fill
+     a black rectangle around the scroller, to separate it from other elements)
+	[LEFT MARGIN   relating SCROLLER BOUNDS relating vector console scroller] -;
+	[TOP MARGIN    relating SCROLLER BOUNDS relating vector console scroller] -;
+	[RIGHT MARGIN  relating SCROLLER BOUNDS relating vector console scroller] +;
+	[BOTTOM MARGIN relating SCROLLER BOUNDS relating vector console scroller] +;
+	[l2l region] = scroller bounds relating vector console scroller;
+	[l2l region color] = zero;
+	[destination layer] = backdrop layer;
+	=> clear l2l region;
+	[LEFT MARGIN   relating SCROLLER BOUNDS relating vector console scroller] +;
+	[TOP MARGIN    relating SCROLLER BOUNDS relating vector console scroller] +;
+	[RIGHT MARGIN  relating SCROLLER BOUNDS relating vector console scroller] -;
+	[BOTTOM MARGIN relating SCROLLER BOUNDS relating vector console scroller] -;
+	[scroller datascript] = vector console scroller;
+	=> draw scroller;
+    (the scroller is ok, but we didn't really write the actual contents of the console:
+     we called "stdwrite" with ghost mode on, now we have to make sure that NO pixels
+     get outside the work area, and effectively tell stdwrite to trace the pixels, for
+     all visible characters; to make sure stdwrite doesn't plot outside the work area,
+     we set [textregion] to point to "work area", then we can even "close the bottom"
+     of our formerly bottomless text window, although it wouldn't really be needed, but
+     just to be more coherent and to enforce checks in "stdwrite", which never hurts)
+	a = [console bounds];
+	[BOTTOM MARGIN relating expanded work area] = [a plus BOTTOM MARGIN];
+	[textregion] = a;
+	[textwindow] = expanded work area;
+	[textghostmode] = off;
+	-> stdwrite;
+
+"control console"
+    (control vertical scrollbar: it's very easy, because the iGUI does all the work,
+     we only have to set [scroller datascript] to the datascript describing which
+     scroller is being checked for mouse drags, and make a call to "check scroller":
+     in case the scroller's position had changed, the iGUI would return with the
+     [scroller variation flag] set to ON; in reply to this event we call a simple
+     refresh of the whole display, which would take care for retracing also things
+     that are superimposed to the console, such as a pull-down menu)
+      ? [client owns mouse pointer] = no -> cc same position;
+	=> assemble console scroller data;
+	[scroller datascript] = vector console scroller;
+	=> check scroller;
+      ? [scroller variation flag] = off -> cc same position;
+	=> refresh display;
+      "cc same position"
+	[ekey session id] = 19020001;
+	=> negotiate ekey session;
+      ? failed -> skip session 19020001;
+	[key up server] = service vcons scroll up one line;
+	[key down server] = service vcons scroll down one line;
+	[key page up server] = service vcons scroll up one page;
+	[key page down server] = service vcons scroll down one page;
+	[key home server] = service vcons scroll to top;
+	[key end server] = service vcons scroll to bottom;
+	[key insert server] = service vcons dump to clipboard;
+	=> serve enhanced keystrokes;
+	=> quit ekey session;
+      "skip session 19020001"
+	leave;
+      "service vcons scroll down one line"
+	[SCROLLER READOUT relating vector console scroller] + [std font body];
+	[SCROLLER READOUT relating vector console scroller] + [text interlinespacing];
+	-> vcons scroll common;
+      "service vcons scroll up one line"
+	[SCROLLER READOUT relating vector console scroller] - [std font body];
+	[SCROLLER READOUT relating vector console scroller] - [text interlinespacing];
+	-> vcons scroll up common;
+      "service vcons scroll down one page"
+	a = [console bounds];
+	[SCROLLER READOUT relating vector console scroller] + [a plus BOTTOM MARGIN];
+	[SCROLLER READOUT relating vector console scroller] - [a plus TOP MARGIN];
+	-> vcons scroll common;
+      "service vcons scroll up one page"
+	a = [console bounds];
+	[SCROLLER READOUT relating vector console scroller] - [a plus BOTTOM MARGIN];
+	[SCROLLER READOUT relating vector console scroller] + [a plus TOP MARGIN];
+       (-> vcons scroll up common;)
+      "vcons scroll up common"
+      ? [SCROLLER READOUT relating vector console scroller] >= zero -> vcons scroll common;
+      "service vcons scroll to top"
+	[SCROLLER READOUT relating vector console scroller] = zero;
+      "vcons scroll common"
+	=> assemble console scroller data;
+	[scroller datascript] = vector console scroller;
+	=> update scroller position from readout;
+	-> refresh display;
+      "service vcons scroll to bottom"
+	[SCROLLER READOUT relating vector console scroller] = 1 000 000 000;
+	-> vcons scroll common;
+      "service vcons dump to clipboard"
+      ? [key control] = off -> dumping only with ctrl ins;
+	[clip command] = write clip;
+	[clip string] = [conout];
+	[clip size] = greatest unsigned integer; (will stop at the first null unit)
+	isocall;
+      "dumping only with ctrl ins"
+	leave;
+
+"assemble console scroller data"
+    (used by "show console" and "control console" to update the area taken by the
+     scroller, eventually reacting to changes affecting the window's dimensions)
+	a = [console bounds];
+	[LEFT MARGIN	 relating SCROLLER BOUNDS relating vector console scroller] = [a plus RIGHT MARGIN];
+	[LEFT MARGIN	 relating SCROLLER BOUNDS relating vector console scroller] - [console scroller thickness];
+	[TOP MARGIN	 relating SCROLLER BOUNDS relating vector console scroller] = [a plus TOP MARGIN];
+	[RIGHT MARGIN	 relating SCROLLER BOUNDS relating vector console scroller] = [a plus RIGHT MARGIN];
+	[BOTTOM MARGIN	 relating SCROLLER BOUNDS relating vector console scroller] = [a plus BOTTOM MARGIN];
+	[SCROLLER WINDOW relating vector console scroller] = [a plus BOTTOM MARGIN];
+	[SCROLLER WINDOW relating vector console scroller] - [a plus TOP MARGIN];
+	leave;
+
+"cout"
+    (string Console OUTput: prints string pointed by [szcout] onto console)
+	? [szcout] = null -> cout nothing;
+	a -->;
+	b -->;
+	c -->;
+	d -->;
+	e -->;
+	a = [szcout];
+	b = [conout];
+	b + [coutcp];
+	c = [coutcp];
+    "cout loop"
+	? [a] = null -> cout done;
+	? c = [cosize] -> cout clear;
+	[b] = [a]; [b plus 1] = null;
+	a+; b+; c+; -> cout loop;
+    "cout clear"
+	d = [conout];
+	e = [cosize];
+	? e = zero -> cout no newlines found;
+      "cout find first newline"
+	? [d] = 10 -> cout found first newline;
+	d+; e ^ cout find first newline;
+      "cout no newlines found"
+	b = [conout];
+	c = zero;
+	-> cout loop;
+      "cout found first newline"
+	d - [conout];
+	c - d; c-;
+	d + [conout];
+	b = [conout];
+      "cout clear loop"
+	[b] = [d plus 1];
+	b+; d+; e ^ cout clear loop;
+	b = [conout]; b + c;
+	-> cout loop;
+    "cout done"
+      (below: updates cursor pointer/position within buffer, and sets the readout of
+       the scroller to 1 billion, supposingly a value well below the actual end of
+       visible text, so that the scroller control code in subroutine "show console"
+       will pratically always renormalize that, causing the text window to scroll to
+       the end of the actual text: this is for bringing the user's attention onto
+       what has just been outputted via the console - notice that for Linoleum it's
+       not a problem to separate decimal groups in immediate values with spaces...)
+	[coutcp] = c;
+	[SCROLLER READOUT relating vector console scroller] = 1 000 000 000;
+	? [slep is active] = yes -> cout be quiet;
+	=> refresh display;
+      "cout be quiet"
+	<-- e;
+	<-- d;
+	<-- c;
+	<-- b;
+	<-- a;
+    "cout nothing"
+	leave;
+
+"uicout"
+    (Unsigned Integer Console OUTput: converts [dwcout] to a decimal string,
+     then calls "cout" to print that string)
+	[szcout] -->;
+	[string binary] -->;
+	[target string] -->;
+	[string binary] = [dwcout];
+	[target string] = sicout;
+	=> convert binary to ascii;
+	[szcout] = sicout; => cout;
+	<-- [target string];
+	<-- [string binary];
+	<-- [szcout];
+	leave;
+
+"convert binary to ascii"
+    (converts value held by [string binary], which is supposed to be an unsigned
+    integer value, to ascii, and stores the resulting text within [target string])
+	a -->;
+	b -->;
+	c -->;
+	a = zero;
+	b = [string binary];
+    "cb2a forward"
+	c = b; c '% 10; c + 48; [a plus xicout] = c;
+	a+; b '/ 10; ? b > zero -> cb2a forward;
+	b = [target string];
+    "cb2a reverse"
+	[b] = [a plus xicout minus 1];
+	b+; a ^ cb2a reverse;
+	[b] = null;
+	<-- c;
+	<-- b;
+	<-- a;
+	leave;
+
+"convert ascii to binary"
+    (converts the contents of string pointed by [source string], which is supposed to
+     be a decimal string without sign [that is, positive or null], to binary, and
+     stores the resulting value within [string binary])
+	a -->;
+	b -->;
+	[string binary] = zero;
+	a = [source string];
+    "ca2b loop"
+	b = [a]; b - 48;
+	? b < zero -> ca2b done;
+	? b > 9 -> ca2b done;
+	[string binary] '* 10;
+	[string binary] + b;
+	a+; -> ca2b loop;
+    "ca2b done"
+	<-- b;
+	<-- a;
+	leave;
+
+"count bytes in string"
+    (finds out the length of string pointed by [source string],
+     giving result to variable [string length])
+	a -->;
+	[string length] = zero;
+	a = [source string];
+    "cbs loop"
+	? [a] = null -> cbs done;
+	[string length]+;
+	a+; -> cbs loop;
+    "cbs done"
+	<-- a;
+	leave;
+
+"convert ascii to fourbyte"
+    (converts string pointed by [source string], given in ascii format, to fourbyte
+     format, and uses [target string] as a pointer to where resulting string is to be
+     stored: [string length] gives how many ascii bytes are in the string to convert)
+	a -->;
+	b -->;
+	c -->;
+	d -->;
+	e -->;
+	a = [source string];
+	b = [target string];
+	c = [string length]; ? c = zero -> ca2fb done;
+	d = zero;
+    "ca2fb loop"
+	e = [a]; e > d; e & ffh; [b] = e;
+	d + 8; ? d < 32 -> ca2fb same;
+	d = 0; a+;
+      "ca2fb same"
+	b+; c ^ ca2fb loop;
+    "ca2fb done"
+	<-- e;
+	<-- d;
+	<-- c;
+	<-- b;
+	<-- a;
+	leave;
+
+"convert fourbyte to ascii"
+    (converts string pointed by [source string], given in fourbyte format, to ascii
+     format, and uses [target string] as a pointer to where resulting string is to
+     be stored: [string length] gives how many units are in the string to convert)
+	a -->;
+	b -->;
+	c -->;
+	d -->;
+	e -->;
+	a = [source string];
+	b = [target string];
+	c = [string length]; ? c = zero -> cfb2a done;
+	d = zero;
+	[b] = zero;
+    "cfb2a loop"
+	e = [a]; e < d; [b] | e;
+	d + 8; ? d < 32 -> cfb2a same;
+	d = 0; b+; [b] = zero;
+      "cfb2a same"
+	a+; c ^ cfb2a loop;
+    "cfb2a done"
+	<-- e;
+	<-- d;
+	<-- c;
+	<-- b;
+	<-- a;
+	leave;

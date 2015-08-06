@@ -1,0 +1,994 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        variables<br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        THE "variables" PERIOD<br><br>
+        Remember to write it between quotes.<br>
+        This period follows "constants", if "constants" is used.<br>
+        This period preceeds "workspace", if "workspace" is used.<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        If you already know the structure of a computer, you'll certainly
+        know what's a "byte". It's a group of 8 bits. When the bits are 16,
+        "computer people" call it a "word". When they're 32, it's a "doubleword",
+        64 bits give a "quadword", and so on by powers of two.
+        For what concerns how memory is INTERNALLY organized, actually CPUs
+        are counting memory cells by dividing them in bytes. So, if your PC
+        has got 32 Mb, it means it has 32 x 1024 x 1024 x 8 bits, because a
+        megabyte is formed by 1024 kilobytes, and a kilobyte by 1024 bytes.
+        All cells are accessible throught the CPU's internal "address BUS".
+        If your CPU unit is 32 bits, the number of cells it can address are
+        a little more than 4 billions, given by 2 raised to 32. Physically,
+        cells are seen by the BUS as starting from byte number zero, up to
+        last cell which would be numbered &lt;total amount of cells&gt; minus 1.
+
+        <br><br>
+
+        So we have 8-bits cells one after the other, starting from cell zero.
+        Such an organization is called a FLAT memory space, contrarily to
+        "paged" and "segmented" memory organizations which divide memory
+        sections in pages and segments...
+
+        <br><br>
+
+        Is L.in.oleum using a FLAT memory space?
+        Yes and no.
+
+        <br><br>
+
+        Yes, it numbers those cells one after the other starting from zero.
+        And no, it doesn't consider single cells formed by 8 bits.
+        L.in.oleum works with cells of n bits, where n is your CPU unit,
+        so it's easy to figure out those cells are not called "memory bytes";
+        instead, they are called "memory units".
+        Such an organization is called (by me) a n-FLAT memory space,
+        and it's not here because I just wanted to be more creative.
+
+        <br><br>
+
+        Everything in your program's memory is measured in memory units.
+        If your CPU unit is 32 bits, each memory unit takes 32 / 8 = 4 bytes.
+
+        <br><br>
+
+        The n-FLAT memory organization gives a lot of advantages in terms of
+        compatibility between processors and it's much easier to manage.
+        Here are the main two advantages of a n-FLAT memory organization:
+
+        <blockquote>
+                <ol>
+             <li>CPU addresses and data registers have all the same size
+                as a memory unit; also FPU calculations can be performed
+                using CPU registers, rather than having to fit floating-
+                point numbers in dedicated FPU registers instead.</li>
+                <br><br>
+             <li>No matter how CPUs internally organize memory bytes,
+                no matter if they're using big-endian or small-endian,
+                the n-FLAT workspace can always be overlaid to the physical
+                memory management in a fast, universal and reliable way.</li>
+                </ol>
+        </blockquote>
+
+        Other advantages depend from the CPU you're working with.
+        For example, Intel CPUs are running much faster using n-FLAT,
+        because they can avoid segment/selector prefixes (one machine cycle
+        would be taken for accessing memory throught such a prefix, and some
+        instructions which would be pairable on two pipelines would no longer
+        be pairable if they had prefixes) and because the CPU never has to
+        care for accessing memory operands of 16 or 8 bits, also slower than
+        accessing a full 32-bit location. And last but not least, you can bet
+        you'll have a very wide range for numbers in all of your variables.
+        Nice! Where's the catch? (laughs) It can be said that this way, your
+        variables always need to be n bits and it may be considered a waste
+        of space. For how I'm seeing it, there's no difference between the
+        waste of space due to having ALWAYS 8 bits or ALWAYS n bits.
+        Some space is wasted anyway, and here's why there are compression
+        algorythms managing streams of bits. Since L.in.oleum has a complete
+        set of instructions (and even an interesting library, "bits.txt") to
+        read and write "bit strings" formed by any number of bits upto the
+        amount of bits in the CPU unit, just apply some compression.
+
+        <br><br>
+
+        What's a variable?
+        Well, now that you know what's a memory unit, a L.in.oleum variable
+        is a single memory unit. If you've ever used another high-level
+        programming language before, the first way you should change your
+        mind in order for you to learn the L.in.oleum universal over-language,
+        is that there is absolutely no specification about what kind of
+        values variables may contain.
+        There are NO ways to declare a variable is "a floating-point" one,
+        nor to declare "signed and unsigned" types. You declare a variable,
+        the compiler gives you a memory unit for it, and what you put in it
+        will make it a variable of a certain type, to be treaten in the
+        appropriate way.
+        Is that clear? No more fiddling with "type cast", "automatic type
+        assertion", "type checking" and the rest... YOU DECIDE WHAT THE
+        VARIABLE CONTAINS, and its type may even change while the program is
+        executing, if you need it.
+        Before you ask, I have already coded a lot of programs this way and
+        I did NEVER feel the need to get back to "type declaration"... I'm
+        feeling there's a lot more freedom this way.
+
+        <br><br>
+
+        Now let's introduce symbols, and the symbols map.
+
+        <br><br>
+
+        A symbol can be either a variable or a constant.
+        A symbol is basically a name which has been associated to a value.
+        When you declared your constant in the above paragraph, you wrote:
+        <blockquote>
+                my first constant = 113;
+        </blockquote>
+        This means the L.in.oleum compiler created an instance in the program's
+        symbols map, registered name "my first constant", and associated that
+        name with decimal value 113.
+
+        <br><br>
+
+        What if you did the same thing in the "variables" period?
+        The compiler would create another instance for the new symbol.
+        But there would be some differences. Take this example:
+
+        <blockquote>
+                my first variable = 123456;
+        </blockquote>
+
+        First the compiler registers a new symbol name, "my first variable".
+        Second, it takes an internal counter (a number) technically called
+        the "top of workspace", and associates "my first value" with THAT
+        number, and NOT with 123456.
+        Third, the compiler saves value 123456 into your program's workspace
+        at exactly the location given by the "top of workspace".
+        Finally, the compiler increments "top of workspace" of one unit.
+
+        <br><br>
+
+        It's not difficult to understand! Let's explain with simple words.
+        Imagine your program's memory workspace to be a road, and variables
+        to be buildings along one side of the road, numbered progressively.
+        The "top of workspace" is a placeholder for which will be the next
+        building to be built along the road. Like in the following scheme:
+
+        <pre>
+                0         1         2         3         4         5
+                |---------|---------|---------|---------|---------|-- -  -
+                | allocated         |
+                | workspace...      |
+                |---------|---------|---------|---------|---------|-- -  -
+                ^                   ^
+            beginning            top of
+           of the road          workspace
+        </pre>
+
+        This is the road before you declare the variable.
+        Beginning of the road is ALWAYS address zero, top of workspace,
+        in the example, is address 2. "allocated workspace" represents
+        a placeholder for unknown contents of adresses zero and one...
+        Now let's see what happens when we add a "building": your variable.
+
+        <pre>
+                0         1         2         3         4         5
+                |---------|---------|---------|---------|---------|-- -  -
+                | allocated         | 123456  |
+                | workspace...      |         |
+                |---------|---------|---------|---------|---------|-- -  -
+                ^                   ^         ^
+            beginning           my first   top of
+           of the road          variable  workspace
+        </pre>
+
+        You can see "my first variable" is associated to number 2, because
+        this is its address along the "workspace road". Top of workspace,
+        instead, takes address 3. Also you can see the road now contains
+        the initial value for "my first variable", the one which represents
+        the CONTENT of that variable, which may be changed by the program.
+
+        <br><br>
+
+        This is a concept which always existed in ALL compilers, but it was
+        rarely applied "simple and pure". L.in.oleum treats variables EXACTLY
+        like it treats constants, only that the value associated to variables
+        is automatically "decided" by the compiler. Just that: "my first
+        variable" means the unit number 2 along the "workspace road", and
+        furthermore, in facts it purely means number 2 to the compiler, as
+        if it was another constant. It initially contains the value 123456
+        just because we streamed that value to the workspace along with the
+        name, so that unit number 2 would contain 123456, and when 2 is used
+        to "point at" a memory unit (as a memory pointer), it points to the
+        said unit that initially contains value 123456.
+
+        <br><br>
+
+        To recap, here's some terminology to remember:
+        2 is called the EFFECTIVE ADDRESS of, or the POINTER to, variable
+        "my first variable"; 123456 is called the CONTENT, or the VALUE,
+        of variable "my first variable".
+
+        <br><br>
+
+        It's VERY VERY important to realize the difference, because with
+        L.in.oleum syntaxes, when you write "my first variable" and nothing
+        more than this, you are meaning NUMBER 2, and not 123456.
+        When, instead, you write [my first variable] using ***brackets***
+        around the name, you tell the compiler to take the CONTENT of the
+        said variable, which is the content of cell number 2. Remember this!
+
+        <br><br>
+
+        In effects, you would be accessing the variable's value even if you
+        simply wrote [2], only, in that case the compiler would put a warning
+        message in errors' log to ask you "is 2 to be considered an IMMEDIATE
+        constant?" because it would be a pain to organize the workspace without
+        the possibility of giving names to the addresses of the units (or
+        variables). And so, writing [2] is thought by the compiler to be a
+        possible mistake. This argument will be carefully re-examined in example
+        number 16, where data is loaded and saved to a file, and where it will
+        show its importance in full.
+
+        <br><br>
+
+        Supposing you clearly understood this important fact, let's see some
+        other ways to declare variables, useful in certain cases.
+
+        <br><br>
+
+        The first thing to understand is how to declare a VECTOR.
+        A vector is formed by two or more variables one after the other.
+        "vectors" are also called "arrays" and when they have more than one
+        dimension, they're called "matrixs". Let's zoom out a bit from the
+        "workspace road", numbering 30 units:
+
+        <pre>
+
+                            1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+        |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-- -  -
+              ^
+          actual top
+         of workspace
+        </pre>
+
+        Now with our variable declared, the top of workspace is at unit 3.
+        Let's declare a vector. The "variables" period will then contain:
+
+        <blockquote>
+            "variables"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;my first variable = 123456;<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this is a vector = 555 *** 10;
+        </blockquote>
+
+        What does it mean to the compiler??
+        The compiler takes the name "this is a vector" and associates that
+        name with the actual top of workspace, that is to unit number 3.
+        Then it streams value 555 to the workspace for 10 times.
+        Finally, it forwards "top of workspace" by 10 units.
+        In the end, we've got the following situation:
+
+        <pre>
+
+                            1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 3
+        0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+        |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-- -  -
+              ^                   ^
+           this is              top of
+           a vector            workspace
+        </pre>
+
+        ...where all units ranging from 3 to 12 contain value 555.
+        How do we address the units in the vector?
+        Easy: with progressive indexs to be added to the EFFECTIVE ADDRESS,
+        which is 3 in our case. Such indexs are called RELATIVE DISPLACEMENTS.
+        Suppose you're to change the content of the fifth unit in the vector.
+        You would refer to that memory unit by writing, in the "programme":
+
+        <blockquote>
+            "programme"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[this is a vector plus 4] = 556;
+        </blockquote>
+
+        This would change the fifth element from 555 to 556.
+        The compiler would internally see what you've written as:
+
+        <blockquote>
+                [3 plus 4] = 556;
+        </blockquote>
+
+        And automatically refer to address 7 along the "road".
+        Why has the fifth unit got a relative displacement of 4? Should be 5?
+        Not very difficult to understand: because the first one is referred
+        by the same address pointed by "this is a vector"; in other words,
+        the first unit has a relative displacement of zero. Therefore, the
+        last unit in the vector has a relative displacement of 9.
+
+        <br><br>
+
+        Let's see if you've understood: what would happen writing...
+
+        <blockquote>
+                [this is a vector minus 1]
+        </blockquote>
+
+        ...which is the memory unit you're referencing to?
+        If you concluded you'd be referencing unit number 2, you're right.
+        Writing such a thing won't give errors, just it will refer to the
+        variable we called "my first variable", and thus, to value 123456.
+
+        <br><br>
+
+        Another test, a little more difficult.
+        Imagine what happens if you write:
+
+        <blockquote>
+                [this is a vector plus my first variable]
+        </blockquote>
+
+        Again, which is the memory unit referenced by that sentence?
+        I have to say it's pratically a nonsense, and will give a warning.
+        For the solution, you have to consider the compiler will see it as:
+
+        <blockquote>
+                [3 plus 2]
+        </blockquote>
+
+        So you were referencing the third unit in the vector.
+        Ok, apart from such an exercise which has no pratical meaning,
+        now you should have understood (I guess) how things work in memory.
+        If you believe this stuff to be only related to L.in.oleum, forget it.
+        All programming languages follow similar schemes when using memory.
+        You're learning how memory behaves internally, just like in assembly.
+
+        <br><br>
+
+        Such expressions can be also used with the CPU registers, providing
+        you're including ONLY ONE register per operand and the register is
+        used as the FIRST element of the expression. This called
+        <big><i>indirect addressing mode</i></big> and it's extremely important
+        for accessing vectors if your piece of code only has a numeric pointer
+        to that vector, and couldn't refer to the vector using its full name.
+        Here are some examples about what is legal and what is not:
+
+        <blockquote>
+                <span class = "inverse">[A] = 5;</span><br>
+                Is legal, and it's using the content of register A as the
+                pointer to the memory unit where value 5 is to be stored.
+                <br><br>
+                <span class = "inverse">[A plus 1] = 5;</span><br>
+                Is legal, and it works as above, only that the final pointer
+                is given by the value of register A plus one, which is the location
+                immediately following the one pointed by the value of register A.
+                <br><br>
+                <span class = "inverse">[A plus vector MY VECTOR plus 1] = 5;</span><br>
+                Is legal, either. The effective address of "vector MY VECTOR" is added
+                to the value of register A and a relative displacement of 1 is added
+                to the result.
+                <br><br>
+                <span class = "inverse">[1 plus A] = 5;</span><br>
+                Is <i>illegal</i> because the register is not the first element
+                of the expression.
+                <br><br>
+                <span class = "inverse">[A plus B] = 5;</span><br>
+                Is <i>illegal</i> because contains two registers.
+        </blockquote>
+
+        To conclude, the relative displacement in the above cases was an immediate
+        value, a number. In effects, it can ALSO be a linear expression, made up
+        of constants and operators. But there is a special rule in this case: the
+        first operator must be plus or minus, not "multiplied" or "divided".
+        So you could write:
+
+        <blockquote>
+                [A plus 3 multiplied 3]
+        </blockquote>
+
+        which would refer to 3x3 = 9 as the relative displacement.
+        BUT you could NOT write:
+
+        <blockquote>
+                [A multiplied 3 plus 3]
+        </blockquote>
+
+        because you're trying to multiply by 3 the effective address held by
+        register A. It's not that this couldn't be done, but you would have to
+        use an instruction to explicitly multiply A by 3 before using A in the
+        expression. This is due to the fact that while additions and subtractions
+        can be calculated by the CPU's "address generator", and embedded in a
+        single atomic instruction, multiplications and divisions cannot be
+        performed by the "address generator". In practice, the above might be
+        written similarly to the following piece of code:
+
+        <blockquote>
+                A * 3;<br>
+                B = [A plus 3];
+        </blockquote>
+
+        That's why the first operator must be plus or minus, when a linear
+        expression is used as a relative displacement to access a vector.
+        Also beware that while the expression "A plus 3 multiplied 3" may be of
+        some use, the expression "this is a vector plus 3 multiplied 3" may not.
+        The compiler takes the immediate values, or the numeric constants, in a
+        linear expression, in the order they're written, and also performs
+        operations as they occur: there is no operators' precedence in L.in.oleum's
+        linear expressions.
+
+        <br><br>
+
+        Writing [A plus 3 multiplied 3] behaves as expected because the register
+        that gives the "base address" in indirect addressing mode is neither a
+        constant, nor an immediate value; in practice, you can imagine a register
+        used in that way to be a separate entity, that doesn't directly influence
+        the value of the linear expression, but only works as a basic value to
+        which the result of the expression will be added (A plus...) or subtracted
+        (A minus...). Instead, writing:
+
+        <blockquote>
+                [this is a vector plus 3 multiplied 3]
+        </blockquote>
+
+        ...wouldn't probably behave as you expect: it would NOT add 9 to the
+        effective address of "this is a vector"; it would instead consider the
+        said effective address as part of the expression, and perform the
+        operations in the order they're given. So, it would take "this is a
+        vector" which, basing on the above examples, means 3 to the compiler,
+        and add 3 to it (plus 3), then it would multiply the result by 3. To
+        clarify, and see how the compiler would internally translate the said
+        expression, just replace "this is a vector" with its effective address:
+
+        <blockquote>
+                [3 plus 3 multiplied 3]
+        </blockquote>
+
+        And, due to the fact that it's a LINEAR expression, where there is
+        no implicit precedence for the multiplication against the addition,
+        the resulting address would be simply computed as:
+
+        <blockquote>
+                (3 + 3) * 3
+        </blockquote>
+
+        The last thing we've got to see is how to initialize all of the units
+        in a vector, and therefore also how to initialize text strings, which
+        are just vectors formed by encoded characters.
+        We need yet another "trick", a special syntax. This one:
+
+        <blockquote>
+                no label = 4567890;
+        </blockquote>
+
+        Huh? Declares a variable called "no label"?
+        Not as such. "no label" is like a special name to tell the compiler
+        not to register a new symbol name for the memory unit which is
+        actually at the top of workspace. The compiler, in this case, just
+        streams value 4567890 to the workspace and advances top of workspace,
+        but does NOT register the name.
+        Let's say for example that you need to build a small table containing
+        ten phone numbers. This is how you would declare the table:
+
+                <pre>
+                phone book = 555984532;
+                no label   = 555723431;
+                no label   = 555165262;
+                </pre>
+
+        ...and so on for another seven times.
+        You can also use "no label" to declare text strings which will be
+        streamed, but not associated to a pointer. Oh, by the way, you can
+        also omit "no label" and just type in the values, like so:
+
+        <blockquote>
+                phone book = 555984532; 555723431; 555165262;
+        </blockquote>
+
+        Technically, the compiler calls the values after the first one
+        in phone book, "implicitly unlabeled memory units".
+
+        <br><br>
+
+        Now for the final syntax, the text string.
+        Text strings are rather universally encoded using ASCII.
+        If you use the first 128 codes, 0 to 127, they're part of the
+        ASCII standard, while codes ranging from 128 to 255 are encoded
+        throught conventional assignments of extended signs as in the
+        ANSI standard. For what concerns the ASCII standard, it defines the
+        first 128 codes as follows (there are some omissions in the table,
+        corresponding to codes which aren't used or having various meanings
+        which are depending on the environment):
+
+        <pre>
+        code(s)         description
+        0               string terminator, placed at the end of a text string
+        8               backspace code, generated when backspace is pressed
+        9               tabulation, either generated and interpreted
+        10              line feed (advances the cursor by one line)
+        11              vertical tabulation (only for printers)
+        12              form feed (advances to next page, only for printers)
+        13              carriage return (moves cursor back to first column)
+        27              escape code (marks special codes and represents ESC)
+        32              blank space
+        33              ! exclamation point, logical NOT
+        34              &quot; double quote
+        35              # hash, logical exclusive OR
+        36              $ dollar, sistre
+        37              % percent, modulus
+        38              &amp; ampersand, logical AND, commercial E
+        39              ' single quote, unsigned comparison
+        40              ( opening parenthesis, left parenthesis
+        41              ) closing parenthesis, right parenthesis
+        42              * asterisk, multiplication
+        43              + plus sign, addition
+        44              , comma
+        45              - minus sign, dash, subtraction
+        46              . period, decimal point, dot
+        47              / slash, division
+        48 to 57        decimal digits 0 to 9
+        58              : colon
+        59              ; semicolon, instruction terminator
+        60              &lt; less than, bitwise left shift
+        61              = equal, assignment
+        62              &gt; greater than, bitwise right shift
+        63              ? question mark, condition
+        64              @ at, commercial A, bitwise rotation
+        65 to 90        uppercase letters A to Z
+        91              [ opening bracket, left bracket
+        92              \ backslash, reverse slash
+        93              ] closing bracket, right bracket
+        94              ^ caret, integer loop until zero
+        95              _ underscore, blank space marker
+        96              ` backquote or terminal grave accent
+        97 to 122       lowercase letters a to z
+        123             { opening string bracket, left brace
+        124             | vertical bar, logical inclusive OR
+        125             } closing string bracket, right brace
+        126             ~ about sign, asciitilde, wave function
+        127             delete code, vacant character placeholder
+        </pre>
+
+        When you declare a text string, you have to use string brackets to
+        enclose its contents. Here follows an example defining a vector which
+        will point to a text string:
+
+        <blockquote>
+                hello string = { Hello! };
+        </blockquote>
+
+        The first thing to know about how L.in.oleum encodes text strings is
+        that the compiler absolutely ignores any control codes below or equal
+        to ASCII code 32. So the blank spaces eventually separating "Hello!"
+        from the string brackets are totally ignored and are NOT coded inside
+        the text string. If you want to encode an EFFECTIVE blank space you'll
+        have to use a special sign, the underscore, like in this example:
+
+        <blockquote>
+                hello world = { Hello_world! };
+        </blockquote>
+
+        Also carriage returns and TABulations are ignored.
+        By writing, for instance:
+
+        <blockquote>
+                hello world = { Hello<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_world! };
+        </blockquote>
+
+        you would obtain exactly the same thing.
+        This allows visual organization of strings in more than one line,
+        without affecting the effective contents of the string. Yes but...
+        how do you code EFFECTIVE carriage returns, and line feeds? Like so:
+
+        <blockquote>
+                hello worlds = { Hello_Earth, \cr \lf hello_Saturn! };
+        </blockquote>
+
+        This would stream each character as it is except that when the two
+        special tags marked as \cr and \lf are found, the compiler streams
+        ASCII codes 13 and 10. This is like pressing ENTER and would cause
+        the rest of the string to be shown from the beginning of next line.
+        If you called a function to print out the string, it would show:
+
+        <blockquote>
+                Hello Earth,<br>
+                hello Saturn!
+        </blockquote>
+
+        Now there are only another three special tags, obviusly very useful.
+        The "closing string bracket", for example, can't be encoded within
+        the string because it's the character which will close the string,
+        as seen by the compiler. So, rather than using }, you have to write
+        the special tag \cs and it will stream ASCII code 125 in the string.
+        Another one is \ta, the tabulation code, or ASCII code 9.
+        The last symbol is to show an underscore, which as you learned is
+        interpreted as a single blank space. To mark an effective underscore
+        use the \us tag, and it will be translated to ASCII code 95.
+        How to code an effective backslash? Type a backslash which is not
+        followed by any of the  cr,  lf,  cs,  ta,  us  special tags, *OR*
+        type a double backslash, like so: \\
+
+        <br><br>
+
+        Finally, remember when the compiler encodes a string, it also puts a
+        string terminator (a null ASCII code, meaning zero) at the end, so a
+        given string takes as much memory units as the number of effective
+        characters forming the string PLUS the termination code.
+        For example a void string {&nbsp;} would be encoded as a single zero unit.
+
+        <br><br>
+
+        Maybe you'd like an example of how the string { Hello! } is built
+        along the "workspace road"... let's see the road after declaration,
+        assuming allocation of that string starts back from unit number 2
+        (...because there'd be not enough room in the screen, that's why :o)
+
+        <pre>
+        |------|------|------|------|------|------|------|------|------|-- -
+        | allocated   |   H      e      l      l      o      !    zero |
+        | workspace...|                                            (0) |
+        |------|------|------|------|------|------|------|------|------|-- -
+        ^             ^                                                ^
+    beginning       hello                                           top of
+   of the road      string                                         workspace
+        </pre>
+
+        And if you want to see the string by ASCII code, here's it:
+
+        <pre>
+        |------|------|------|------|------|------|------|------|------|-- -
+        | allocated   |   72    101    108    108    111     33   zero |
+        | workspace...|                                            (0) |
+        |------|------|------|------|------|------|------|------|------|-- -
+        ^             ^                                                ^
+    beginning       hello                                           top of
+   of the road      string                                         workspace
+        </pre>
+
+        So that, for example, location [hello string plus 4] will contain
+        decimal value 111, the ASCII code corresponding to the lowercase "o".
+
+        <br><br>
+
+        An important thing you should know about the "variables" period is:
+        to load a pointer to a string or to a vector inside a register or
+        another memory unit while in the "programme" period (ok, this is
+        a little preview) you'd write something like:
+
+        <blockquote>
+                A = hello world;
+        </blockquote>
+
+        would load register A with the POINTER to the "hello world" string.
+        Well, I mentioned that because, WHEN USING STRINGS that's ok, but
+        when you're using another vector defined in the "variables" period
+        and want to load its pointer, such as:
+
+        <blockquote>
+                A = my vector;
+        </blockquote>
+
+        this would normally cause a warning message.
+        Why? Because you didn't declare my vector as a vector.
+        The compiler suspects such a loading operation may be a mistake,
+        because it thinks you forgot to put brackets around the name of
+        a SINGLE variable to get its value. Thus, it warns you about the
+        fact that the variable is being referenced by ADDRESS, and A is
+        loaded with its address (which however is what you WANTED), not
+        with its content. In facts, to load A with the content of a SINGLE
+        variable (not vector, which is a sequence of variables) you'd write:
+
+        <blockquote>
+                A = [my variable];
+        </blockquote>
+
+        between brackets.
+        Now, how do you declare a variable is the first unit in a vector,
+        so that the compiler will stop bothering you with warning messages?
+        Like so:
+
+        <blockquote>
+            "variables"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vector my vector = value 1; value 2; value 3; (....)
+        </blockquote>
+
+        where you should notice the word "vector" (typed ALWAYS lowercase)
+        PRECEEDS the real name of the vector itself, which is "my vector".
+        Value 1, value 2 etc are just placeholders in the above example...
+        At this point, when you write:
+
+        <blockquote>
+                A = vector my vector;
+        </blockquote>
+
+        It's considered perfectly legal by the compiler,
+        and the warning message won't appear anymore.
+
+        <br><br>
+
+        Now that you know what's a vector and how it works, let's see next
+        entity: the MATRIX. Basically, a matrix is a n-dimensional vector.
+        The alternate term "array" also applies to matrixs, as to vectors,
+        but I'd like you to learn the precise terminology so I'll repeat:<br><br>
+      - a VECTOR is a linear sequence of memory cells, one after the other;<br>
+      - a MATRIX is a vector having more than one dimension.
+
+        <br><br>
+
+        An example of a 2-dimensional matrix would be:
+
+        <br><br>
+        <center>
+        <table>
+                <tr>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">107</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">941</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">123</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">5</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">228</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">434</span></td>
+                </tr>
+                <tr>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">652</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">182</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">734</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">368</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">127</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">91</span></td>
+                </tr>
+                <tr>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">172</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">726</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">832</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">167</span></td>
+                <td bgcolor = "#FFFFC0" width = 40 height = 30><span style="color:black">268</span></td>
+                <td bgcolor = "#C0FFC0" width = 40 height = 30><span style="color:black">315</span></td>
+                </tr>
+        </table>
+        </center>
+        <br>
+
+        it has 2 dimensions: width and height.
+        Its width, in the example, is 6 columns.
+        Its height is 3 rows.
+
+        <br><br>
+
+        How's it built when you have to encode such a thing in a program?
+        Well, generally speaking, you have to use the same syntax seen for
+        vectors (let's say vectors can be seen as 1-dimensional matrixs).
+        So, the "rough" way to declare a matrix is the following:
+
+        <pre>
+        vector my matrix = 107; 941; 123; 005; 228; 434;
+                           652; 182; 734; 368; 127; 091;
+                           172; 726; 832; 167; 268; 315;
+        </pre>
+
+        Please note: the compiler doesn't even know it's a matrix...
+        it considers it a vector, and it's declared with the same keyword.
+        However, you can distinguish matrixs from vectors by using a
+        synonym of the "vector" keyword which is, of course, "matrix".
+        So you can write:
+
+        <pre>
+        matrix my matrix = 107; 941; 123; 005; 228; 434;
+                           652; 182; 734; 368; 127; 091;
+                           172; 726; 832; 167; 268; 315;
+        </pre>
+
+        I told you it's the "rough" way.
+        There are ways to organize matrixs so that their dimensions can
+        change without having to re-write everything about them. Suppose
+        that matrix shouldn't have dimensions of 6 x 3, but the initialized
+        fragment of the matrix is still 6 x 3 (you don't know which values
+        will be written in the other positions). Suppose the real dimensions
+        of the said matrix should be 10 x 8. The total size of the matrix,
+        that way, would be 80 units. All clear?
+        Well, there's a couple of keywords that can be used only in the
+        "variables" period to setup such "partially initialized matrixs".
+        They are "align at" and "extend up to".
+        They are called the ALIGNMENT DIRECTIVES, and their syntax is:
+        <blockquote>
+                align at:xxx;
+                extend up to:yyy;
+        </blockquote>
+        ...where xxx and yyy are immediate values or constant symbols.
+        To make the above matrix take always 10 columns and 8 rows,
+        you'd then write:
+
+        <pre>
+        matrix my matrix = 107; 941; 123; 005; 228; 434; extend upto: 10;
+                           652; 182; 734; 368; 127; 091; extend upto: 20;
+                           172; 726; 832; 167; 268; 315; extend upto: 30;
+                           extend upto: 80; (8 rows, 10 columns each)
+        </pre>
+
+        It should be easy to read and understand what happens.
+        However, the compiler expands each row so that it will take 10 units,
+        and when there are no more declared rows, in the end, it extends the
+        whole matrix until it takes 80 units, therefore adding another 50.
+        If you use constant symbols rather than immediate values, you can
+        resize the matrix without even touching its declaration. Like:
+
+        <pre>
+    "constants"
+        COLS = 18;
+        ROWS = 25;
+
+    "variables"
+        matrix my matrix = 107; 941; 123; 005; 228; 434; extend upto: 1 mtp COLS;
+                           652; 182; 734; 368; 127; 091; extend upto: 2 mtp COLS;
+                           172; 726; 832; 167; 268; 315; extend upto: 3 mtp COLS;
+                           extend upto: COLS mtp ROWS;
+        </pre>
+
+        Now let's explain what this and the other directive mean, in theory.
+        As a preamble, you have to know the compiler has an internal counter
+        called the "reference EA", standing for "reference effective address". 
+        I hope you remember, also, what the "top of workspace" was, because
+        the reference EA is calculated starting from that.
+        Each time you declare a LABELED symbol inside the "variables" period,
+        the reference EA is set to the actual value of "top of workspace".
+        This is the base value relatively to which any kinds of alignment are
+        then performed, whenever an alignment directive is found. Here's it:
+
+        <blockquote>
+        <u>expand up to: x;</u>
+        <ul>
+        <li>takes current "top of workspace" and subtracts the reference EA
+          from it. Let's call the result of the calculation "relative EA".</li><br>
+        <li>Starts streaming null units to the workspace, and each time a unit
+          is streamed, the relative EA is incremented.</li><br>
+        <li>This loop goes on until relative EA equals parameter x.</li>
+        </ul>
+        </blockquote>
+
+        As a result of the whole process, it's clear that, since the last
+        labeled symbol was declared, the workspace has grown by x units,
+        and therefore that the last symbol now takes complessively x units.
+        Here's the other directive:
+
+        <blockquote>
+        <u>align at: x;</u>
+        <ul>
+        <li>takes current "top of workspace" and divides it by x.</li><br>
+        <li>The REMAINDER of that division forms a special counter, call it y.</li><br>
+        <li>The workspace is expanded by x-y (x minus y) units.
+        </ul>
+        </blockquote>
+
+        The "align at" directive is used whenever you have to position the
+        next symbol exactly on a x-units boundary. Normally, it preceeds
+        the declaration of a symbol, so that this symbol's effective address
+        will be a multiple of x. That's all...
+
+        <br><br>
+
+        But how are matrixs accessed?
+        Well, in case of a 2-dimensional matrix, by calculating relative
+        displacements as follows... suppose you want to load register A with
+        the value at column 3 of row 2 in the example matrix. You'd write:
+
+        <blockquote>
+                A = matrix my matrix;<br>
+                A = [A plus 2 mtp COLS plus 3];
+        </blockquote>
+
+        In symbolic (pseudo) code, that would mean:
+
+        <blockquote>
+                load register A with the content of memory cell at...<br>
+                (effective address of my matrix) + (2 x COLS) + 3
+        </blockquote>
+
+        If you want the indexes (3 and 2) to be variables, rather than
+        constants, you need some more code. However, you should take the
+        following "as it is" and come back to see it once you know how
+        these commands work, even if the comments will help a little:
+
+        <pre>
+        A = [row to be accessed];       (A is loaded with row number)
+        A * COLS;                       (A is multiplied by matrix's width)
+        A + [column to be accessed];    (the column number is added)
+        A + matrix my matrix;           (plus effective address of the matrix)
+        A = [A];                        (A = value of memory cell A points to)
+        </pre>
+
+        Oh, by the way, speaking of matrixs: since text strings are vectors,
+        if you want to make a vector out of a SEQUENCE of text strings, well,
+        that would be a matrix. Yes, and here's a funny example:
+
+        <pre>
+        matrix of error messages =
+        { Errcode_00:_Too_lazy_to_do_that! };           extend upto:  50;
+        { Errcode_01:_Dumb_user._Replace_user. };       extend upto: 100;
+        { Errcode_02:_CTRL+HOME+F1+X+Y_to_continue. };  extend upto: 150;
+        { Errcode_03:_Try_again_later._I'm_busy... };   extend upto: 200;
+        </pre>
+
+        Apart from the fact that you should try pressing CTRL+HOME+F1+X+Y,
+        which COULD be really acknowledged by the L.in.oleum run-time module,
+        note that matrix contains strings having a maximum size of 50 units.
+        This simplifies calculating the address of the first character in
+        each string, when your program has to print one of them...
+        you'd just take that "error code", a variable containing a number
+        going from 0 to 3, and multiply it by 50. Then you would add the
+        effective address of "matrix of error messages" and that's it...
+
+        <br><br>
+
+        <u>Final notes:</u><br>
+        <ul>
+      <li>Asking for structures (especially C programmers will be asking):
+        manage them on your own. You have all of the needed instruments,
+        you know what a structure is. You figure out how... consider you'll
+        be working in some sort of "ideal" assembler, if you choose L.in.oleum.</li><br><br>
+      <li>Curiousity about structures (for those who don't know):
+        structures are "irregular" vectors whose elements could take
+        more than one unit. They're groups made up of both single units,
+        AND vectors. And they may also contain nidified structures inside.
+        I don't like them very much... I still prefere low-level management
+        of my workspace. So they're not supported, as well as macros are not
+        supported.</li><br><br>
+      <li>Something similar to structures are, in L.in.oleum, the "datascripts":
+        datascripts are sequences of text strings and immediate values stored
+        into the "variables" period. Examples of datascripts can be found in
+        the Icon Editor source code.</li>
+        </ul>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

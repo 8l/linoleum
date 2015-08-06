@@ -1,0 +1,3275 @@
+"libraries"
+	gen/hotspot;
+	gen/tgafont;
+	gen/pitagora;
+
+	pselibs/gui;
+	pselibs/textures;
+
+"stockfile"
+	cotton;
+	greench;
+
+"directors"
+	unit = 32;
+	symbols map = OFF;
+	display width = INITIAL WIDTH;
+	display height = INITIAL HEIGHT;
+	display mode = COOPERATIVE;
+	program name = { Scenery_Editor };
+
+"constants"
+	HIDDEN			= 80000000h;
+	COLLISION		= 40000000h;
+	PI			= 3.141592654f;
+
+	Crosshair Region Width	= 44;
+	Crosshair Region Height = 44;
+
+	GLOBAL FONT WIDTH	= 16;
+	GLOBAL FONT BODY	= 19;
+
+	INITIAL WIDTH		= 456;
+	INITIAL HEIGHT		= 480;
+
+	MINIMUM WIDTH		= 320;
+	MINIMUM HEIGHT		= 160;
+
+	MAXIMUM WIDTH		= 640;
+	MAXIMUM HEIGHT		= 480;
+
+	MAXIMUM SUPPORTED WIDTH = 640;
+	MAXIMUM SUPPORTED HEIGHT= 480;
+
+	REFERENCE PLANE WIDTH	= 512;
+	REFERENCE PLANE HEIGHT	= 512;
+	REFERENCE PLANE SIZE	= REFERENCE PLANE WIDTH mtp REFERENCE PLANE HEIGHT;
+
+	MAX MARKERS		= 1024;
+	X of first marker	= 0;
+	Y of first marker	= 1;
+	Z of first marker	= 2;
+	X of second marker	= 3;
+	Y of second marker	= 4;
+	Z of second marker	= 5;
+	X of third marker	= 6;
+	Y of third marker	= 7;
+	Z of third marker	= 8;
+	X of fourth marker	= 9;
+	Y of fourth marker	= 10;
+	Z of fourth marker	= 11;
+
+	MAX TRIANGLES		= 65536; (*4*16 = 4 megabytes)
+	TRIANGLE DATA SIZE	= 16;
+	TRIANGLE DATA SHIFT	= 4;
+
+	TRIANGLE PARENT 	= 0;
+	TRIANGLE FEATURES	= 1;
+	TRIANGLE COLOR		= 2;
+	TRIANGLE CG		= 2;
+	TRIANGLE TEXTURE	= 3;
+	TRIANGLE SP COLS	= 4;
+	TRIANGLE SP ROWS	= 5;
+	TRIANGLE SCALING	= 6;
+	TRIANGLE X1		= 7;
+	TRIANGLE Y1		= 8;
+	TRIANGLE Z1		= 9;
+	TRIANGLE X2		= 10;
+	TRIANGLE Y2		= 11;
+	TRIANGLE Z2		= 12;
+	TRIANGLE X3		= 13;
+	TRIANGLE Y3		= 14;
+	TRIANGLE Z3		= 15;
+
+	TEXTURES BANK SIZE	= 2048 mtp 1024; (2 Megaunits, 8 Megabytes)
+
+"variables"
+	Quit Now = NO;
+	Fold Is Active = NO;
+	Previous display height = INITIAL HEIGHT;
+	Title string = { Pitagora_Scenery_Editor };
+
+	vector Title Bar Bounds = 51; 1; INITIAL WIDTH minus 102; 23;
+	vector Title Bar Gradients = 1f; 1f; 1f; 0.5f; 0.6f; 0.7f; 0.7f; 0.6f; 0.5f;
+
+	vector Buttons Bar Bounds = 1; 1; 49; 23;
+	vector Buttons Bar Gradients = 1f; 1f; 1f; 0.7f; 0.6f; 0.5f; 0.5f; 0.6f; 0.7f;
+
+	vector Exit Button = 4; 4; 20; 20; 0;
+	vector Exit Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Exit Button Tip Bounds = 11; 11; 14; 14;
+	vector Exit Button Tip Gradients = 1f; 1f; 1f; 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f;
+	vector Exit Button Push Gradients = 0.3f; 0.1f; 0.1f; 0.7f; 0.1f; 0.1f; 1f; 0.5f; 0.5f;
+	vector Exit Button Hover Gradients = 0.5f; 0.1f; 0.1f; 0.8f; 0.5f; 0.5f; 1f; 1f; 1f;
+	Exit Button Description = { End_session };
+
+	vector Fold Button = 23; 4; 46; 20; 0;
+	vector Fold Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Fold Button Tip Fold Bounds = 26; 11; 43; 14;
+	vector Fold Button Tip Unfold Bounds = 26; 7; 43; 17;
+	vector Fold Button Tip Gradients = 1f; 1f; 1f; 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f;
+	vector Fold Button Push Gradients = 0.1f; 0.3f; 0.1f; 0.1f; 0.7f; 0.1f; 0.5f; 1f; 0.5f;
+	vector Fold Button Hover Gradients = 0.1f; 0.5f; 0.1f; 0.5f; 0.8f; 0.5f; 1f; 1f; 1f;
+	Fold Button Description = { Fold/unfold };
+
+	vector Rightside Buttons Bar Bounds = INITIAL WIDTH minus 100; 1; INITIAL WIDTH minus 2; 23;
+	vector Rightside Buttons Bar Gradients = 1f; 1f; 1f; 0.7f; 0.6f; 0.5f; 0.5f; 0.6f; 0.7f;
+
+	vector Size Button = INITIAL WIDTH minus 21; 4; INITIAL WIDTH minus 21 plus 16; 20; 0;
+	vector Size Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Size Button Push Gradients = 0.1f; 0.15f; 0.3f; 0.1f; 0.35f; 0.7f; 0.5f; 0.7f; 0.9f;
+	vector Size Button Hover Gradients = 0.1f; 0.25f; 0.5f; 0.4f; 0.5f; 0.8f; 1f; 1f; 1f;
+	Size Button Text = { R };
+	Size Button Description = { Resize_display };
+
+	vector Turn Button = INITIAL WIDTH minus 40; 4; INITIAL WIDTH minus 40 plus 16; 20; 0;
+	vector Turn Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Turn Button Push Gradients = 0.3f; 0.3f; 0.1f; 0.7f; 0.7f; 0.1f; 1f; 1f; 0.5f;
+	vector Turn Button Hover Gradients = 0.5f; 0.5f; 0.1f; 0.8f; 0.8f; 0.5f; 1f; 1f; 1f;
+	Turn Button Text = { T };
+	Turn Button Description = { Turn_around };
+
+	vector Move Button = INITIAL WIDTH minus 59; 4; INITIAL WIDTH minus 59 plus 16; 20; 0;
+	vector Move Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Move Button Push Gradients = 0.3f; 0.15f; 0.1f; 0.7f; 0.35f; 0.1f; 1f; 0.75f; 0.5f;
+	vector Move Button Hover Gradients = 0.5f; 0.25f; 0.1f; 0.8f; 0.4f; 0.5f; 1f; 1f; 1f;
+	Move Button Text = { M };
+	Move Button Description = { Zoom_in/out_along_Z,_strafe_along_X };
+
+	vector Strafe Button = INITIAL WIDTH minus 78; 4; INITIAL WIDTH minus 78 plus 16; 20; 0;
+	vector Strafe Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Strafe Button Push Gradients = 0.3f; 0.15f; 0.1f; 0.7f; 0.35f; 0.1f; 1f; 0.75f; 0.5f;
+	vector Strafe Button Hover Gradients = 0.5f; 0.25f; 0.1f; 0.8f; 0.4f; 0.5f; 1f; 1f; 1f;
+	Strafe Button Text = { S };
+	Strafe Button Description = { Strafe_along_X-Y_(plane) };
+
+	vector Home Button = INITIAL WIDTH minus 97; 4; INITIAL WIDTH minus 97 plus 16; 20; 0;
+	vector Home Button Gradients = 0.2f; 0.3f; 0.5f; 0.6f; 0.5f; 0.4f; 1f; 1f; 1f;
+	vector Home Button Push Gradients = 0.5f; 0.5f; 1f; 0.5f; 1f; 1f; 1f; 1f; 0.5f;
+	vector Home Button Hover Gradients = 0f; 0f; 1f; 0f; 1f; 1f; 1f; 1f; 0f;
+	Home Button Text = { H };
+	Home Button Description = { Return_to_"home"_position };
+
+	vector Viewport Bounds = 1; 25; INITIAL WIDTH minus 2; INITIAL HEIGHT minus 2;
+
+	vector Ground Triangle 1 Vertexs =
+		minus 100000f;	0f;		100000f;
+		100000f;	0f;		100000f;
+		minus 100000f;	0f;		minus 100000f;
+
+	vector Ground Triangle 2 Vertexs =
+		100000f;	0f;		100000f;
+		100000f;	0f;		minus 100000f;
+		minus 100000f;	0f;		minus 100000f;
+
+	vector Reference Plane Texture =
+		ZERO;				(offset in textures bank)
+		REFERENCE PLANE WIDTH;		(width)
+		REFERENCE PLANE HEIGHT; 	(height)
+		STYLE GRID;			(style)
+		UNDEFINED;			(style repeat count)
+		0F4488h;			(background color)
+		FFFFFFh;			(foreground color)
+		0.020f; 			(style parameter 1)
+		0.020f; 			(style parameter 2)
+		1f;				(style parameter 3)
+		FILTER SMOOTH;			(filter 1 type)
+		1;				(filter 1 repeat count)
+		UNDEFINED;			(filter 1 parameter 1)
+		UNDEFINED;			(filter 1 parameter 2)
+		UNDEFINED;			(filter 1 parameter 3)
+		FILTER DUMMY;			(filter 2 type)
+		UNDEFINED;			(filter 2 repeat count)
+		UNDEFINED;			(filter 2 parameter 1)
+		UNDEFINED;			(filter 2 parameter 2)
+		UNDEFINED;			(filter 2 parameter 3)
+		FILTER DUMMY;			(filter 3 type)
+		UNDEFINED;			(filter 3 repeat count)
+		UNDEFINED;			(filter 3 parameter 1)
+		UNDEFINED;			(filter 3 parameter 2)
+		UNDEFINED;			(filter 3 parameter 3)
+
+	Camera Movement Coefficient = 50f;
+	Camera Rotation Coefficient = 0.01f;
+
+	NW Label = { North-West };
+	SW Label = { South-West };
+	NE Label = { North-East };
+	SE Label = { South-East };
+
+	Home X = 0f;
+	Home Y = minus 88000f;
+	Home Z = 0f;
+
+	Show PRP = YES;
+	Surface indexing = YES;
+
+	Console Map ID = minus 1;
+	Check Viewport Interface Mappings = NO;
+
+	VLU Scaling = 100000f mtp 2 div REFERENCE PLANE WIDTH;
+	Secondary Reference Plane Altitude = 0f;
+
+	Point X = UNDEFINED;
+	Point Y = UNDEFINED;
+	Point Z = UNDEFINED;
+	Point on = NO;
+
+	vector Pointer Triangle Vertexs = UNDEFINED *** 9;
+	vector Pointer Triangle Texture = FFFFFFh; FFFFFFh; FFFFFFh;
+					  FFFFFFh; 0h; 0h;
+					  FFFFFFh; 0h; 0h;
+	vector Pointer Triangle Texture
+		When Matching SRP	= FF00h; FF00h; FF00h;
+					  FF00h; 0h; 0h;
+					  FF00h; 0h; 0h;
+
+	vector Collision texture	= FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+					  FFFF00h; 000000h; FFFF00h; 000000h;
+
+	Marker X = UNDEFINED;
+	Marker Y = UNDEFINED;
+	Marker Z = UNDEFINED;
+	Markers on = ZERO;
+	Current point to show = UNDEFINED;
+	vector Marker Triangle Texture	= FF8080h; FF8080h; FF8080h;
+					  FF8080h; 0h; 0h;
+					  FF8080h; 0h; 0h;
+	vector Marker Triangle Texture
+		When Matching SRP	= FFFFh; FFFFh; FFFFh;
+					  FFFFh; 0h; 0h;
+					  FFFFh; 0h; 0h;
+
+	Triangles on = ZERO;
+	Current triangle color = 33FF22h;
+	Current triangle SP cols = 100;
+	Current triangle SP rows = 100;
+	Current triangle to show = UNDEFINED;
+	Showing blended polygons = UNDEFINED;
+	Current triangle features = USE SPANNER plus
+				DEPTH BUFFERING plus APPLY SHADING;
+
+	Wall top = UNDEFINED;
+	Wall base = UNDEFINED;
+
+	vector	Light Sources Table = 1;
+		LS X = minus 100000f;
+		LS Y = minus 044000f;
+		LS Z = minus 100000f;
+		LS R = 1f;
+		LS G = 1f;
+		LS B = 1f;
+		LS P = 141420f;
+		LS reflection = 0.7f;
+		LS diffusion = 0.3f;
+
+	Selected triangle = UNDEFINED;
+	CV Min distance = UNDEFINED;
+	CVPTX = UNDEFINED;
+	CVPTY = UNDEFINED;
+	CVPTZ = UNDEFINED;
+
+	MV Text = { X };
+	WS Line = UNDEFINED;
+	WS Text = UNDEFINED;
+	SUP Features = UNDEFINED;
+
+	Def Texture		= { Texture };
+	Def ZBuffering		= { Zbuffer };
+	Def Blend		= { Blend };
+	Def Shading		= { Shading };
+	Def Spanner		= { Spanned };
+	Def Metal Shading	= { Metal };
+	Def Double Face 	= { DblFace };
+	Def Hidden		= { In_trashcan };
+	Def Composite		= { Composite };
+	CG Text 		= { Part_of_CG:_"XXXX" };
+
+	Textures on = ZERO;
+	Top of textures bank = ZERO;
+	Selected texture = UNDEFINED;
+
+	Texture W = UNDEFINED;
+	Texture H = UNDEFINED;
+
+	P Fetch size = ZERO;
+	P Texture to fetch = { Texture_to_fetch> };
+	vector Texture to fetch = ZERO *** 32; NULL;
+
+	Prompt on = NO;
+	P Cursor = { < };
+	P Null buffer = {};
+	Prompt text = UNDEFINED;
+	Prompt buffer = UNDEFINED;
+	Prompt buffer size = UNDEFINED;
+	Prompt answer size now = UNDEFINED;
+	On answer = UNDEFINED;
+	On reject = UNDEFINED;
+
+	FXC Counter = UNDEFINED;
+	FXC Pointer = UNDEFINED;
+	Child ID = UNDEFINED;
+
+	NB Rejected triangles = UNDEFINED;
+	NB Size of texture to remove = UNDEFINED;
+
+	P Scenery name size = ZERO;
+	P Scenery name = { XXXX:_Scenery_name> };
+	vector Scenery name = ZERO *** 32; NULL;
+
+	P TB name size = ZERO;
+	P TB name = { XXXX:_Texture_bank_name> };
+	vector TB name = ZERO *** 32; NULL;
+
+	Set as parent of = UNDEFINED;
+	P Select child = { Select_child_triangle... };
+
+	Show CG = YES;
+	Selected collision group = UNDEFINED;
+
+	P CG ID size = ZERO;
+	P CG ID = { Collision_group_ID> };
+	vector CG ID = ZERO *** 4; NULL;
+
+	P COLOR ID size = ZERO;
+	P COLOR ID = { Color_ID> };
+	vector COLOR ID = ZERO *** 6; NULL;
+
+	MM Center X = UNDEFINED;
+	MM Center Y = UNDEFINED;
+	MM Center Z = UNDEFINED;
+
+	Destination triangle = UNDEFINED;
+
+	Msg = NULL;
+	Tip = NULL;
+
+	MSG SELECT =
+		{ Selected_triangle_#_____ };
+	MSG PRP On =
+		{ Primary_reference_plane_on_screen. };
+	MSG PRP Off =
+		{ Primary_reference_plane_now_hidden. };
+	MSG SI On =
+		{ Surface_indexing_enabled. };
+	MSG SI Off =
+		{ Surface_indexing_disabled. };
+	ERR No polygon selected =
+		{ ERR:_No_polygon_selected! };
+	TIP No polygon selected =
+		{ TIP:_Click_upon_its_surface_to_select_a_polygon. };
+	ERR Not a composite polygon =
+		{ ERR:_Not_a_composite_polygon,_so_you_can't_split_it. };
+	MSG Polygon split =
+		{ MSG:_Ok,_polygon_split. };
+	ERR Jump side only for noncomposite polygons =
+		{ ERR:_Jump_side_only_for_non-composite_polygons. };
+	TIP Jump side only for noncomposite polygons =
+		{ TIP:_Press_L_to_split_composite_polygon_and_try_again. };
+	MSG Jump side =
+		{ MSG:_Ok,_polygon_now_visible_from_the_other_side. };
+	ERR Send to background only for noncomposite polygons =
+		{ ERR:_Send_to_background_only_for_non-composite_polygons. };
+	TIP Send to background only for noncomposite polygons =
+		{ TIP:_Press_L_to_split_composite_polygon_and_try_again. };
+	MSG Send to background =
+		{ MSG:_Polygon_sent_to_background_(index_zero). };
+	TIP Send to background =
+		{ TIP:_Press_>_to_send_to_foreground. };
+	ERR Send to foreground only for noncomposite polygons =
+		{ ERR:_Send_to_foreground_only_for_non-composite_polygons. };
+	TIP Send to foreground only for noncomposite polygons =
+		{ TIP:_Press_L_to_split_composite_polygon_and_try_again. };
+	MSG Send to foreground =
+		{ MSG:_Polygon_sent_to_foreground_(index_n-1). };
+	TIP Send to foreground =
+		{ TIP:_Press_<_to_send_to_background. };
+	ERR No point selected =
+		{ ERR:_No_point_selected! };
+	TIP No point selected =
+		{ TIP:_Click_over_reference_plane_to_select_a_point. };
+	ERR Too many markers =
+		{ ERR:_Sorry,_too_many_markers. };
+	MSG Adding marker =
+		{ Adding_marker... };
+	TIP Adding marker =
+		{ TIP:_Press_W_to_delete_last_marker. };
+	ERR No marker to delete =
+		{ ERR:_No_marker_to_delete! };
+	MSG Deleting marker =
+		{ Deleting_last_marker... };
+	TIP Deleting marker =
+		{ TIP:_Press_E_to_delete_all_markers. };
+	MSG Deleting all markers =
+		{ Deleting_all_markers... };
+	ERR Insufficient markers to raise wall =
+		{ ERR:_Insufficient_markers_to_raise_wall! };
+	TIP Insufficient markers to raise wall =
+		{ TIP:_At_least_two_markers_are_needed_to_raise_a_wall. };
+	ERR Wall interrupted =
+		{ ERR:_Wall_construction_interrupted! };
+	TIP Wall interrupted =
+		{ TIP:_All_wall_markers_must_be_aligned_on_a_horizontal_plane. };
+	MSG Wall raised =
+		{ Ok,_wall_raised. };
+	MSG Bringing SRP to ground level =
+		{ Bringing_secondary_reference_plane_to_ground_level... };
+	TIP Bringing SRP to ground level =
+		{ TIP:_Press_A,Z,S,X_to_move_secondary_reference_plane_up_and_down. };
+	ERR Insufficient markers for pure polygon =
+		{ ERR:_Insufficient_markers_to_create_pure_polygon. };
+	TIP Insufficient markers for pure polygon =
+		{ TIP:_At_least_3_markers_are_needed_to_create_a_pure_polygon. };
+	MSG Pure polygon created =
+		{ Ok,_created_pure_polygon_surface. };
+	MSG Raising SRP10 =
+		{ Raising_secondary_reference_plane_by_10_units... };
+	TIP Raising SRP10 =
+		{ TIP:_Press_X_to_drop_secondary_reference_plane_10_units. };
+	MSG Dropping SRP10 =
+		{ Dropping_secondary_reference_plane_by_10_units... };
+	TIP Dropping SRP10 =
+		{ TIP:_Press_S_to_raise_secondary_reference_plane_10_units. };
+	MSG Raising SRP1 =
+		{ Raising_secondary_reference_plane_unit_by_unit... };
+	TIP Raising SRP1 =
+		{ TIP:_Press_Z_to_drop_secondary_reference_plane_unit_by_unit. };
+	MSG Dropping SRP1 =
+		{ Dropping_secondary_reference_plane_unit_by_unit... };
+	TIP Dropping SRP1 =
+		{ TIP:_Press_A_to_raise_secondary_reference_plane_unit_by_unit. };
+	MSG Duplicating =
+		{ Duplicating_polygon... };
+	MSG Fetching texture =
+		{ Fetching_new_texture_from_disk... };
+	TIP Fetching texture =
+		{ Press_ENTER_to_confirm,_ESCAPE_to_cancel. };
+	MSG Fetch canceled =
+		{ Texture_fetch:_operation_canceled... };
+	ERR Texture file not found =
+		{ ERR:_Texture_file_not_accessible. };
+	TIP Texture file not found =
+		{ TIP:_The_texture_file_must_lay_inside_PSE's_folder. };
+	ERR Invalid texture size =
+		{ ERR:_Invalid_texture_size. };
+	TIP Invalid texture size =
+		{ TIP:_Max_512x512_-_Texture_must_be_a_TGA_truecolor_image. };
+	ERR Not enough memory in textures bank =
+		{ ERR:_Not_enough_memory_in_textures_bank_to_hold_this_texture. };
+	MSG Texture fetched =
+		{ Texture_fetched_and_successfully_loaded. };
+	TIP Texture fetched =
+		{ TIP:_Press_G_to_glue_texture_to_selected_polygon. };
+	ERR No texture selected =
+		{ ERR:_No_textures_loaded. };
+	TIP No texture selected =
+		{ TIP:_Press_F_to_fetch_a_texture_from_the_PSE_folder. };
+	MSG Texture glued =
+		{ Ok,_texture_attached_to_selected_polygon. };
+	TIP Texture glued =
+		{ TIP:_Press_B_to_select_(branch_to)_next_texture. };
+	MSG Detaching texture =
+		{ Detaching_texture_from_polygon... };
+	TIP Detaching texture =
+		{ TIP:_F-fetch_texture_from_disk,_G-glue_texture_to_polygon. };
+	ERR Not enough markers to close figure =
+		{ ERR:_Not_enough_markers_to_create_a_closed_figure. };
+	TIP Not enough markers to close figure =
+		{ TIP:_At_least_3_markers_are_needed_to_create_closed_figures. };
+	MSG Figure closed =
+		{ Figure closed. };
+	TIP Figure closed =
+		{ TIP:_(Last_marker_set_to_first_marker's_position). };
+	ERR No triangles =
+		{ ERR:_No_triangles_in_scenery. };
+	TIP No triangles =
+		{ TIP:_R_or_Y_to_create_figures,_but_first_setup_markers_(with_Q). };
+	MSG Branching to next texture =
+		{ Branching_to_next_texture... };
+	TIP Branching to next texture =
+		{ TIP:_Hit_G_to_glue_textures,_':'_to_save_textures_bank. };
+	MSG Hiding polygon =
+		{ Ok,_selected_polygon_is_now_hidden_(in_trashcan). };
+	TIP Hiding polygon =
+		{ TIP:_N_deletes_trashed_polygons,_H_reveals_hidden_polygon. };
+	MSG Narrowing buffers =
+		{ Narrowing_buffers_(optimizing_memory_usage)... };
+	TIP Narrowing buffers =
+		{ TIP:_Trashed_polygons_and_unused_textures_are_now_deleted. };
+	MSG Saving scenery =
+		{ Saving_scenery_to_file... };
+	TIP Saving scenery =
+		{ ENTER_to_confirm,_ESCAPE_to_cancel... };
+	MSG Save scenery canceled =
+		{ Save_scenery:_operation_canceled. };
+	ERR Disk error while saving scenery =
+		{ ERR:_An_error_occured_while_saving_scenery_data! };
+	TIP Disk error while saving scenery =
+		{ TIP:_Check_file_name_for_validity,_and_free_disk_space. };
+	MSG Scenery saved =
+		{ Ok,_scenery_data_saved. };
+	TIP Scenery saved =
+		{ TIP:_Press_","_(comma)_to_load_previously_saved_sceneries. };
+	MSG Loading scenery =
+		{ Loading_scenery_from_file... };
+	TIP Loading scenery =
+		{ ENTER_to_confirm,_ESCAPE_to_cancel... };
+	MSG Load scenery canceled =
+		{ Load_scenery:_operation_canceled. };
+	ERR Disk error while loading scenery =
+		{ ERR:_An_error_occured_while_loading_scenery_data! };
+	TIP Disk error while loading scenery =
+		{ TIP:_Check_if_scenery_file_is_available. };
+	MSG Scenery loaded =
+		{ Ok,_scenery_data_loaded. };
+	TIP Scenery loaded =
+		{ TIP:_Press_"."_(dot)_to_save_current_scenery. };
+	MSG Saving textures bank =
+		{ Saving_textures_bank_to_file... };
+	TIP Saving textures bank =
+		{ ENTER_to_confirm,_ESCAPE_to_cancel... };
+	MSG Save textures bank canceled =
+		{ Save_textures_bank:_operation_canceled. };
+	ERR Disk error while saving textures bank =
+		{ ERR:_An_error_occured_while_saving_textures_bank! };
+	TIP Disk error while saving textures bank =
+		{ TIP:_Check_file_name_for_validity,_and_free_disk_space. };
+	MSG Textures bank saved =
+		{ Ok,_textures_bank_saved. };
+	TIP Textures bank saved =
+		{ TIP:_Press_";"_to_load_previously_saved_textures_banks. };
+	MSG Loading textures bank =
+		{ Loading_textures_bank_from_file... };
+	TIP Loading textures bank =
+		{ ENTER_to_confirm,_ESCAPE_to_cancel... };
+	MSG Load textures bank canceled =
+		{ Load_textures_bank:_operation_canceled. };
+	ERR Disk error while loading textures bank =
+		{ ERR:_An_error_occured_while_loading_textures_bank! };
+	TIP Disk error while loading textures bank =
+		{ TIP:_Check_if_textures_bank_file_is_available. };
+	MSG Textures bank loaded =
+		{ Ok,_textures_bank_loaded. };
+	TIP Textures bank loaded =
+		{ TIP:_Press_":"_to_save_current_textures_bank. };
+	MSG Changing vertexs order =
+		{ Changing_vertexs_order... };
+	TIP Changing vertexs order =
+		{ TIP:_J_reverses_order_and_changes_visible_side. };
+	MSG Selecting child triangle =
+		{ Click_its_surface_to_select_child_triangle._ESCAPE_to_cancel. };
+	TIP Selecting child triangle =
+		{ TIP:_Make_sure_parent's_domain_("d"_sign)_includes_child_triangle. };
+	MSG Select child canceled =
+		{ "Set_as_parent_of":_operation_canceled. };
+	ERR Parent of itself =
+		{ ERR:_Polygon_cannot_be_child_of_itself! };
+	ERR Already a child triangle =
+		{ ERR:_This_polygon_is_already_a_child_of_another_polygon. };
+	MSG Child selected =
+		{ Ok,_successfully_created_composite_triangle. };
+	MSG Polygon marked for collision group =
+		{ Polygon_marked_as_part_of_collision_group_"XXXX". };
+	TIP Polygon marked for collision group =
+		{ TIP:_To_select_another_collision_group,_press_K. };
+	MSG Polygon unmarked from its collision group =
+		{ Polygon_unmarked_from_its_collision_group. };
+	ERR No collision group selected =
+		{ ERR:_No_collision_group_selected_or_defined. };
+	TIP No collision group selected =
+		{ TIP:_To_select/define_a_collision_group,_press_K. };
+	MSG Select collision group ID =
+		{ Enter_ID_of_collision_group_to_select/define. };
+	TIP Select collision group ID =
+		{ Type_a_4-characters_ID,_ENTER=confirm,_ESCAPE=cancel. };
+	ERR Invalid collision group ID =
+		{ ERR:_4_characters_needed_for_collision_group_ID! };
+	MSG Selected collision group =
+		{ Ok,_selected_collision_group_is:_"XXXX". };
+	MSG Select collision group canceled =
+		{ Select_collision_group:_operation_canceled. };
+	ERR Collision surface cannot be doubleface =
+		{ Collision_surface_cannot_be_double-faced! };
+	MSG CG On =
+		{ Collision_groups_visualization_enabled. };
+	MSG CG Off =
+		{ Collision_groups_visualization_disabled. };
+	MSG Select color =
+		{ Enter_new_color_ID. };
+	TIP Select color =
+		{ Use_hexadecimal_value_(digits_0-9_or_letters_A-F). };
+	ERR Invalid color ID =
+		{ ERR: Invalid_color_ID! };
+	MSG Selected color =
+		{ Ok,_new_color_acquired_for_future_triangles. };
+	MSG Selected color to triangle =
+		{ Ok,_new_color_acquired_by_selected_triangle. };
+	MSG Select color canceled =
+		{ Select_color:_operation_canceled. };
+	MSG No Infinity Triangles =
+		{ No_infinity_triangles. };
+	MSG Printing =
+		{ Printing screen dump... };
+
+"workspace"
+	Primary Display 	= MAXIMUM SUPPORTED WIDTH multiplied MAXIMUM SUPPORTED HEIGHT;
+	Backdrop Layer		= MAXIMUM SUPPORTED WIDTH multiplied MAXIMUM SUPPORTED HEIGHT;
+	Depth Buffer		= MAXIMUM SUPPORTED WIDTH multiplied MAXIMUM SUPPORTED HEIGHT;
+
+	Crosshair Shape 	= Size of greench;	(pointer cursor)
+
+	Resident Font		= Size of cotton;	(font TGA)
+	Resident Font Block	= 256 multiplied 152;	(font bitmap 256x152)
+
+	Reference Plane Surface = REFERENCE PLANE SIZE mtp 2;
+	Markers area		= MAX MARKERS mtp 3;
+	Primary shapes buffer	= MAX TRIANGLES mtp TRIANGLE DATA SIZE;
+	Secondary shapes buffer = MAX TRIANGLES mtp TRIANGLE DATA SIZE;
+	Textures bank		= TEXTURES BANK SIZE;
+
+	Temporary texture file buffer = 512 mtp 512 plus 69;
+
+"programme"
+	[Display Origin] = Primary Display;
+	[Pointer To Backdrop Layer] = Backdrop Layer;
+	[Arrow Region Width] = Crosshair Region Width;
+	[Arrow Region Height] = Crosshair Region Height;
+	[Pointer To Arrow Shape] = Crosshair Shape;
+	[Arrow Shape Effect] = service FX Alpha Light;
+	[Arrow Hot Spot X] = 2;
+	[Arrow Hot Spot Y] = 2;
+	[DraggingPad] = vector Title Bar Bounds;
+
+	[Viewport frame buffer] = Backdrop Layer;
+	[Viewport depth buffer] = Depth Buffer;
+	[Distance from projection plane] = 200f;
+	[Inverse of DPP] = 0.005f;
+	[Mipmapping Factor] = 100000f;
+	[Mipmapping Latency] = 100000f;
+	[Global Feature Mask] = NULL;
+	[Antialiasing Factor] = 1.025f;
+
+	[Viewport left]   = 1;
+	[Viewport top]	  = 25;
+	[Viewport right]  = INITIAL WIDTH minus 2;
+	[Viewport bottom] = INITIAL HEIGHT minus 2;
+	=> Create Standard Viewport;
+
+	[Distance from projection plane] = 350f;
+	=> Change Camera Lens;
+
+	=> Take Home Position;
+	=> Load Resident Graphics;
+	=> Initialize Reference Plane;
+	=> Prepare Backdrop Layer;
+
+    "Update And Wait User Input"
+	=> Update Scenery;
+	=> Update Layers;
+
+    "Wait User Input"
+	=> Begin Control Loop;
+
+		[Hot Spot Data] = vector Exit Button;
+		[When Hovering] = service When Hovering Exit Button;
+		[When No Longer Hovering] = service When No Longer Hovering Exit Button;
+		[When Pushing] = service When Pushing Exit Button;
+		[When No Longer Pushing] = service Exit Button Action;
+		=> Check Hot Spot;
+
+		? [Display Status] + EXCLUSIVE -> Cant Use Fold Button When In Exclusive Mode;
+			[Hot Spot Data] = vector Fold Button;
+			[When Hovering] = service When Hovering Fold Button;
+			[When No Longer Hovering] = service When No Longer Hovering Fold Button;
+			[When Pushing] = service When Pushing Fold Button;
+			[When No Longer Pushing] = service Fold Button Action;
+			=> Check Hot Spot;
+		"Cant Use Fold Button When In Exclusive Mode"
+
+		[Hot Spot Data] = vector Turn Button;
+		[When Hovering] = service When Hovering Turn Button;
+		[When No Longer Hovering] = service When No Longer Hovering Turn Button;
+		[When Pushing] = service When Pushing Turn Button;
+		[When No Longer Pushing] = service When Finished Turning;
+		=> Check Hot Spot;
+		[Hot Spot Data] = vector Move Button;
+		[When Hovering] = service When Hovering Move Button;
+		[When No Longer Hovering] = service When No Longer Hovering Move Button;
+		[When Pushing] = service When Pushing Move Button;
+		[When No Longer Pushing] = service When Finished Moving;
+		=> Check Hot Spot;
+		[Hot Spot Data] = vector Strafe Button;
+		[When Hovering] = service When Hovering Strafe Button;
+		[When No Longer Hovering] = service When No Longer Hovering Strafe Button;
+		[When Pushing] = service When Pushing Strafe Button;
+		[When No Longer Pushing] = service When Finished Strafing;
+		=> Check Hot Spot;
+		[Hot Spot Data] = vector Home Button;
+		[When Hovering] = service When Hovering Home Button;
+		[When No Longer Hovering] = service When No Longer Hovering Home Button;
+		[When Pushing] = service When Pushing Home Button;
+		[When No Longer Pushing] = service Home Button Action;
+		=> Check Hot Spot;
+
+		? [Fold Is Active] = YES -> Cant Use Size Button When Fold;
+		? [Display Status] + EXCLUSIVE -> Cant Use Size Button When In Exclusive Mode;
+			[Hot Spot Data] = vector Size Button;
+			[When Hovering] = service When Hovering Size Button;
+			[When No Longer Hovering] = service When No Longer Hovering Size Button;
+			[When Pushing] = service When Pushing Size Button;
+			[When No Longer Pushing] = service When Finished Sizing;
+			=> Check Hot Spot;
+		"Cant Use Size Button When Fold"
+		"Cant Use Size Button When In Exclusive Mode"
+
+		[Console Map ID] = minus 1;
+		? [Pointer Status] - PD LEFT BUTTON DOWN -> Not pressing over viewport interface;
+		? [Pointer X Coordinate] < [Viewport left] -> Not pressing over viewport interface;
+		? [Pointer Y Coordinate] < [Viewport top] -> Not pressing over viewport interface;
+		? [Pointer X Coordinate] > [Viewport right] -> Not pressing over viewport interface;
+		? [Pointer Y Coordinate] > [Viewport bottom] -> Not pressing over viewport interface;
+			[Check Viewport Interface Mappings] = YES;
+			=> Update Scenery;
+			[Check Viewport Interface Mappings] = NO;
+			=> Update Layers;
+			-> Dont show pointer this time;
+		"Not pressing over viewport interface"
+
+		? [KEY RIGHT] = ON -> Translate markers right;
+		? [KEY LEFT] = ON -> Translate markers left;
+		? [KEY UP] = ON -> Translate markers up;
+		? [KEY DOWN] = ON -> Translate markers down;
+		? [KEY PGDN] = ON -> Translate markers down depth;
+		? [KEY PGUP] = ON -> Translate markers up depth;
+
+		? [Fold Is Active] = YES -> Cant toggle video modes when fold;
+			? [KEY F1] = ON -> Revert to cooperative display mode;
+			? [KEY F2] = ON -> Set physical resolution 320x240;
+			? [KEY F3] = ON -> Set physical resolution 512x384;
+			? [KEY F4] = ON -> Set physical resolution 640x480;
+		"Cant toggle video modes when fold"
+
+	=> End Control Loop;
+	"Dont show pointer this time"
+	? [Quit Now] = YES -> Quit This Program;
+	[Console Command] = GET CONSOLE INPUT;
+	=> [IsoKernel]; ? failed -> Wait User Input;
+	? [Prompt on] = NO -> Not caring for prompt input;
+	? [Console Input] = 08 -> Prompt Backspace;
+	? [Console Input] = 13 -> Prompt Accept;
+	? [Console Input] = 27 -> Prompt Reject;
+	? [Prompt answer size now] >= [Prompt buffer size] -> Wait User Input;
+	A = [Prompt buffer]; A + [Prompt answer size now];
+	[A] = [Console Input]; [A plus 1] = NULL;
+	[Prompt answer size now]+;
+	-> Update And Wait User Input;
+    "Prompt Backspace"
+	? [Prompt answer size now] = ZERO -> Wait User Input;
+	[Prompt answer size now]-;
+	A = [Prompt buffer]; A + [Prompt answer size now]; [A] = NULL;
+	-> Update And Wait User Input;
+    "Prompt Accept"
+	-> [On answer];
+    "Prompt Reject"
+	[Prompt on] = NO;
+	-> [On reject];
+    "Not caring for prompt input"
+	? [Console Input] = 27 -> Quit This Program;
+	? [Console Input] < 49 -> No digit 1 to 6;
+	? [Console Input] > 54 -> No digit 1 to 6;
+	[Console Input] - 48; A = 1; A < [Console Input];
+	? [Selected triangle] = UNDEFINED -> Change editing features;
+	B = [Selected triangle]; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	? A != DOUBLE FACE -> Change selected triangles features;
+	? [B plus TRIANGLE FEATURES] - COLLISION -> Change selected triangles features;
+	[Msg] = ERR Collision surface cannot be doubleface; [Tip] = NULL;
+	-> Update And Wait User Input;
+    "Change selected triangles features"
+	[B plus TRIANGLE FEATURES] # A;
+	-> Update And Wait User Input;
+    "Change editing features"
+	[Current triangle features] # A;
+	-> Update And Wait User Input;
+    "No digit 1 to 6"
+	? [Console Input] < 97 -> No lowercase key;
+	? [Console Input] > 122 -> No lowercase key;
+	[Console Input] - 32;
+    "No lowercase key"
+	? [Console Input] = 32 -> Toggle primary reference plane;      (SPC)
+	? [Console Input] = 73 -> Toggle surface indexing;		(I)
+	? [Console Input] = 81 -> Add Marker;				(Q)
+	? [Console Input] = 87 -> Undo Marker;				(W)
+	? [Console Input] = 69 -> Erase All Markers;			(E)
+	? [Console Input] = 82 -> Raise Wall;				(R)
+	? [Console Input] = 84 -> Take Ground Level;			(T)
+	? [Console Input] = 89 -> Pure Polygon; 			(Y)
+	? [Console Input] = 65 -> Raise SRP;				(A)
+	? [Console Input] = 90 -> Drop SRP;				(Z)
+	? [Console Input] = 83 -> Raise SRP more;			(S)
+	? [Console Input] = 88 -> Drop SRP more;			(X)
+	? [Console Input] = 68 -> Duplicate polygon;			(D)
+	? [Console Input] = 70 -> Fetch texture from disk;		(F)
+	? [Console Input] = 71 -> Glue texture to polygon;		(G)
+	? [Console Input] = 67 -> Close Figure; 			(C)
+	? [Console Input] = 86 -> Crop Vertex;				(V)
+	? [Console Input] = 66 -> Branch to next texture;		(B)
+	? [Console Input] = 72 -> Hide polygon; 			(H)
+	? [Console Input] = 78 -> Narrow buffers;			(N)
+	? [Console Input] = 46 -> Save scenery; 			(.)
+	? [Console Input] = 44 -> Load scenery; 			(,)
+	? [Console Input] = 58 -> Save textures bank;			(:)
+	? [Console Input] = 59 -> Load textures bank;			(;)
+	? [Console Input] = 79 -> Change vertexs order; 		(O)
+	? [Console Input] = 80 -> Parent of;				(P)
+	? [Console Input] = 76 -> Split composite polygon;		(L)
+	? [Console Input] = 74 -> Jump side;				(J)
+	? [Console Input] = 60 -> Send to background;			(<)
+	? [Console Input] = 62 -> Send to foreground;			(>)
+	? [Console Input] = 75 -> Select collision group ID;		(K)
+	? [Console Input] = 77 -> Mark for collision group;		(M)
+	? [Console Input] = 85 -> Toggle collision groups visulization; (U)
+	? [Console Input] = 43 -> Magnify markers;			(+)
+	? [Console Input] = 45 -> Shrink markers;			(-)
+	? [Console Input] =124 -> Find infinity triangle;		(|)
+	? [Console Input] = 35 -> Select color; 			(#)
+	? [Console Input] = 42 -> Print screen; 			(*)
+	-> Wait User Input;
+
+    "Quit This Program"
+	end;
+
+				    ( * )
+
+"Load Resident Graphics"
+	[File Name] = STOCK FILE;
+	[File Position] = greench;
+	[File Command] = READ;
+	[Block Pointer] = Crosshair Shape;
+	[Block Size] = Size of greench;
+	=> [IsoKernel];
+	[File Name] = STOCK FILE;
+	[File Position] = cotton;
+	[File Command] = READ;
+	[Block Pointer] = Resident Font;
+	[Block Size] = Size of cotton;
+	=> [IsoKernel];
+	[TGA Effect] = service FX Raw;
+	[TGA Display Alignment] = GLOBAL FONT WIDTH mtp 16;
+	[TGA Display Height] = GLOBAL FONT BODY mtp 8;
+	[TGA Picture Data] = Resident Font;
+	[TGA Picture Left] = 0;
+	[TGA Picture Top] = 0;
+	[TGA Target Layer] = Resident Font Block;
+	=> Load TGA Picture;
+	end;
+
+"Prepare Backdrop Layer"
+	[TGAT InterChar Spacing] = 1;
+	[TGAT Source Block] = Resident Font Block;
+	[TGAT Target Layer] = Backdrop Layer;
+	[TGAT Font Width] = GLOBAL FONT WIDTH;
+	[TGAT Font Body] = GLOBAL FONT BODY;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Buttons Bar Bounds;
+	[Rectangle Gradients] = vector Buttons Bar Gradients;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Effect] = service FX Raw;
+	=> Rectangle;
+	[Rectangle Gradients] = vector Exit Button Gradients;
+	=> Update Exit Button Appearence;
+	[Rectangle Gradients] = vector Fold Button Gradients;
+	=> Update Fold Button Appearence;
+	[Rectangle Bounds] = vector Rightside Buttons Bar Bounds;
+	[Rectangle Gradients] = vector Rightside Buttons Bar Gradients;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	[Rectangle Gradients] = vector Size Button Gradients;
+	=> Update Size Button Appearence;
+	[Rectangle Gradients] = vector Turn Button Gradients;
+	=> Update Turn Button Appearence;
+	[Rectangle Gradients] = vector Move Button Gradients;
+	=> Update Move Button Appearence;
+	[Rectangle Gradients] = vector Strafe Button Gradients;
+	=> Update Strafe Button Appearence;
+	[Rectangle Gradients] = vector Home Button Gradients;
+	=> Update Home Button Appearence;
+	end;
+
+"Update Title Bar"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Title Bar Bounds;
+	[Rectangle Gradients] = vector Title Bar Gradients;
+	[Rectangle Target Layer] = Backdrop Layer;
+	[Rectangle Effect] = service FX Raw;
+	=> Rectangle;
+	[TGAT Top Margin] = 4;
+	[TGAT Left Margin] = 55;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	[L2L Region] = vector Title Bar Bounds;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Title Bar Bounds;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"Update Layers"
+	? [Prompt on] = NO -> No prompt active;
+	[TGAT Left Margin] = 5;
+	[TGAT Top Margin] = [Display Height];
+	[TGAT Top Margin] - [TGAT Font Body];
+	[TGAT Top Margin] - 5;
+	[TGAT Effect] = service FX Alpha Light;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	[TGAT Source String] = [Prompt text];
+	=> TGA Text;
+	[TGAT Left Margin] = [TGAT Current Left Margin];
+	[TGAT Source String] = [Prompt buffer];
+	=> TGA Text;
+	[TGAT Left Margin] = [TGAT Current Left Margin];
+	[TGAT Source String] = P Cursor;
+	=> TGA Text;
+    "No prompt active"
+	? [Msg] = NULL -> No message;
+	[TGAT Left Margin] = 5;
+	[TGAT Top Margin] = [Display Height];
+	[TGAT Top Margin] - [TGAT Font Body];
+	[TGAT Top Margin] - [TGAT Font Body];
+	? [Tip] = NULL -> No tip message J1;
+	[TGAT Top Margin] - [TGAT Font Body];
+    "No tip message J1"
+	[TGAT Top Margin] - 5;
+	[TGAT Effect] = service FX Alpha Light;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	[TGAT Source String] = [Msg];
+	=> TGA Text;
+    "No message"
+	? [Tip] = NULL -> No tip message J2;
+	[TGAT Left Margin] = 5;
+	[TGAT Top Margin] = [Display Height];
+	[TGAT Top Margin] - [TGAT Font Body];
+	[TGAT Top Margin] - [TGAT Font Body];
+	[TGAT Top Margin] - 5;
+	[TGAT Effect] = service FX Alpha Light;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	[TGAT Source String] = [Tip];
+	=> TGA Text;
+    "No tip message J2"
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L;
+	[Display Command] = RETRACE;
+	[Display Live Region] = WHOLE DISPLAY;
+	=> [IsoKernel];
+	end;
+
+				    ( * )
+
+"Update Exit Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Exit Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	[Rectangle Bounds] = vector Exit Button Tip Bounds;
+	[Rectangle Gradients] = vector Exit Button Tip Gradients;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	[L2L Region] = vector Exit Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Exit Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Exit Button"
+	[Rectangle Gradients] = vector Exit Button Hover Gradients;
+	=> Update Exit Button Appearence;
+	[TGAT Source String] = Exit Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Exit Button"
+	[Rectangle Gradients] = vector Exit Button Gradients;
+	=> Update Exit Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Exit Button"
+	[Rectangle Gradients] = vector Exit Button Push Gradients;
+	=> Update Exit Button Appearence;
+	end;
+
+"service Exit Button Action"
+	=> service When Hovering Exit Button;
+	[Quit Now] = YES;
+	end;
+
+				    ( * )
+
+"Update Fold Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Fold Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	[Rectangle Bounds] = vector Fold Button Tip Unfold Bounds;
+	? [Fold Is Active] = YES -> Show As Unfold;
+	[Rectangle Bounds] = vector Fold Button Tip Fold Bounds;
+    "Show As Unfold"
+	[Rectangle Gradients] = vector Fold Button Tip Gradients;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	[L2L Region] = vector Fold Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Fold Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Fold Button"
+	[Rectangle Gradients] = vector Fold Button Hover Gradients;
+	=> Update Fold Button Appearence;
+	[TGAT Source String] = Fold Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Fold Button"
+	[Rectangle Gradients] = vector Fold Button Gradients;
+	=> Update Fold Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Fold Button"
+	[Rectangle Gradients] = vector Fold Button Push Gradients;
+	=> Update Fold Button Appearence;
+	end;
+
+"service Fold Button Action"
+	? [Fold Is Active] = NO -> Now Fold;
+	? [Fold Is Active] = YES -> Now Unfold;
+    "FoldUnfold Rendezvous"
+	[Fold Is Active] # YES;
+	[Rectangle Gradients] = vector Fold Button Hover Gradients;
+	=> Update Fold Button Appearence;
+	=> Update Layers;
+	end;
+
+"Now Fold"
+	[Previous display height] = [Display Height];
+	[Display Height] = 25;
+	=> [IsoKernel];
+	-> FoldUnfold Rendezvous;
+
+"Now Unfold"
+	[Display Height] = [Previous display height];
+	=> [IsoKernel];
+	-> FoldUnfold Rendezvous;
+
+				    ( * )
+
+"Update Size Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Size Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	A = vector Size Button;
+	[TGAT Top Margin] = [A plus 1]; [TGAT Top Margin] + 1;
+	[TGAT Left Margin] = [A plus 0]; [TGAT Left Margin] + 4;
+	[TGAT Source String] = Size Button Text;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[L2L Region] = vector Size Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Size Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Size Button"
+	[Rectangle Gradients] = vector Size Button Hover Gradients;
+	=> Update Size Button Appearence;
+	[TGAT Source String] = Size Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Size Button"
+	[Rectangle Gradients] = vector Size Button Gradients;
+	=> Update Size Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Size Button"
+	[Rectangle Gradients] = vector Size Button Push Gradients;
+	=> Update Size Button Appearence;
+	[Pointer Mode] = BY DELTA; isocall;
+    "Wait for release of size button"
+	[Pointer Command] = READ POINTER; isocall;
+	=> Things To Do While Resizing;
+    ? [Pointer Status] + PD LEFT BUTTON DOWN -> Wait for release of size button;
+	[Pointer Mode] = BY COORDINATE; isocall;
+	end;
+
+"service When Finished Sizing"
+	end;
+
+				    ( * )
+
+"Update Turn Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Turn Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	A = vector Turn Button;
+	[TGAT Top Margin] = [A plus 1]; [TGAT Top Margin] + 1;
+	[TGAT Left Margin] = [A plus 0]; [TGAT Left Margin] + 4;
+	[TGAT Source String] = Turn Button Text;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[L2L Region] = vector Turn Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Turn Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Turn Button"
+	[Rectangle Gradients] = vector Turn Button Hover Gradients;
+	=> Update Turn Button Appearence;
+	[TGAT Source String] = Turn Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Turn Button"
+	[Rectangle Gradients] = vector Turn Button Gradients;
+	=> Update Turn Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Turn Button"
+	[Rectangle Gradients] = vector Turn Button Push Gradients;
+	=> Update Turn Button Appearence;
+	[Pointer Mode] = BY DELTA; isocall;
+    "Wait for release of turn button"
+	[Pointer Command] = READ POINTER; isocall;
+	A ,= [Pointer Delta Y]; A ** [Camera Rotation Coefficient];
+	B ,= [Pointer Delta X]; B ** [Camera Rotation Coefficient];
+	[Alpha angle] -- A;
+	[Beta angle] -- B;
+	=> Rotate Camera;
+	=> Update Scenery;
+	=> Update Layers;
+    ? [Pointer Status] + PD LEFT BUTTON DOWN -> Wait for release of turn button;
+	[Pointer Mode] = BY COORDINATE; isocall;
+	end;
+
+"service When Finished Turning"
+	=> Update Layers;
+	end;
+
+				    ( * )
+
+"Update Move Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Move Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	A = vector Move Button;
+	[TGAT Top Margin] = [A plus 1]; [TGAT Top Margin] + 1;
+	[TGAT Left Margin] = [A plus 0]; [TGAT Left Margin] + 1;
+	[TGAT Source String] = Move Button Text;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[L2L Region] = vector Move Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Move Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Move Button"
+	[Rectangle Gradients] = vector Move Button Hover Gradients;
+	=> Update Move Button Appearence;
+	[TGAT Source String] = Move Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Move Button"
+	[Rectangle Gradients] = vector Move Button Gradients;
+	=> Update Move Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Move Button"
+	[Rectangle Gradients] = vector Move Button Push Gradients;
+	=> Update Move Button Appearence;
+	[Pointer Mode] = BY DELTA; isocall;
+    "Wait for release of move button"
+	[Pointer Command] = READ POINTER; isocall;
+	[FC Delta] ,= [Pointer Delta Y];
+	[FC Delta] ** [Camera Movement Coefficient];
+	[FC Delta]++--;
+	=> Forward Camera;
+	[Alpha angle]-->;
+	[Beta angle]-->;
+		[Beta angle] ++ PI div 2f;
+		[Alpha angle] = 0f;
+		=> Rotate Camera;
+		[FC Delta] ,= [Pointer Delta X];
+		[FC Delta] ** [Camera Movement Coefficient];
+		[FC Delta]++--;
+		=> Forward Camera;
+	<--[Beta angle];
+	<--[Alpha angle];
+	=> Rotate Camera;
+	=> Update Scenery;
+	=> Update Layers;
+    ? [Pointer Status] + PD LEFT BUTTON DOWN -> Wait for release of move button;
+	[Pointer Mode] = BY COORDINATE; isocall;
+	end;
+
+"service When Finished Moving"
+	=> Update Layers;
+	end;
+
+				    ( * )
+
+"Update Strafe Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Strafe Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	A = vector Strafe Button;
+	[TGAT Top Margin] = [A plus 1]; [TGAT Top Margin] + 1;
+	[TGAT Left Margin] = [A plus 0]; [TGAT Left Margin] + 4;
+	[TGAT Source String] = Strafe Button Text;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[L2L Region] = vector Strafe Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Strafe Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Strafe Button"
+	[Rectangle Gradients] = vector Strafe Button Hover Gradients;
+	=> Update Strafe Button Appearence;
+	[TGAT Source String] = Strafe Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Strafe Button"
+	[Rectangle Gradients] = vector Strafe Button Gradients;
+	=> Update Strafe Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Strafe Button"
+	[Rectangle Gradients] = vector Strafe Button Push Gradients;
+	=> Update Strafe Button Appearence;
+	[Pointer Mode] = BY DELTA; isocall;
+    "Wait for release of strafe button"
+	[Pointer Command] = READ POINTER; isocall;
+	[Alpha angle]-->;
+	[Beta angle]-->;
+		[Alpha angle] = 0f;
+		=> Rotate Camera;
+		[FC Delta] ,= [Pointer Delta Y];
+		[FC Delta] ** [Camera Movement Coefficient];
+		[FC Delta]++--;
+		=> Forward Camera;
+		[Beta angle] ++ PI div 2f;
+		=> Rotate Camera;
+		[FC Delta] ,= [Pointer Delta X];
+		[FC Delta] ** [Camera Movement Coefficient];
+		[FC Delta]++--;
+		=> Forward Camera;
+	<--[Beta angle];
+	<--[Alpha angle];
+	=> Rotate Camera;
+	=> Update Scenery;
+	=> Update Layers;
+    ? [Pointer Status] + PD LEFT BUTTON DOWN -> Wait for release of strafe button;
+	[Pointer Mode] = BY COORDINATE; isocall;
+	end;
+
+"service When Finished Strafing"
+	=> Update Layers;
+	end;
+
+				    ( * )
+
+"Update Home Button Appearence"
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Effect] = service FX Raw;
+	[Rectangle Bounds] = vector Home Button;
+	[Rectangle Target Layer] = Backdrop Layer;
+	=> Rectangle;
+	A = vector Home Button;
+	[TGAT Top Margin] = [A plus 1]; [TGAT Top Margin] + 1;
+	[TGAT Left Margin] = [A plus 0]; [TGAT Left Margin] + 3;
+	[TGAT Source String] = Home Button Text;
+	[TGAT Effect] = service FX Alpha Dim;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	=> TGA Text;
+	[L2L Region] = vector Home Button;
+	[Source Layer] = Backdrop Layer;
+	[Destination Layer] = Primary Display;
+	=> Copy L2L Region;
+	[Display Live Region] = vector Home Button;
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+	end;
+
+"service When Hovering Home Button"
+	[Rectangle Gradients] = vector Home Button Hover Gradients;
+	=> Update Home Button Appearence;
+	[TGAT Source String] = Home Button Description;
+	=> Update Title Bar;
+	end;
+
+"service When No Longer Hovering Home Button"
+	[Rectangle Gradients] = vector Home Button Gradients;
+	=> Update Home Button Appearence;
+	[TGAT Source String] = Title string;
+	=> Update Title Bar;
+	end;
+
+"service When Pushing Home Button"
+	[Rectangle Gradients] = vector Home Button Push Gradients;
+	=> Update Home Button Appearence;
+	end;
+
+"service Home Button Action"
+	=> service When Hovering Home Button;
+	=> Take Home Position;
+	=> Update Scenery;
+	=> Update Layers;
+	end;
+
+				    ( * )
+
+"Things To Do While Resizing"
+	B = [Display Width];
+	[Display Width] + [Pointer Delta X];
+	? [Display Width] >= MINIMUM WIDTH -> Min Display Width In Range;
+	[Display Width] = MINIMUM WIDTH;
+	[Pointer Delta X] = MINIMUM WIDTH;
+	[Pointer Delta X] - B;
+    "Min Display Width In Range"
+	? [Display Width] <= MAXIMUM WIDTH -> Max Display Width In Range;
+	[Display Width] = MAXIMUM WIDTH;
+	[Pointer Delta X] = MAXIMUM WIDTH;
+	[Pointer Delta X] - B;
+    "Max Display Width In Range"
+	[Pointer Delta Y]+-;
+	B = [Display Height];
+	[Display Height] + [Pointer Delta Y];
+	? [Display Height] >= MINIMUM HEIGHT -> Min Display Height In Range;
+	[Display Height] = MINIMUM HEIGHT;
+	[Pointer Delta Y] = MINIMUM HEIGHT;
+	[Pointer Delta Y] - B;
+    "Min Display Height In Range"
+	? [Display Height] <= MAXIMUM HEIGHT -> Max Display Height In Range;
+	[Display Height] = MAXIMUM HEIGHT;
+	[Pointer Delta Y] = MAXIMUM HEIGHT;
+	[Pointer Delta Y] - B;
+    "Max Display Height In Range"
+	[Display Y Position] - [Pointer Delta Y];
+	isocall;
+
+    (Updating title bar's right edge)
+	A = vector Title Bar Bounds;
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating rightside buttons bar's left/right edges)
+	A = vector Rightside Buttons Bar Bounds;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating home button left/right edges)
+	A = vector Home Button;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating move button left/right edges)
+	A = vector Strafe Button;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating move button left/right edges)
+	A = vector Move Button;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating turn button left/right edges)
+	A = vector Turn Button;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating size button left/right edges)
+	A = vector Size Button;
+	[A plus 0] + [Pointer Delta X];
+	[A plus 2] + [Pointer Delta X];
+
+    (Updating mouse cursor pos. to follow the button which is also moving)
+	[Pointer X Coordinate] + [Pointer Delta X];
+
+    (Updating viewport region, 2D parameters)
+	A = vector Viewport Bounds;
+	[A plus 2] + [Pointer Delta X];
+	[A plus 3] + [Pointer Delta Y];
+
+    (Updating viewport region, 3D parameters)
+	[Viewport right] + [Pointer Delta X];
+	[Viewport bottom] + [Pointer Delta Y];
+	=> Create Standard Viewport;
+
+	[Destination Layer] = Backdrop Layer;
+	[L2L Region Color] = 0;
+	=> Clear L2L;
+	[Destination Layer] = Primary Display;
+	[L2L Region Color] = 0;
+	=> Clear L2L;
+
+	=> Prepare Backdrop Layer;
+	=> Update Scenery;
+	=> Update Layers;
+	end;
+
+				    ( * )
+
+"Initialize Reference Plane"
+	[Pointer to textures bank] = Reference Plane Surface;
+	[Pointer to texture data block] = vector Reference Plane Texture;
+	=> Build Texture;
+	[TGAT Source Block] = Resident Font Block;
+	[TGAT Target Layer] = Reference Plane Surface;
+	[TGAT Font Width] = GLOBAL FONT WIDTH;
+	[TGAT Font Body] = GLOBAL FONT BODY;
+	[TGAT Display Alignment] = REFERENCE PLANE WIDTH;
+	[TGAT Display Height] = REFERENCE PLANE HEIGHT;
+	[TGAT Effect] = service FX Raw;
+	[TGAT InterChar Spacing] = 0;
+	[TGAT Source String] = NW Label;
+	[TGAT Left Margin] = 5;
+	[TGAT Top Margin] = 5;
+	=> TGA Text;
+	[TGAT Source String] = NE Label;
+	[TGAT Left Margin] = REFERENCE PLANE WIDTH minus 75;
+	[TGAT Top Margin] = 5;
+	=> TGA Text;
+	[TGAT Source String] = SW Label;
+	[TGAT Left Margin] = 5;
+	[TGAT Top Margin] = REFERENCE PLANE HEIGHT minus 24;
+	=> TGA Text;
+	[TGAT Source String] = SE Label;
+	[TGAT Left Margin] = REFERENCE PLANE WIDTH minus 79;
+	[TGAT Top Margin] = REFERENCE PLANE HEIGHT minus 24;
+	=> TGA Text;
+	A = REFERENCE PLANE WIDTH div 2 plus 6;
+	B = REFERENCE PLANE HEIGHT div 2 plus 6;
+	=> Make or delete cursor crosshair;
+	A = Reference Plane Surface; A + REFERENCE PLANE SIZE;
+	B = ZERO; C = REFERENCE PLANE SIZE;
+    "Fill reference plane"
+	[A] = B; A+; B+;
+	C ^ Fill reference plane;
+	end;
+
+				    ( * )
+
+"Update Scenery"
+	? [Surface indexing] = YES -> Map hidden frame;
+	=> Clear Depth;
+	[Viewport color] = 0h;
+	-> No surface indexing;
+    (Hidden frame for selections' tracking)
+      "Map hidden frame"
+	[Viewport color] = 7FFFFFFFh;
+	=> Clear Frame and Depth;
+    (Scenery mapping)
+	[Current triangle to show] = 0;
+      "MAP Show next triangle"
+	? [Current triangle to show] >= [Triangles on] -> End map run;
+	E = [Current triangle to show];
+	E < TRIANGLE DATA SHIFT;
+	E + Primary shapes buffer;
+	[CT Vertexs] = E; [CT Vertexs] + TRIANGLE X1;
+	[CT Parents] = [E plus TRIANGLE PARENT];
+	? [CT Parents] = UNDEFINED -> MAP No parent triangle;
+	[CT Parents] < TRIANGLE DATA SHIFT;
+	[CT Parents] + Primary shapes buffer;
+	[CT Parents] + TRIANGLE X1;
+	[CT Texture] = 80000000h;
+	[CT Texture] | [E plus TRIANGLE PARENT];
+	E = [E plus TRIANGLE PARENT];
+	E < TRIANGLE DATA SHIFT;
+	E + Primary shapes buffer;
+	-> MAP Child triangle;
+      "MAP No parent triangle"
+	[CT Parents] = NULL;
+	[CT Texture] = 80000000h;
+	[CT Texture] | [Current triangle to show];
+      "MAP Child triangle"
+	[CT Feature] = [E plus TRIANGLE FEATURES];
+	[CT Feature] & FFFFFFF0h;
+	[CT Feature] | DEPTH BUFFERING;
+	[CT SP Cols] = [E plus TRIANGLE SP COLS];
+	[CT SP Rows] = [E plus TRIANGLE SP ROWS];
+	[CT Scaling] = [E plus TRIANGLE SCALING];
+	=> Cast Triangle;
+	[Current triangle to show]+;
+	-> MAP Show next triangle;
+    (Reference plane mapping)
+      "End map run"
+	[Camera Y] -- [Secondary Reference Plane Altitude];
+	[CT Vertexs] = vector Ground Triangle 1 Vertexs;
+	[CT Parents] = NULL;
+	[CT Feature] = DEPTH BUFFERING plus DOUBLE FACE plus APPLY TEXTURE;
+	[CT Texture] = Reference Plane Surface plus REFERENCE PLANE SIZE;
+	[CT Shaders] = NULL;
+	[CT SP Cols] = REFERENCE PLANE WIDTH;
+	[CT SP Rows] = REFERENCE PLANE HEIGHT;
+	[CT Scaling] = 1.25f;
+	=> Cast Triangle;
+	[CT Vertexs] = vector Ground Triangle 2 Vertexs;
+	[CT Parents] = vector Ground Triangle 1 Vertexs;
+	=> Cast Triangle;
+	[Camera Y] ++ [Secondary Reference Plane Altitude];
+    (Check mappings in relation to current pointer coordinates)
+	? [Check Viewport Interface Mappings] = NO -> No selection;
+	[Selected triangle] = UNDEFINED;
+	A = [Pointer Y Coordinate]; A * [Display Width];
+	A + [Pointer X Coordinate]; A + [Viewport frame buffer];
+	? [A] + 80000000h -> Select polygon;
+	[Console Map ID] = [A];
+	=> Viewport Interface;
+	-> No selection;
+      "Select polygon"
+	[Selected triangle] = [A];
+	[Selected triangle] & 7FFFFFFFh;
+	A = [Selected triangle];
+	[MSG SELECT plus 19] = A;
+	[MSG SELECT plus 19] / 10000;
+	[MSG SELECT plus 19] + 48;
+	B = A; B / 10000; B * 10000; A - B;
+	[MSG SELECT plus 20] = A;
+	[MSG SELECT plus 20] / 1000;
+	[MSG SELECT plus 20] + 48;
+	B = A; B / 1000; B * 1000; A - B;
+	[MSG SELECT plus 21] = A;
+	[MSG SELECT plus 21] / 100;
+	[MSG SELECT plus 21] + 48;
+	B = A; B / 100; B * 100; A - B;
+	[MSG SELECT plus 22] = A;
+	[MSG SELECT plus 22] / 10;
+	[MSG SELECT plus 22] + 48;
+	A % 10;
+	[MSG SELECT plus 23] = A;
+	[MSG SELECT plus 23] + 48;
+	[Msg] = MSG SELECT; [Tip] = NULL;
+	B = [Set as parent of];
+	? B = UNDEFINED -> No selection;
+	[Prompt on] = NO;
+	[Set as parent of] = UNDEFINED;
+	[Msg] = ERR Parent of itself; [Tip] = NULL;
+	? B = [Selected triangle] -> No selection;
+	A = B; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[Msg] = ERR Already a child triangle; [Tip] = NULL;
+	? [A plus TRIANGLE PARENT] != UNDEFINED -> No selection;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE PARENT] = B;
+	[Selected triangle] = B;
+	[Msg] = MSG Child selected; [Tip] = NULL;
+      "No selection"
+    (Visible frame)
+	[Viewport color] = F4488h;
+      "No surface indexing"
+	=> Clear Frame and Depth;
+	[Showing blended polygons] = NO;
+      "Frame run again"
+	[Current triangle to show] = 0;
+      "Show next triangle"
+	? [Current triangle to show] >= [Triangles on] -> End frame run;
+	E = [Current triangle to show];
+	E < TRIANGLE DATA SHIFT;
+	E + Primary shapes buffer;
+	? [E plus TRIANGLE FEATURES] + ALPHA BLEND -> This is a blended triangle;
+	? [Showing blended polygons] = YES -> Not shown this run;
+	-> This is not a blended triangle;
+      "This is a blended triangle"
+	[CT LayerID] = 08000000h;
+	? [Showing blended polygons] = NO -> Not shown this run;
+      "This is not a blended triangle"
+	[CT Vertexs] = E; [CT Vertexs] + TRIANGLE X1;
+	[CT Parents] = [E plus TRIANGLE PARENT];
+	? [CT Parents] = UNDEFINED -> No parent triangle;
+	[CT Parents] < TRIANGLE DATA SHIFT;
+	[CT Parents] + Primary shapes buffer;
+	[CT Parents] + TRIANGLE X1;
+	E = [E plus TRIANGLE PARENT];
+	E < TRIANGLE DATA SHIFT;
+	E + Primary shapes buffer;
+	-> Child triangle;
+      "No parent triangle"
+	[CT Parents] = NULL;
+      "Child triangle"
+	[CT Feature] = [E plus TRIANGLE FEATURES];
+	[CT Texture] = [E plus TRIANGLE COLOR];
+	? [CT Feature] - APPLY TEXTURE -> Triangle without texture map;
+	[CT Texture] = [E plus TRIANGLE TEXTURE];
+	[CT Texture] + Textures bank;
+      "Triangle without texture map"
+	[CT Shaders] = vector Light Sources Table;
+	[CT SP Cols] = [E plus TRIANGLE SP COLS];
+	[CT SP Rows] = [E plus TRIANGLE SP ROWS];
+	[CT Scaling] = [E plus TRIANGLE SCALING];
+	? [E plus TRIANGLE FEATURES] + HIDDEN -> Hidden triangle;
+	? [E plus TRIANGLE FEATURES] - COLLISION -> A perfectly normal triangle;
+	? [Show CG] = NO -> Not shown this run;
+	[CT SP Cols] = 8;
+	[CT SP Rows] = 8;
+	[CT Feature] = APPLY TEXTURE plus DEPTH BUFFERING;
+	[CT Texture] = vector Collision texture;
+      "A perfectly normal triangle"
+	=> Cast Triangle;
+      "Hidden triangle"
+	E = [Current triangle to show]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	? [Current triangle to show] = [Selected triangle] -> Highlight this triangle;
+	? [E plus TRIANGLE PARENT] = UNDEFINED -> Not shown this run;
+	? [E plus TRIANGLE PARENT] = [Selected triangle] -> Highlight this triangle;
+	-> Not shown this run;
+      "Highlight this triangle"
+	[CT LayerID] = 10000000h;
+	[FC Delta] = [VLU Scaling]; [FC Delta] ** 0.5f; => Forward Camera;
+	[CT Feature] = ALPHA BLEND plus DEPTH BUFFERING plus USE SPANNER;
+	[CT Texture] = FF0000h;
+	? [Selected texture] = UNDEFINED -> No textures selected;
+	[CT Feature] | APPLY TEXTURE;
+	[CT Texture] = [Selected texture];
+	[CT Texture] + Textures bank;
+	A = [CT Texture];
+	[CT SP Cols] = [A plus 1];
+	[CT SP Rows] = [A plus 2];
+	[CT Texture] + 3;
+      "No textures selected"
+	=> Cast Triangle;
+	[FC Delta] = [VLU Scaling]; [FC Delta] ** minus 0.5f; => Forward Camera;
+      "Not shown this run"
+	[Current triangle to show]+;
+	-> Show next triangle;
+      "End frame run"
+	? [Showing blended polygons] = YES -> Show primary reference plane;
+	[Showing blended polygons] = YES; -> Frame run again;
+      "Show primary reference plane"
+	? [Show PRP] = NO -> PRP is hidden;
+	[CT Vertexs] = vector Ground Triangle 1 Vertexs;
+	[CT Parents] = NULL;
+	[CT Feature] = DOUBLE FACE plus DEPTH BUFFERING plus APPLY TEXTURE plus ALPHA BLEND;
+	[CT Texture] = Reference Plane Surface;
+	[CT Shaders] = NULL;
+	[CT SP Cols] = REFERENCE PLANE WIDTH;
+	[CT SP Rows] = REFERENCE PLANE HEIGHT;
+	[CT Scaling] = 1.25f;
+	[CT LayerID] = 01000000h;
+	=> Cast Triangle;
+	[CT Vertexs] = vector Ground Triangle 2 Vertexs;
+	[CT Parents] = vector Ground Triangle 1 Vertexs;
+	=> Cast Triangle;
+      "PRP is hidden"
+	?? [Secondary Reference Plane Altitude] = 0f -> No secondary plane;
+	[Camera Y] -- [Secondary Reference Plane Altitude];
+	[CT Vertexs] = vector Ground Triangle 1 Vertexs;
+	[CT Parents] = NULL;
+	[CT Feature] = DOUBLE FACE plus DEPTH BUFFERING plus APPLY TEXTURE plus ALPHA BLEND;
+	[CT Texture] = Reference Plane Surface;
+	[CT Shaders] = NULL;
+	[CT SP Cols] = REFERENCE PLANE WIDTH;
+	[CT SP Rows] = REFERENCE PLANE HEIGHT;
+	[CT Scaling] = 1.25f;
+	[CT LayerID] = 02000000h;
+	=> Cast Triangle;
+	[CT Vertexs] = vector Ground Triangle 2 Vertexs;
+	[CT Parents] = vector Ground Triangle 1 Vertexs;
+	=> Cast Triangle;
+	[Camera Y] ++ [Secondary Reference Plane Altitude];
+      "No secondary plane"
+	? [Point on] = NO -> No point selected;
+	A = vector Pointer Triangle Vertexs;
+	[A plus 0] = [Point X]; [A plus 1] = [Point Y]; [A plus 2] = [Point Z];
+	[A plus 3] = [Point X]; [A plus 4] = [Point Y]; [A plus 5] = [Point Z];
+	[A plus 6] = [Point X]; [A plus 7] = [Point Y]; [A plus 8] = [Point Z];
+	B = [VLU Scaling]; B ** 10f;
+	[A plus 3] ++ B;
+	[A plus 8] -- B;
+	[CT Vertexs] = vector Pointer Triangle Vertexs;
+	[CT Parents] = NULL;
+	[CT Feature] = DOUBLE FACE plus APPLY TEXTURE plus DEPTH BUFFERING plus ALPHA BLEND;
+	[CT Texture] = vector Pointer Triangle Texture;
+	?? [Point Y] != [Secondary Reference Plane Altitude] -> Pointer Triangle Not Matching SRP;
+	[CT Texture] = vector Pointer Triangle Texture When Matching SRP;
+      "Pointer Triangle Not Matching SRP"
+	[CT Shaders] = NULL;
+	[CT SP Cols] = 3;
+	[CT SP Rows] = 3;
+	[CT Scaling] = 1f;
+	[CT LayerID] = 04000000h;
+	=> Cast Triangle;
+      "No point selected"
+	[Current point to show] = 0;
+      "Show next point"
+	? [Current point to show] >= [Markers on] -> No more points to show;
+	A = [Current point to show]; A * 3; A + Markers area;
+	[Marker X] = [A plus 0];
+	[Marker Y] = [A plus 1];
+	[Marker Z] = [A plus 2];
+	A = vector Pointer Triangle Vertexs;
+	[A plus 0] = [Marker X]; [A plus 1] = [Marker Y]; [A plus 2] = [Marker Z];
+	[A plus 3] = [Marker X]; [A plus 4] = [Marker Y]; [A plus 5] = [Marker Z];
+	[A plus 6] = [Marker X]; [A plus 7] = [Marker Y]; [A plus 8] = [Marker Z];
+	B = [VLU Scaling]; B ** 5f;
+	[A plus 3] ++ B;
+	[A plus 8] -- B;
+	[CT Vertexs] = vector Pointer Triangle Vertexs;
+	[CT Parents] = NULL;
+	[CT Feature] = DOUBLE FACE plus APPLY TEXTURE plus DEPTH BUFFERING plus ALPHA BLEND;
+	[CT Texture] = vector Marker Triangle Texture;
+	?? [Marker Y] != [Secondary Reference Plane Altitude] -> Marker Triangle Not Matching SRP;
+	[CT Texture] = vector Marker Triangle Texture When Matching SRP;
+      "Marker Triangle Not Matching SRP"
+	[CT Shaders] = NULL;
+	[CT SP Cols] = 3;
+	[CT SP Rows] = 3;
+	[CT Scaling] = 1f;
+	=> Cast Triangle;
+	[Current point to show]+;
+	-> Show next point;
+      "No more points to show"
+    (Removing cursor position markers)
+	? [Check Viewport Interface Mappings] = NO -> Was out of the viewport;
+	=> Viewport Interface Cursor Markers;
+      "Was out of the viewport"
+    (Superimpressions)
+	[SUP Features] = [Current triangle features];
+	? [Selected triangle] = UNDEFINED -> USJ0;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[SUP Features] = [A plus TRIANGLE FEATURES];
+      "USJ0"
+	[WS Line] = 0; ? [SUP Features] - APPLY TEXTURE -> USJ1;
+	[WS Text] = Def Texture; => Write Superimpress;
+      "USJ1"
+	[WS Line] = 1; ? [SUP Features] - DEPTH BUFFERING -> USJ2;
+	[WS Text] = Def ZBuffering; => Write Superimpress;
+      "USJ2"
+	[WS Line] = 2; ? [SUP Features] - ALPHA BLEND -> USJ3;
+	[WS Text] = Def Blend; => Write Superimpress;
+      "USJ3"
+	[WS Line] = 3; ? [SUP Features] - APPLY SHADING -> USJ4;
+	[WS Text] = Def Shading; => Write Superimpress;
+      "USJ4"
+	[WS Line] = 4; ? [SUP Features] - USE SPANNER -> USJ5;
+	[WS Text] = Def Spanner; => Write Superimpress;
+      "USJ5"
+	[WS Line] = 5; ? [SUP Features] - METAL SHADING -> USJ6;
+	[WS Text] = Def Metal Shading; => Write Superimpress;
+      "USJ6"
+	[WS Line] = 6; ? [SUP Features] - DOUBLE FACE -> USJ7;
+	[WS Text] = Def Double Face; => Write Superimpress;
+      "USJ7"
+	[WS Line] = 7; ? [SUP Features] - HIDDEN -> USJ8;
+	[WS Text] = Def Hidden; => Write Superimpress;
+      "USJ8"
+	? [Selected triangle] = UNDEFINED -> USJ10;
+	=> Find first child; ? failed -> USJ9;
+	[WS Line] = 8; [WS Text] = Def Composite;
+	=> Write Superimpress;
+      "USJ9"
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	[GSC X] = [E plus TRIANGLE X1];
+	[GSC Y] = [E plus TRIANGLE Y1];
+	[GSC Z] = [E plus TRIANGLE Z1];
+	[MV Text] = 79; => Mark vertex;
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	[GSC X] = [E plus TRIANGLE X2];
+	[GSC Y] = [E plus TRIANGLE Y2];
+	[GSC Z] = [E plus TRIANGLE Z2];
+	[MV Text] = 88; => Mark vertex;
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	[GSC X] = [E plus TRIANGLE X3];
+	[GSC Y] = [E plus TRIANGLE Y3];
+	[GSC Z] = [E plus TRIANGLE Z3];
+	[MV Text] = 89; => Mark vertex;
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	A = [E plus TRIANGLE X2]; A -- [E plus TRIANGLE X1];
+	B = [E plus TRIANGLE X3]; B -- [E plus TRIANGLE X1];
+	A ++ B; A ++ [E plus TRIANGLE X1]; [GSC X] = A;
+	A = [E plus TRIANGLE Y2]; A -- [E plus TRIANGLE Y1];
+	B = [E plus TRIANGLE Y3]; B -- [E plus TRIANGLE Y1];
+	A ++ B; A ++ [E plus TRIANGLE Y1]; [GSC Y] = A;
+	A = [E plus TRIANGLE Z2]; A -- [E plus TRIANGLE Z1];
+	B = [E plus TRIANGLE Z3]; B -- [E plus TRIANGLE Z1];
+	A ++ B; A ++ [E plus TRIANGLE Z1]; [GSC Z] = A;
+	[MV Text] = 100; => Mark vertex;
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	? [E plus TRIANGLE FEATURES] - COLLISION -> USJ10;
+	[CG Text plus 16] = [E plus TRIANGLE CG];
+	[CG Text plus 16] & FF000000h;
+	[CG Text plus 16] > 24;
+	[CG Text plus 15] = [E plus TRIANGLE CG];
+	[CG Text plus 15] & FF0000h;
+	[CG Text plus 15] > 16;
+	[CG Text plus 14] = [E plus TRIANGLE CG];
+	[CG Text plus 14] & FF00h;
+	[CG Text plus 14] > 8;
+	[CG Text plus 13] = [E plus TRIANGLE CG];
+	[CG Text plus 13] & FFh;
+	[WS Line] = 9; [WS Text] = CG Text; => Write Superimpress;
+      "USJ10"
+	end;
+
+				    ( * )
+
+"Mark vertex"
+	=> Get Screen Coordinates;
+	? ok -> MV Continue 1;
+	end;
+   "MV Continue 1"
+	A = [Display Width]; A - [TGAT Font Width]; A - 2;
+	? [GSC X On Screen] < A -> MV Continue 2;
+	end;
+   "MV Continue 2"
+	A = [Display Height]; A - [TGAT Font Body]; A - 2;
+	? [GSC Y On Screen] < A -> MV Continue 3;
+	end;
+   "MV Continue 3"
+	A = [GSC Y On Screen]; A * [Display Width]; A + [GSC X On Screen];
+	A + [Display Origin]; [A] = FFFFFFh;
+	[GSC X On Screen] + 2;
+	[GSC Y On Screen] + 2;
+	[TGAT Top Margin] = [GSC Y On Screen];
+	[TGAT Left Margin] = [GSC X On Screen];
+	[TGAT Effect] = service FX Alpha Light;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	[TGAT Source String] = MV Text;
+	=> TGA Text;
+	end;
+
+				    ( * )
+
+"Write Superimpress"
+	[TGAT Top Margin] = [WS Line];
+	[TGAT Top Margin] * [TGAT Font Body];
+	[TGAT Top Margin] + 44;
+	[TGAT Left Margin] = 4;
+	[TGAT Effect] = service FX Alpha Light;
+	[TGAT Display Alignment] = [Display Width];
+	[TGAT Display Height] = [Display Height];
+	[TGAT Source String] = [WS Text];
+	=> TGA Text;
+	end;
+
+				    ( * )
+
+"Take Home Position"
+	[Camera X] = [Home X];
+	[Camera Y] = [Home Y];
+	[Camera Z] = [Home Z];
+	[Alpha angle] = PI div 2f;
+	[Beta angle] = 0f;
+	[Gamma angle] = 0f;
+	=> Rotate Camera;
+	end;
+
+				    ( * )
+
+"Viewport Interface"
+    "Viewport Interface Cursor Markers"
+	? [Console Map ID] '> REFERENCE PLANE SIZE -> Not on reference plane;
+	A = [Console Map ID]; A % REFERENCE PLANE WIDTH;
+	B = [Console Map ID]; B / REFERENCE PLANE WIDTH;
+	A - REFERENCE PLANE WIDTH div 2;
+	B - REFERENCE PLANE HEIGHT div 2;
+	[Point X] ,= A; [Point X] ** [VLU Scaling];
+	[Point X] ++ [VLU Scaling]; [Point X] ++ [VLU Scaling];
+	[Point X] ** [Antialiasing Factor];
+	[Point Y] = [Secondary Reference Plane Altitude];
+	[Point Z] ,= B; [Point Z]++--; [Point Z] ** [VLU Scaling];
+	[Point Z] -- [VLU Scaling]; [Point Z] -- [VLU Scaling];
+	[Point Z] ** [Antialiasing Factor];
+	[Point on] = YES;
+	A + REFERENCE PLANE WIDTH div 2;
+	B + REFERENCE PLANE HEIGHT div 2;
+    "Make or delete cursor crosshair"
+	C = Reference Plane Surface; C + A;
+	D = REFERENCE PLANE HEIGHT;
+    "Make vertical cursor marker"
+	![C]; [C] & FFFFFFh; C + REFERENCE PLANE WIDTH;
+	D ^ Make vertical cursor marker;
+	C = B; C * REFERENCE PLANE WIDTH; C + Reference Plane Surface;
+	D = REFERENCE PLANE WIDTH;
+    "Make horizontal cursor marker"
+	![C]; [C] & FFFFFFh; C+;
+	D ^ Make horizontal cursor marker;
+    "Not on reference plane"
+	end;
+
+				    ( * )
+
+"Find first child"
+	[FXC Pointer] = Primary shapes buffer;
+	[FXC Counter] = [Triangles on];
+"Find next child"
+	[Child ID] = UNDEFINED;
+	? [FXC Counter] = ZERO -> FXC Not found;
+    "FXC Repeat"
+	A = [FXC Pointer]; [FXC Pointer] + TRIANGLE DATA SIZE;
+	? [A plus TRIANGLE PARENT] = [Selected triangle] -> FXC Found;
+	[FXC Counter] ^ FXC Repeat;
+    "FXC Not found"
+	fail;
+    "FXC Found"
+	[FXC Counter]-;
+	[Child ID] = [FXC Pointer];
+	[Child ID] - Primary shapes buffer;
+	[Child ID] - TRIANGLE DATA SIZE;
+	[Child ID] > TRIANGLE DATA SHIFT;
+	end;
+
+				    ( * )
+
+"Infinity check"
+	?? [E plus TRIANGLE X1] != [E plus TRIANGLE X2] -> Infinity control 1 2 passed;
+	?? [E plus TRIANGLE Y1] != [E plus TRIANGLE Y2] -> Infinity control 1 2 passed;
+	?? [E plus TRIANGLE Z1] != [E plus TRIANGLE Z2] -> Infinity control 1 2 passed;
+	fail;
+    "Infinity control 1 2 passed"
+	?? [E plus TRIANGLE X1] != [E plus TRIANGLE X3] -> Infinity control 1 3 passed;
+	?? [E plus TRIANGLE Y1] != [E plus TRIANGLE Y3] -> Infinity control 1 3 passed;
+	?? [E plus TRIANGLE Z1] != [E plus TRIANGLE Z3] -> Infinity control 1 3 passed;
+	fail;
+    "Infinity control 1 3 passed"
+	?? [E plus TRIANGLE X2] != [E plus TRIANGLE X3] -> Infinity control 2 3 passed;
+	?? [E plus TRIANGLE Y2] != [E plus TRIANGLE Y3] -> Infinity control 2 3 passed;
+	?? [E plus TRIANGLE Z2] != [E plus TRIANGLE Z3] -> Infinity control 2 3 passed;
+	fail;
+    "Infinity control 2 3 passed"
+	end;
+
+				   ( SPC )
+
+"Toggle primary reference plane"
+	[Show PRP] # YES;
+	[Msg] = MSG PRP On; [Tip] = NULL;
+	? [Show PRP] = YES -> Update And Wait User Input;
+	[Msg] = MSG PRP Off; -> Update And Wait User Input;
+
+				    ( I )
+
+"Toggle surface indexing"
+	[Surface indexing] # YES;
+	[Msg] = MSG SI On; [Tip] = NULL;
+	? [Surface indexing] = YES -> Update And Wait User Input;
+	[Msg] = MSG SI Off; -> Update And Wait User Input;
+
+				    ( Q )
+
+"Add Marker"
+	[Msg] = ERR No point selected; [Tip] = TIP No point selected;
+	? [Point on] = NO -> Update And Wait User Input;
+	[Msg] = ERR Too many markers; [Tip] = NULL;
+	? [Markers on] >= MAX MARKERS -> Update And Wait User Input;
+	[Msg] = MSG Adding marker;
+	[Tip] = TIP Adding marker;
+	C = [Markers on]; C * 3;
+	[C plus Markers area plus 0] = [Point X];
+	[C plus Markers area plus 1] = [Point Y];
+	[C plus Markers area plus 2] = [Point Z];
+	[Markers on]+;
+	-> Update And Wait User Input;
+
+				    ( W )
+
+"Undo Marker"
+	[Msg] = ERR No marker to delete; [Tip] = NULL;
+	? [Markers on] = ZERO -> Update And Wait User Input;
+	[Msg] = MSG Deleting marker;
+	[Tip] = TIP Deleting marker;
+	[Markers on]-;
+	-> Update And Wait User Input;
+
+				    ( E )
+
+"Erase All Markers"
+	[Msg] = MSG Deleting all markers; [Tip] = NULL;
+	[Markers on] = ZERO;
+	-> Update And Wait User Input;
+
+				    ( R )
+
+"Raise Wall"
+	[Msg] = ERR Insufficient markers to raise wall;
+	[Tip] = TIP Insufficient markers to raise wall;
+	? [Markers on] < 2 -> Update And Wait User Input;
+	D = Markers area;
+	C = [Markers on]; C-;
+    "RW Next"
+	[Msg] = ERR Wall interrupted; [Tip] = TIP Wall interrupted;
+	?? [D plus Y of first marker] != [D plus Y of second marker] -> Update And Wait User Input;
+	E = [Triangles on]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	[Wall base] = [D plus Y of first marker];
+	[Wall top] = [Secondary Reference Plane Altitude];
+	?? [Wall top] = [Wall base] -> Update And Wait User Input;
+	?? [Wall top] < [Wall base] -> RW Up;
+	[Wall base] = [Wall top];
+	[Wall top] = [D plus Y of first marker];
+    "RW Up"
+	[E plus TRIANGLE X1] = [D plus X of first marker];
+	[E plus TRIANGLE Y1] = [Wall base];
+	[E plus TRIANGLE Z1] = [D plus Z of first marker];
+	[E plus TRIANGLE X2] = [D plus X of first marker];
+	[E plus TRIANGLE Y2] = [Wall top];
+	[E plus TRIANGLE Z2] = [D plus Z of first marker];
+	[E plus TRIANGLE X3] = [D plus X of second marker];
+	[E plus TRIANGLE Y3] = [Wall base];
+	[E plus TRIANGLE Z3] = [D plus Z of second marker];
+	=> Infinity check; ? failed -> RW Skip infinity triangles;
+	[E plus TRIANGLE PARENT] = UNDEFINED;
+	[E plus TRIANGLE FEATURES] = [Current triangle features];
+	[E plus TRIANGLE COLOR] = [Current triangle color];
+	[E plus TRIANGLE TEXTURE] = [Selected texture];
+	[E plus TRIANGLE SP COLS] = [Current triangle SP cols];
+	[E plus TRIANGLE SP ROWS] = [Current triangle SP rows];
+	[E plus TRIANGLE SCALING] = 1f;
+	E + TRIANGLE DATA SIZE;
+	[E plus TRIANGLE X1] = [D plus X of first marker];
+	[E plus TRIANGLE Y1] = [Wall top];
+	[E plus TRIANGLE Z1] = [D plus Z of first marker];
+	[E plus TRIANGLE X2] = [D plus X of second marker];
+	[E plus TRIANGLE Y2] = [Wall top];
+	[E plus TRIANGLE Z2] = [D plus Z of second marker];
+	[E plus TRIANGLE X3] = [D plus X of second marker];
+	[E plus TRIANGLE Y3] = [Wall base];
+	[E plus TRIANGLE Z3] = [D plus Z of second marker];
+	=> Infinity check; ? failed -> RW Skip infinity triangles;
+	[E plus TRIANGLE PARENT] = [Triangles on];
+	[E plus TRIANGLE FEATURES] = ZERO; (to reset the "hidden" attribute)
+	[Triangles on] + 2;
+    "RW Skip infinity triangles"
+	D + 3;
+	C ^ RW Next;
+	[Msg] = MSG Wall raised; [Tip] = NULL;
+	-> Update And Wait User Input;
+
+				    ( T )
+
+"Take Ground Level"
+	[Msg] = MSG Bringing SRP to ground level;
+	[Tip] = TIP Bringing SRP to ground level;
+	[Secondary Reference Plane Altitude] = 0f;
+	-> Update And Wait User Input;
+
+				    ( Y )
+
+"Pure Polygon"
+	[Msg] = ERR Insufficient markers for pure polygon;
+	[Tip] = TIP Insufficient markers for pure polygon;
+	? [Markers on] < 3 -> Update And Wait User Input;
+	D = Markers area; B = Markers area;
+	C = [Markers on]; C - 2;
+    "PP Next"
+	E = [Triangles on]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	[E plus TRIANGLE X1] = [B plus X of first marker];
+	[E plus TRIANGLE Y1] = [B plus Y of first marker];
+	[E plus TRIANGLE Z1] = [B plus Z of first marker];
+	[E plus TRIANGLE X2] = [D plus X of second marker];
+	[E plus TRIANGLE Y2] = [D plus Y of second marker];
+	[E plus TRIANGLE Z2] = [D plus Z of second marker];
+	[E plus TRIANGLE X3] = [D plus X of third marker];
+	[E plus TRIANGLE Y3] = [D plus Y of third marker];
+	[E plus TRIANGLE Z3] = [D plus Z of third marker];
+	=> Infinity check; ? failed -> PP Skip infinity triangles;
+	[E plus TRIANGLE PARENT] = UNDEFINED;
+	[E plus TRIANGLE FEATURES] = [Current triangle features];
+	[E plus TRIANGLE COLOR] = [Current triangle color];
+	[E plus TRIANGLE TEXTURE] = [Selected texture];
+	[E plus TRIANGLE SP COLS] = [Current triangle SP cols];
+	[E plus TRIANGLE SP ROWS] = [Current triangle SP rows];
+	[E plus TRIANGLE SCALING] = 1f;
+	E + TRIANGLE DATA SIZE;
+	[Triangles on]+;
+    "PP Skip infinity triangles"
+	D + 3;
+	C ^ PP Next;
+	[Msg] = MSG Pure polygon created; [Tip] = NULL;
+	-> Update And Wait User Input;
+
+				    ( A )
+
+"Raise SRP"
+	[Msg] = MSG Raising SRP1; [Tip] = TIP Raising SRP1;
+	[Secondary Reference Plane Altitude] -- [VLU Scaling];
+	-> Update And Wait User Input;
+
+				    ( Z )
+
+"Drop SRP"
+	[Msg] = MSG Dropping SRP1; [Tip] = TIP Dropping SRP1;
+	[Secondary Reference Plane Altitude] ++ [VLU Scaling];
+	-> Update And Wait User Input;
+
+				    ( S )
+
+"Raise SRP more"
+	[Msg] = MSG Raising SRP10; [Tip] = TIP Raising SRP10;
+	A = [VLU Scaling]; A ** 10f;
+	[Secondary Reference Plane Altitude] -- A;
+	-> Update And Wait User Input;
+
+				    ( X )
+
+"Drop SRP more"
+	[Msg] = MSG Dropping SRP10; [Tip] = TIP Dropping SRP10;
+	A = [VLU Scaling]; A ** 10f;
+	[Secondary Reference Plane Altitude] ++ A;
+	-> Update And Wait User Input;
+
+				    ( D )
+
+"Duplicate polygon"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = MSG Duplicating; [Tip] = NULL;
+	[Destination triangle] = [Triangles on];
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	B = [Triangles on]; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "Copy polygon data"
+	[B] = [A]; A+; B+;
+	C ^ Copy polygon data;
+	[Triangles on]+;
+	=> Find first child;
+	? failed -> Update And Wait User Input;
+    "Copy childs"
+	A = [Child ID]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	B = [Triangles on]; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "Copy child data"
+	[B] = [A]; A+; B+;
+	C ^ Copy child data;
+	[B minus TRIANGLE DATA SIZE plus TRIANGLE PARENT] = [Destination triangle];
+	[Triangles on]+;
+	=> Find next child;
+	? failed -> Update And Wait User Input;
+	-> Copy childs;
+
+				    ( F )
+
+"Fetch texture from disk"
+	[Msg] = MSG Fetching texture;
+	[Tip] = TIP Fetching texture;
+	[Prompt on] = YES;
+	[Prompt text] = P Texture to fetch;
+	[Prompt buffer] = vector Texture to fetch;
+	[Prompt buffer size] = 32;
+	[Prompt answer size now] = [P Fetch size];
+	[On answer] = service Fetch texture from disk;
+	[On reject] = service Reject fetch texture from disk;
+	-> Update And Wait User Input;
+
+"service Reject fetch texture from disk"
+	[Msg] = MSG Fetch canceled; [Tip] = NULL;
+	[P Fetch size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+"service Fetch texture from disk"
+	[P Fetch size] = [Prompt answer size now];
+	[File Name] = vector Texture to fetch;
+	[File Command] = READ;
+	[File Position] = ZERO;
+	[Block Pointer] = Temporary texture file buffer;
+	[Block Size] = 512 mtp 512 plus 69;
+	[Block Size] * BYTES PER UNIT;
+	[Msg] = ERR Texture file not found;
+	[Tip] = TIP Texture file not found;
+	isocall; ? failed -> Update And Wait User Input;
+	[Texture W] = [Temporary texture file buffer plus 3];
+	[Texture W] & FFFFh;
+	[Texture H] = [Temporary texture file buffer plus 3];
+	[Texture H] > 16;
+	[Msg] = ERR Invalid texture size;
+	[Tip] = TIP Invalid texture size;
+	? [Texture W] = 0 -> Update And Wait User Input;
+	? [Texture H] = 0 -> Update And Wait User Input;
+	? [Texture W] '> 512 -> Update And Wait User Input;
+	? [Texture H] '> 512 -> Update And Wait User Input;
+	[Msg] = ERR Not enough memory in textures bank;
+	[Tip] = NULL;
+	A = [Top of textures bank];
+	B = [Texture W]; B * [Texture H]; B + 3;
+	C = A; C + B; ? C > TEXTURES BANK SIZE -> Update And Wait User Input;
+	A + Textures bank;
+	[A plus 0] = B;
+	[A plus 1] = [Texture W];
+	[A plus 2] = [Texture H];
+	[TGA Target Layer] = A; [TGA Target Layer] + 3;
+	[TGA Display Alignment] = [Texture W];
+	[TGA Display Height] = [Texture H];
+	[TGA Picture Data] = Temporary texture file buffer;
+	[TGA Picture Left] = 0;
+	[TGA Picture Top] = 0;
+	[TGA Effect] = service FX Raw;
+	=> Load TGA Picture;
+	[Selected texture] = [Top of textures bank];
+	A = [Texture W]; A * [Texture H]; A + 3;
+	[Top of textures bank] + A;
+	[Prompt on] = NO;
+	[Msg] = MSG Texture fetched;
+	[Tip] = TIP Texture fetched;
+	-> Update And Wait User Input;
+
+				    ( G )
+
+"Glue texture to polygon"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	? [A plus TRIANGLE FEATURES] - APPLY TEXTURE -> Go glue;
+	[A plus TRIANGLE FEATURES] - APPLY TEXTURE;
+	[A plus TRIANGLE TEXTURE] = UNDEFINED;
+	[Msg] = MSG Detaching texture; [Tip] = TIP Detaching texture;
+	-> Update And Wait User Input;
+    "Go glue"
+	[Msg] = ERR No texture selected; [Tip] = TIP No texture selected;
+	? [Selected texture] = UNDEFINED -> Update And Wait User Input;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE FEATURES] | APPLY TEXTURE;
+	[A plus TRIANGLE TEXTURE] = [Selected texture];
+	[A plus TRIANGLE TEXTURE] + 3;
+	B = [Selected texture]; B + Textures bank;
+	[A plus TRIANGLE SP COLS] = [B plus 1];
+	[A plus TRIANGLE SP ROWS] = [B plus 2];
+	[Msg] = MSG Texture glued;
+	[Tip] = TIP Texture glued;
+	-> Update And Wait User Input;
+
+				    ( C )
+
+"Close Figure"
+	[Msg] = ERR Not enough markers to close figure;
+	[Tip] = TIP Not enough markers to close figure;
+	? [Markers on] < 3 -> Update And Wait User Input;
+	E = Markers area;
+	[Point X] = [E plus X of first marker];
+	[Point Y] = [E plus Y of first marker];
+	[Point Z] = [E plus Z of first marker];
+	[Msg] = MSG Figure closed;
+	[Tip] = TIP Figure closed;
+	-> Add Marker;
+
+				    ( V )
+
+"Crop Vertex"
+	[Msg] = ERR No triangles; [Tip] = TIP No triangles;
+	? [Triangles on] = ZERO -> Update And Wait User Input;
+	[Msg] = ERR No point selected; [Tip] = TIP No point selected;
+	? [Point on] = NO -> Update And Wait User Input;
+	[CVPTX] = [Point X];
+	[CVPTY] = [Point Y];
+	[CVPTZ] = [Point Z];
+	A = Primary shapes buffer;
+	E = [Triangles on];
+	[CV Min distance] = 1e15f;
+    "CV Next"
+	B = [A plus TRIANGLE X1]; B -- [CVPTX];
+	C = [A plus TRIANGLE Y1]; C -- [CVPTY];
+	D = [A plus TRIANGLE Z1]; D -- [CVPTZ];
+	B ** B; C ** C; D ** D; B ++ C; B ++ D; /~ B;
+	?? B >= [CV Min distance] -> CV1 Not this;
+	[CV Min distance] = B;
+	[Point X] = [A plus TRIANGLE X1];
+	[Point Y] = [A plus TRIANGLE Y1];
+	[Point Z] = [A plus TRIANGLE Z1];
+    "CV1 Not this"
+	B = [A plus TRIANGLE X2]; B -- [CVPTX];
+	C = [A plus TRIANGLE Y2]; C -- [CVPTY];
+	D = [A plus TRIANGLE Z2]; D -- [CVPTZ];
+	B ** B; C ** C; D ** D; B ++ C; B ++ D; /~ B;
+	?? B >= [CV Min distance] -> CV2 Not this;
+	[CV Min distance] = B;
+	[Point X] = [A plus TRIANGLE X2];
+	[Point Y] = [A plus TRIANGLE Y2];
+	[Point Z] = [A plus TRIANGLE Z2];
+    "CV2 Not this"
+	B = [A plus TRIANGLE X3]; B -- [CVPTX];
+	C = [A plus TRIANGLE Y3]; C -- [CVPTY];
+	D = [A plus TRIANGLE Z3]; D -- [CVPTZ];
+	B ** B; C ** C; D ** D; B ++ C; B ++ D; /~ B;
+	?? B >= [CV Min distance] -> CV3 Not this;
+	[CV Min distance] = B;
+	[Point X] = [A plus TRIANGLE X3];
+	[Point Y] = [A plus TRIANGLE Y3];
+	[Point Z] = [A plus TRIANGLE Z3];
+    "CV3 Not this"
+	A + TRIANGLE DATA SIZE;
+	E ^ CV Next;
+	-> Add Marker;
+
+				    ( B )
+
+"Branch to next texture"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR No texture selected; [Tip] = TIP No texture selected;
+	? [Selected texture] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = MSG Branching to next texture;
+	[Tip] = TIP Branching to next texture;
+	A = [Selected texture]; A + Textures bank; [Selected texture] + [A];
+	? [Selected texture] < [Top of textures bank] -> Update And Wait User Input;
+	[Selected texture] = ZERO; -> Update And Wait User Input;
+
+				    ( H )
+
+"Hide polygon" (hide/reveal)
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = MSG Hiding polygon; [Tip] = TIP Hiding polygon;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE FEATURES] # HIDDEN;
+	=> Find first child; ? failed -> Update And Wait User Input;
+    "HP Loop"
+	A = [Child ID]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE FEATURES] # HIDDEN;
+	=> Find next child; ? ok -> HP Loop;
+	-> Update And Wait User Input;
+
+				    ( N )
+
+"Narrow buffers" (remove hidden polygons, unload unused textures)
+	[Msg] = MSG Narrowing buffers;
+	[Tip] = TIP Narrowing buffers;
+	A = ZERO;
+	B = [Triangles on];
+	? B = ZERO -> NB No triangles to copy;
+	B < TRIANGLE DATA SHIFT;
+    "Copy primary to secondary shapes buffer"
+	[A plus Secondary shapes buffer] = [A plus Primary shapes buffer];
+	A+; B ^ Copy primary to secondary shapes buffer;
+      "NB No triangles to copy"
+	B = ZERO;
+	C = [Triangles on];
+	D = [Selected triangle];
+	? C = ZERO -> NB No triangles to prepare;
+	[NB Rejected triangles] = ZERO;
+    "Preparing to narrow shapes buffer"
+	A = B; A < TRIANGLE DATA SHIFT; A + Secondary shapes buffer;
+	? [A plus TRIANGLE FEATURES] - HIDDEN -> NB Not to be trashed;
+	[NB Rejected triangles]+;
+	? B != D -> NB No childs;
+	D = UNDEFINED;
+	-> NB No childs;
+      "NB Not to be trashed"
+	? [A plus TRIANGLE PARENT] != UNDEFINED -> NB No childs;
+	[Selected triangle] = B; => Find first child; ? failed -> NB No childs;
+      "NB Update next child"
+	A = [Child ID]; A < TRIANGLE DATA SHIFT; A + Secondary shapes buffer;
+	[A plus TRIANGLE PARENT] - [NB Rejected triangles];
+	A = [Child ID]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE PARENT] = UNDEFINED;
+	=> Find next child; ? ok -> NB Update next child;
+      "NB No childs"
+	B+; C ^ Preparing to narrow shapes buffer;
+      "NB No triangles to prepare"
+	[Selected triangle] = D;
+	A = ZERO;
+	B = ZERO;
+	C = [Triangles on];
+	? C = ZERO -> NB No triangles to copy back;
+    "Narrowing shapes buffer"
+	E = A;
+	E < TRIANGLE DATA SHIFT;
+	E + Secondary shapes buffer;
+	? [E plus TRIANGLE FEATURES] + HIDDEN -> NB Trash hidden triangle;
+	A < TRIANGLE DATA SHIFT;
+	B < TRIANGLE DATA SHIFT;
+	D = TRIANGLE DATA SIZE;
+      "NB Copy triangle data"
+	[B plus Primary shapes buffer] = [A plus Secondary shapes buffer];
+	A+; B+; D ^ NB Copy triangle data;
+	A > TRIANGLE DATA SHIFT;
+	B > TRIANGLE DATA SHIFT;
+	-> NB Accept visible triangle;
+      "NB Trash hidden triangle"
+	A+;
+      "NB Accept visible triangle"
+	C ^ Narrowing shapes buffer;
+	[Triangles on] = B;
+      "NB No triangles to copy back"
+	A = ZERO;
+      "NB Lookup next texture"
+	? A >= [Top of textures bank] -> NB No more textures;
+	B = Primary shapes buffer;
+	C = [Triangles on];
+	? C = ZERO -> NB No triangles were found with this texture on;
+      "NB Check next triangles texture"
+	? [B plus TRIANGLE PARENT] != UNDEFINED -> NB This is a child and doesnt count;
+	? [B plus TRIANGLE FEATURES] - APPLY TEXTURE -> NB This triangle is not textured;
+	D = A; D + 3; ? [B plus TRIANGLE TEXTURE] = D -> NB Texture in use;
+      "NB This is a child and doesnt count"
+      "NB This triangle is not textured"
+	B + TRIANGLE DATA SIZE;
+	C ^ NB Check next triangles texture;
+      "NB No triangles were found with this texture on"
+	[NB Size of texture to remove] = [A plus Textures bank];
+	D = A; D + [A plus Textures bank];
+	? D = [Top of textures bank] -> NB This is last texture so no data to copy;
+	D = [Top of textures bank]; D - [A plus Textures bank];
+	E = A; E + [A plus Textures bank];
+	A-->;
+      "NB Copy textures data"
+	[A plus Textures bank] = [E plus Textures bank];
+	A+; E+; D ^ NB Copy textures data;
+	<--A;
+      "NB This is last texture so no data to copy"
+	[Top of textures bank] - [NB Size of texture to remove];
+	D = [NB Size of texture to remove];
+	E = [Top of textures bank];
+      "NB Clear last texture"
+	[E plus Textures bank] = ZERO;
+	E+; D ^ NB Clear last texture;
+	B = Primary shapes buffer;
+	C = [Triangles on];
+	? C = ZERO -> NB No triangles were found at all;
+      "NB Check next triangles texture for updating pointers"
+	? [B plus TRIANGLE PARENT] != UNDEFINED -> NB Texture pointer not affected;
+	D = A; D + 3; ? [B plus TRIANGLE TEXTURE] < D -> NB Texture pointer not affected;
+	[B plus TRIANGLE TEXTURE] - [NB Size of texture to remove];
+      "NB Texture pointer not affected"
+	B + TRIANGLE DATA SIZE;
+	C ^ NB Check next triangles texture for updating pointers;
+      "NB No triangles were found at all"
+	-> NB Lookup next texture;
+      "NB Texture in use"
+	A + [A plus Textures bank]; -> NB Lookup next texture;
+      "NB No more textures"
+	[Selected texture] = ZERO;
+	? [Top of textures bank] > ZERO -> Update And Wait User Input;
+	[Selected texture] = UNDEFINED; -> Update And Wait User Input;
+
+				    ( . )
+
+"Save scenery"
+	[Msg] = MSG Saving scenery;
+	[Tip] = TIP Saving scenery;
+	[P Scenery name plus 0] = 83; (S)
+	[P Scenery name plus 1] = 65; (A)
+	[P Scenery name plus 2] = 86; (V)
+	[P Scenery name plus 3] = 69; (E)
+	[Prompt on] = YES;
+	[Prompt text] = P Scenery name;
+	[Prompt buffer] = vector Scenery name;
+	[Prompt buffer size] = 32;
+	[Prompt answer size now] = [P Scenery name size];
+	[On answer] = service Save scenery;
+	[On reject] = service Reject save scenery;
+	-> Update And Wait User Input;
+
+"service Reject save scenery"
+	[Msg] = MSG Save scenery canceled; [Tip] = NULL;
+	[P Scenery name size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+"service Save scenery"
+	[P Scenery name size] = [Prompt answer size now];
+	[File Name] = vector Scenery name;
+	[File Command] = WRITE;
+	[File Position] = ZERO;
+	[Block Pointer] = Primary shapes buffer;
+	[Block Size] = [Triangles on];
+	[Block Size] < TRIANGLE DATA SHIFT;
+	[Block Size] * BYTES PER UNIT;
+	[Msg] = ERR Disk error while saving scenery;
+	[Tip] = TIP Disk error while saving scenery;
+	isocall; ? failed -> Update And Wait User Input;
+	[File Name] = vector Scenery name;
+	[File Command] = SET SIZE;
+	[File Size] = [Triangles on];
+	[File Size] < TRIANGLE DATA SHIFT;
+	[File Size] * BYTES PER UNIT;
+	isocall; ? failed -> Update And Wait User Input;
+	[Prompt on] = NO;
+	[Msg] = MSG Scenery saved;
+	[Tip] = TIP Scenery saved;
+	-> Update And Wait User Input;
+
+				    ( , )
+
+"Load scenery"
+	[Msg] = MSG Loading scenery;
+	[Tip] = TIP Loading scenery;
+	[P Scenery name plus 0] = 76; (L)
+	[P Scenery name plus 1] = 79; (O)
+	[P Scenery name plus 2] = 65; (A)
+	[P Scenery name plus 3] = 68; (D)
+	[Prompt on] = YES;
+	[Prompt text] = P Scenery name;
+	[Prompt buffer] = vector Scenery name;
+	[Prompt buffer size] = 32;
+	[Prompt answer size now] = [P Scenery name size];
+	[On answer] = service Load scenery;
+	[On reject] = service Reject load scenery;
+	-> Update And Wait User Input;
+
+"service Reject load scenery"
+	[Msg] = MSG Load scenery canceled; [Tip] = NULL;
+	[P Scenery name size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+"service Load scenery"
+	[P Scenery name size] = [Prompt answer size now];
+	[File Name] = vector Scenery name;
+	[File Command] = TEST;
+	[Msg] = ERR Disk error while loading scenery;
+	[Tip] = TIP Disk error while loading scenery;
+	isocall; ? failed -> Update And Wait User Input;
+	[File Name] = vector Scenery name;
+	[File Command] = READ;
+	[File Position] = ZERO;
+	[Block Pointer] = Primary shapes buffer;
+	[Block Size] = MAX TRIANGLES mtp TRIANGLE DATA SIZE;
+	[Block Size] * BYTES PER UNIT;
+	isocall; ? failed -> Update And Wait User Input;
+	[Triangles on] = [Block Size];
+	[Triangles on] / BYTES PER UNIT;
+	[Triangles on] > TRIANGLE DATA SHIFT;
+	[Prompt on] = NO;
+	[Msg] = MSG Scenery loaded;
+	[Tip] = TIP Scenery loaded;
+	-> Update And Wait User Input;
+
+				    ( : )
+
+"Save textures bank"
+	[Msg] = MSG Saving textures bank;
+	[Tip] = TIP Saving textures bank;
+	[P TB name plus 0] = 83; (S)
+	[P TB name plus 1] = 65; (A)
+	[P TB name plus 2] = 86; (V)
+	[P TB name plus 3] = 69; (E)
+	[Prompt on] = YES;
+	[Prompt text] = P TB name;
+	[Prompt buffer] = vector TB name;
+	[Prompt buffer size] = 32;
+	[Prompt answer size now] = [P TB name size];
+	[On answer] = service Save textures bank;
+	[On reject] = service Reject save textures bank;
+	-> Update And Wait User Input;
+
+"service Reject save textures bank"
+	[Msg] = MSG Save textures bank canceled; [Tip] = NULL;
+	[P TB name size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+"service Save textures bank"
+	[P TB name size] = [Prompt answer size now];
+	[File Name] = vector TB name;
+	[File Command] = WRITE;
+	[File Position] = ZERO;
+	[Block Pointer] = Textures bank;
+	[Block Size] = [Top of textures bank];
+	[Block Size] * BYTES PER UNIT;
+	[Msg] = ERR Disk error while saving textures bank;
+	[Tip] = TIP Disk error while saving textures bank;
+	isocall; ? failed -> Update And Wait User Input;
+	[File Name] = vector TB name;
+	[File Command] = SET SIZE;
+	[File Size] = [Top of textures bank];
+	[File Size] * BYTES PER UNIT;
+	isocall; ? failed -> Update And Wait User Input;
+	[Prompt on] = NO;
+	[Msg] = MSG Textures bank saved;
+	[Tip] = TIP Textures bank saved;
+	-> Update And Wait User Input;
+
+				    ( ; )
+
+"Load textures bank"
+	[Msg] = MSG Loading textures bank;
+	[Tip] = TIP Loading textures bank;
+	[P TB name plus 0] = 76; (L)
+	[P TB name plus 1] = 79; (O)
+	[P TB name plus 2] = 65; (A)
+	[P TB name plus 3] = 68; (D)
+	[Prompt on] = YES;
+	[Prompt text] = P TB name;
+	[Prompt buffer] = vector TB name;
+	[Prompt buffer size] = 32;
+	[Prompt answer size now] = [P TB name size];
+	[On answer] = service Load textures bank;
+	[On reject] = service Reject load textures bank;
+	-> Update And Wait User Input;
+
+"service Reject load textures bank"
+	[Msg] = MSG Load textures bank canceled; [Tip] = NULL;
+	[P TB name size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+"service Load textures bank"
+	[P TB name size] = [Prompt answer size now];
+	[File Name] = vector TB name;
+	[File Command] = TEST;
+	[Msg] = ERR Disk error while loading textures bank;
+	[Tip] = TIP Disk error while loading textures bank;
+	isocall; ? failed -> Update And Wait User Input;
+	[File Name] = vector TB name;
+	[File Command] = READ;
+	[File Position] = ZERO;
+	[Block Pointer] = Textures bank;
+	[Block Size] = TEXTURES BANK SIZE;
+	[Block Size] * BYTES PER UNIT;
+	isocall; ? failed -> Update And Wait User Input;
+	[Block Size] / BYTES PER UNIT;
+	[Top of textures bank] = [Block Size];
+	[Prompt on] = NO;
+	[Selected texture] = ZERO;
+	[Msg] = MSG Textures bank loaded;
+	[Tip] = TIP Textures bank loaded;
+	? [Top of textures bank] > ZERO -> Update And Wait User Input;
+	[Selected texture] = UNDEFINED;
+	-> Update And Wait User Input;
+
+				    ( O )
+
+"Change vertexs order"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE X1]-->;
+	[A plus TRIANGLE Y1]-->;
+	[A plus TRIANGLE Z1]-->;
+	[A plus TRIANGLE X1] = [A plus TRIANGLE X2];
+	[A plus TRIANGLE Y1] = [A plus TRIANGLE Y2];
+	[A plus TRIANGLE Z1] = [A plus TRIANGLE Z2];
+	[A plus TRIANGLE X2] = [A plus TRIANGLE X3];
+	[A plus TRIANGLE Y2] = [A plus TRIANGLE Y3];
+	[A plus TRIANGLE Z2] = [A plus TRIANGLE Z3];
+	<--[A plus TRIANGLE Z3];
+	<--[A plus TRIANGLE Y3];
+	<--[A plus TRIANGLE X3];
+	[Msg] = MSG Changing vertexs order;
+	[Tip] = TIP Changing vertexs order;
+	-> Update And Wait User Input;
+
+				    ( P )
+
+"Parent of"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = MSG Selecting child triangle;
+	[Tip] = TIP Selecting child triangle;
+	[Prompt on] = YES;
+	[Prompt text] = P Select child;
+	[Prompt buffer] = P Null buffer;
+	[Prompt buffer size] = 0;
+	[Prompt answer size now] = 0;
+	[On answer] = service PO answer;
+	[On reject] = service PO reject;
+	[Set as parent of] = [Selected triangle];
+	-> Update And Wait User Input;
+
+"service PO answer"
+	-> Parent of;
+
+"service PO reject"
+	[Msg] = MSG Select child canceled; [Tip] = NULL;
+	[Set as parent of] = UNDEFINED;
+	-> Update And Wait User Input;
+
+				    ( L )
+
+"Split composite polygon"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR Not a composite polygon; [Tip] = NULL;
+	=> Find first child; ? failed -> Update And Wait User Input;
+	[Msg] = MSG Polygon split;
+    "SCP Loop"
+	E = [Selected triangle]; E < TRIANGLE DATA SHIFT; E + Primary shapes buffer;
+	A = [Child ID]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE PARENT] = UNDEFINED;
+	[A plus TRIANGLE FEATURES] = [E plus TRIANGLE FEATURES];
+	[A plus TRIANGLE COLOR] = [E plus TRIANGLE COLOR];
+	[A plus TRIANGLE TEXTURE] = [E plus TRIANGLE TEXTURE];
+	[A plus TRIANGLE SP COLS] = [E plus TRIANGLE SP COLS];
+	[A plus TRIANGLE SP ROWS] = [E plus TRIANGLE SP ROWS];
+	[A plus TRIANGLE SCALING] = [E plus TRIANGLE SCALING];
+	=> Find next child; ? failed -> Update And Wait User Input;
+	-> SCP Loop;
+
+				    ( J )
+
+"Jump side"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR Jump side only for noncomposite polygons;
+	[Tip] = TIP Jump side only for noncomposite polygons;
+	=> Find first child; ? ok -> Update And Wait User Input;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE X1]-->;
+	[A plus TRIANGLE Y1]-->;
+	[A plus TRIANGLE Z1]-->;
+	[A plus TRIANGLE X3]-->;
+	[A plus TRIANGLE Y3]-->;
+	[A plus TRIANGLE Z3]-->;
+	<--[A plus TRIANGLE Z1];
+	<--[A plus TRIANGLE Y1];
+	<--[A plus TRIANGLE X1];
+	<--[A plus TRIANGLE Z3];
+	<--[A plus TRIANGLE Y3];
+	<--[A plus TRIANGLE X3];
+	[Msg] = MSG Jump side; [Tip] = NULL;
+	-> Update And Wait User Input;
+
+				    ( < )
+
+"Send to background"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR Send to background only for noncomposite polygons;
+	[Tip] = TIP Send to background only for noncomposite polygons;
+	=> Find first child; ? ok -> Update And Wait User Input;
+	? [Selected triangle] = ZERO -> STB Do nothing;
+    (preserving selected triangle's data)
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	B = Secondary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "STB Preserve"
+	[B] = [A];
+	A+; B+;
+	C ^ STB Preserve;
+    (scrolling shapes buffer forwards)
+	A = [Selected triangle]; A-;
+	B = [Selected triangle];
+	C = [Selected triangle];
+    "STB Copy outer"
+	A-->; B-->;
+	A < TRIANGLE DATA SHIFT;
+	B < TRIANGLE DATA SHIFT;
+	? [A plus Primary shapes buffer plus TRIANGLE PARENT] = UNDEFINED -> STB No child;
+	? [A plus Primary shapes buffer plus TRIANGLE PARENT] > [Selected triangle] -> STB No child;
+	[A plus Primary shapes buffer plus TRIANGLE PARENT]+;
+      "STB No child"
+	D = TRIANGLE DATA SIZE;
+      "STB Copy inner"
+	  [B plus Primary shapes buffer] = [A plus Primary shapes buffer];
+	  A+; B+;
+	  D ^ STB Copy inner;
+	<--B; <--A;
+	A-; B-;
+	C ^ STB Copy outer;
+    (restoring selected triangle's data)
+	A = Secondary shapes buffer;
+	B = ZERO; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "STB Restore"
+	[B] = [A];
+	A+; B+;
+	C ^ STB Restore;
+    (re-selecting triangle in its final position, at index zero of the shapes buffer)
+	[Selected triangle] = ZERO;
+    "STB Do nothing"
+	[Msg] = MSG Send to background; [Tip] = TIP Send to background;
+	-> Update And Wait User Input;
+
+				    ( > )
+
+"Send to foreground"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR Send to foreground only for noncomposite polygons;
+	[Tip] = TIP Send to foreground only for noncomposite polygons;
+	=> Find first child; ? ok -> Update And Wait User Input;
+	A = [Triangles on]; A-;
+	? [Selected triangle] = A -> STF Do nothing;
+    (preserving selected triangle's data)
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	B = Secondary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "STF Preserve"
+	[B] = [A];
+	A+; B+;
+	C ^ STF Preserve;
+    (scrolling shapes buffer backwards)
+	A = [Selected triangle]; A+;
+	B = [Selected triangle];
+	C = [Triangles on]; C - [Selected triangle]; C-;
+    "STF Copy outer"
+	A-->; B-->;
+	A < TRIANGLE DATA SHIFT;
+	B < TRIANGLE DATA SHIFT;
+	? [A plus Primary shapes buffer plus TRIANGLE PARENT] = UNDEFINED -> STF No child;
+	? [A plus Primary shapes buffer plus TRIANGLE PARENT] < [Selected triangle] -> STF No child;
+	[A plus Primary shapes buffer plus TRIANGLE PARENT]-;
+      "STF No child"
+	D = TRIANGLE DATA SIZE;
+      "STF Copy inner"
+	  [B plus Primary shapes buffer] = [A plus Primary shapes buffer];
+	  A+; B+;
+	  D ^ STF Copy inner;
+	<--B; <--A;
+	A+; B+;
+	C ^ STF Copy outer;
+    (restoring selected triangle's data)
+	A = Secondary shapes buffer;
+	B = [Triangles on]; B-; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	C = TRIANGLE DATA SIZE;
+    "STF Restore"
+	[B] = [A];
+	A+; B+;
+	C ^ STF Restore;
+    (re-selecting triangle in its final position, at index <[triangles on] - 1>)
+	[Selected triangle] = [Triangles on];
+	[Selected triangle]-;
+    "STF Do nothing"
+	[Msg] = MSG Send to foreground; [Tip] = TIP Send to foreground;
+	-> Update And Wait User Input;
+
+				    ( M )
+
+"Mark for collision group"
+	[Msg] = ERR No polygon selected; [Tip] = TIP No polygon selected;
+	? [Selected triangle] = UNDEFINED -> Update And Wait User Input;
+	[Msg] = ERR No collision group selected;
+	[Tip] = TIP No collision group selected;
+	? [Selected collision group] = UNDEFINED -> Update And Wait User Input;
+	A = [Selected triangle]; A < TRIANGLE DATA SHIFT; A + Primary shapes buffer;
+	[A plus TRIANGLE FEATURES] # COLLISION;
+	? [A plus TRIANGLE FEATURES] - DOUBLE FACE -> Ok not a doublefaced polygon;
+	[A plus TRIANGLE FEATURES] - DOUBLE FACE;
+    "Ok not a doublefaced polygon"
+	? [A plus TRIANGLE FEATURES] - COLLISION -> Unmarking polygon;
+	[Msg] = MSG Polygon marked for collision group;
+	[Tip] = TIP Polygon marked for collision group;
+	[A plus TRIANGLE CG] = [Selected collision group];
+	[MSG Polygon marked for collision group plus 46] = [Selected collision group];
+	[MSG Polygon marked for collision group plus 46] & FF000000h;
+	[MSG Polygon marked for collision group plus 46] > 24;
+	[MSG Polygon marked for collision group plus 45] = [Selected collision group];
+	[MSG Polygon marked for collision group plus 45] & FF0000h;
+	[MSG Polygon marked for collision group plus 45] > 16;
+	[MSG Polygon marked for collision group plus 44] = [Selected collision group];
+	[MSG Polygon marked for collision group plus 44] & FF00h;
+	[MSG Polygon marked for collision group plus 44] > 8;
+	[MSG Polygon marked for collision group plus 43] = [Selected collision group];
+	[MSG Polygon marked for collision group plus 43] & FFh;
+	-> Update And Wait User Input;
+    "Unmarking polygon"
+	[Msg] = MSG Polygon unmarked from its collision group; [Tip] = NULL;
+	[A plus TRIANGLE COLOR] = [Current triangle color];
+	-> Update And Wait User Input;
+
+				    ( K )
+
+"Select collision group ID"
+	[Msg] = MSG Select collision group ID;
+	[Tip] = TIP Select collision group ID;
+	[Prompt on] = YES;
+	[Prompt text] = P CG ID;
+	[Prompt buffer] = vector CG ID;
+	[Prompt buffer size] = 4;
+	[Prompt answer size now] = [P CG ID size];
+	[On answer] = service Select collision group ID;
+	[On reject] = service Reject select collision group ID;
+	-> Update And Wait User Input;
+
+"service Select collision group ID"
+	[P CG ID size] = [Prompt answer size now];
+	? [Prompt answer size now] = 4 -> Valid group ID;
+	[Msg] = ERR Invalid collision group ID;
+	[Tip] = TIP Select collision group ID;
+	-> Update And Wait User Input;
+    "Valid group ID"
+	[MSG Selected collision group plus 34] = [vector CG ID plus 0];
+	[MSG Selected collision group plus 35] = [vector CG ID plus 1];
+	[MSG Selected collision group plus 36] = [vector CG ID plus 2];
+	[MSG Selected collision group plus 37] = [vector CG ID plus 3];
+	A = [vector CG ID plus 0]; A & FFh;
+	B = [vector CG ID plus 1]; B & FFh; B < 8; A | B;
+	B = [vector CG ID plus 2]; B & FFh; B < 16; A | B;
+	B = [vector CG ID plus 3]; B & FFh; B < 24; A | B;
+	[Selected collision group] = A;
+	[Msg] = MSG Selected collision group;
+	[Tip] = NULL;
+	[Prompt on] = NO;
+	-> Update And Wait User Input;
+
+"service Reject select collision group ID"
+	[Msg] = MSG Select collision group canceled; [Tip] = NULL;
+	[P CG ID size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+				    ( U )
+
+"Toggle collision groups visulization"
+	[Show CG] # YES;
+	[Msg] = MSG CG On; [Tip] = NULL;
+	? [Show CG] = YES -> Update And Wait User Input;
+	[Msg] = MSG CG Off; -> Update And Wait User Input;
+
+				( CR. RIGHT )
+
+"Translate markers right"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TMR Loop"
+	[B] ++ [VLU Scaling];
+	B + 3; A ^ TMR Loop;
+	-> Update And Wait User Input;
+
+				( CR. LEFT )
+
+"Translate markers left"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TML Loop"
+	[B] -- [VLU Scaling];
+	B + 3; A ^ TML Loop;
+	-> Update And Wait User Input;
+
+				 ( CR. UP )
+
+"Translate markers up"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TMU Loop"
+	[B plus 2] ++ [VLU Scaling];
+	B + 3; A ^ TMU Loop;
+	-> Update And Wait User Input;
+
+				( CR. DOWN )
+
+"Translate markers down"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TMD Loop"
+	[B plus 2] -- [VLU Scaling];
+	B + 3; A ^ TMD Loop;
+	-> Update And Wait User Input;
+
+				  ( PgDn )
+
+"Translate markers down depth"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TMDD Loop"
+	[B plus 1] ++ [VLU Scaling];
+	B + 3; A ^ TMDD Loop;
+	-> Update And Wait User Input;
+
+				  ( PgUp )
+
+"Translate markers up depth"
+	? [Markers on] = ZERO -> Wait User Input;
+	A = [Markers on];
+	B = Markers area;
+    "TMUD Loop"
+	[B plus 1] -- [VLU Scaling];
+	B + 3; A ^ TMUD Loop;
+	-> Update And Wait User Input;
+
+				    ( + )
+
+"Magnify markers"
+	? [Markers on] = ZERO -> Wait User Input;
+	[MM Center X] = 0f;
+	[MM Center Y] = 0f;
+	[MM Center Z] = 0f;
+	A = [Markers on];
+	B = Markers area;
+    "MM Loop 1"
+	[MM Center X] ++ [B];
+	[MM Center Y] ++ [B plus 1];
+	[MM Center Z] ++ [B plus 2];
+	B + 3; A ^ MM Loop 1;
+	A = 1f; B ,= [Markers on]; A // B;
+	[MM Center X] ** A;
+	[MM Center Y] ** A;
+	[MM Center Z] ** A;
+	A = [Markers on];
+	B = Markers area;
+    "MM Loop 2"
+	C = [B]; D = [B plus 1]; E = [B plus 2];
+	C -- [MM Center X]; D -- [MM Center Y]; E -- [MM Center Z];
+	C ** 1.025f; D ** 1.025f; E ** 1.025f;
+	C ++ [MM Center X]; D ++ [MM Center Y]; E ++ [MM Center Z];
+	[B] = C; [B plus 1] = D; [B plus 2] = E;
+	B + 3; A ^ MM Loop 2;
+	-> Update And Wait User Input;
+
+				    ( - )
+
+"Shrink markers"
+	? [Markers on] = ZERO -> Wait User Input;
+	[MM Center X] = 0f;
+	[MM Center Y] = 0f;
+	[MM Center Z] = 0f;
+	A = [Markers on];
+	B = Markers area;
+    "SM Loop 1"
+	[MM Center X] ++ [B];
+	[MM Center Y] ++ [B plus 1];
+	[MM Center Z] ++ [B plus 2];
+	B + 3; A ^ SM Loop 1;
+	A = 1f; B ,= [Markers on]; A // B;
+	[MM Center X] ** A;
+	[MM Center Y] ** A;
+	[MM Center Z] ** A;
+	A = [Markers on];
+	B = Markers area;
+    "SM Loop 2"
+	C = [B]; D = [B plus 1]; E = [B plus 2];
+	C -- [MM Center X]; D -- [MM Center Y]; E -- [MM Center Z];
+	C ** 0.9756097f; D ** 0.9756097f; E ** 0.9756097f;
+	C ++ [MM Center X]; D ++ [MM Center Y]; E ++ [MM Center Z];
+	[B] = C; [B plus 1] = D; [B plus 2] = E;
+	B + 3; A ^ SM Loop 2;
+	-> Update And Wait User Input;
+
+				    ( | )
+
+"Find infinity triangle"
+	A = Primary shapes buffer;
+	B = [Triangles on];
+	? B = ZERO -> Wait User Input;
+	C = ZERO;
+    "fit loop"
+	E = ZERO;
+	D = [A plus TRIANGLE X1]; D -- [A plus TRIANGLE X2]; || D ||; ?? D >= 0.5f -> fit x finite;
+	D = [A plus TRIANGLE X1]; D -- [A plus TRIANGLE X3]; || D ||; ?? D >= 0.5f -> fit x finite;
+	E+;
+      "fit x finite"
+	D = [A plus TRIANGLE Y1]; D -- [A plus TRIANGLE Y2]; || D ||; ?? D >= 0.5f -> fit y finite;
+	D = [A plus TRIANGLE Y1]; D -- [A plus TRIANGLE Y3]; || D ||; ?? D >= 0.5f -> fit y finite;
+	E+;
+      "fit y finite"
+	D = [A plus TRIANGLE Z1]; D -- [A plus TRIANGLE Z2]; || D ||; ?? D >= 0.5f -> fit z finite;
+	D = [A plus TRIANGLE Z1]; D -- [A plus TRIANGLE Z3]; || D ||; ?? D >= 0.5f -> fit z finite;
+	E+;
+      "fit z finite"
+	? E <= 1 -> fit finite;
+	[Selected triangle] = C;
+	A = [Selected triangle];
+	[MSG SELECT plus 19] = A;
+	[MSG SELECT plus 19] / 10000;
+	[MSG SELECT plus 19] + 48;
+	B = A; B / 10000; B * 10000; A - B;
+	[MSG SELECT plus 20] = A;
+	[MSG SELECT plus 20] / 1000;
+	[MSG SELECT plus 20] + 48;
+	B = A; B / 1000; B * 1000; A - B;
+	[MSG SELECT plus 21] = A;
+	[MSG SELECT plus 21] / 100;
+	[MSG SELECT plus 21] + 48;
+	B = A; B / 100; B * 100; A - B;
+	[MSG SELECT plus 22] = A;
+	[MSG SELECT plus 22] / 10;
+	[MSG SELECT plus 22] + 48;
+	A % 10;
+	[MSG SELECT plus 23] = A;
+	[MSG SELECT plus 23] + 48;
+	[Msg] = MSG SELECT; [Tip] = NULL;
+	-> Update And Wait User Input;
+      "fit finite"
+	A + TRIANGLE DATA SIZE; C+;
+	B ^ fit loop;
+	[Msg] = MSG No Infinity Triangles; [Tip] = NULL;
+	-> Update And Wait User Input;
+
+				    ( # )
+
+"Select color"
+	[Msg] = MSG Select color;
+	[Tip] = TIP Select color;
+	[Prompt on] = YES;
+	[Prompt text] = P COLOR ID;
+	[Prompt buffer] = vector COLOR ID;
+	[Prompt buffer size] = 6;
+	[Prompt answer size now] = [P COLOR ID size];
+	[On answer] = service Select color ID;
+	[On reject] = service Reject color ID;
+	-> Update And Wait User Input;
+
+"service Select color ID"
+	[P COLOR ID size] = [Prompt answer size now];
+	? [Prompt answer size now] = 6 -> Possibly valid color ID;
+    "Invalid color ID"
+	[Msg] = ERR Invalid color ID;
+	[Tip] = TIP Select color;
+	-> Update And Wait User Input;
+    "Possibly valid color ID"
+	B = 5;
+	C = ZERO;
+	D = ZERO;
+      "Translate color ID string"
+	A = [B plus vector COLOR ID];
+	? A >= 48 -> Digit for color ID test 1; -> Digit for color ID test 3;
+      "Digit for color ID test 1"
+	? A <= 57 -> Digit for color ID test 2; -> Digit for color ID test 3;
+      "Digit for color ID test 2"
+	A - 48; -> Digit for color ID test SUCCESS;
+      "Digit for color ID test 3"
+	? A >= 65 -> Digit for color ID test 4; -> Digit for color ID test 6;
+      "Digit for color ID test 4"
+	? A <= 70 -> Digit for color ID test 5; -> Digit for color ID test 6;
+      "Digit for color ID test 5"
+	A - 65 minus 10; -> Digit for color ID test SUCCESS;
+      "Digit for color ID test 6"
+	? A >= 97 -> Digit for color ID test 7; -> Digit for color ID test FAIL;
+      "Digit for color ID test 7"
+	? A <=102 -> Digit for color ID test 8; -> Digit for color ID test FAIL;
+      "Digit for color ID test 8"
+	A - 97 minus 10; -> Digit for color ID test SUCCESS;
+      "Digit for color ID test FAIL"
+	-> Invalid color ID;
+      "Digit for color ID test SUCCESS"
+	A < D; C | A; D + 4; B-; ? B >= 0 -> Translate color ID string;
+    "Valid color ID"
+	? [Selected triangle] = UNDEFINED -> Change editing color;
+	B = [Selected triangle]; B < TRIANGLE DATA SHIFT; B + Primary shapes buffer;
+	[B plus TRIANGLE COLOR] = C;
+	[Msg] = MSG Selected color to triangle;
+	[Tip] = NULL;
+	[Prompt on] = NO;
+	-> Update And Wait User Input;
+    "Change editing color"
+	[Current triangle color] = C;
+	[Msg] = MSG Selected color;
+	[Tip] = NULL;
+	[Prompt on] = NO;
+	-> Update And Wait User Input;
+
+"service Reject color ID"
+	[Msg] = MSG Select color canceled; [Tip] = NULL;
+	[P COLOR ID size] = [Prompt answer size now];
+	-> Update And Wait User Input;
+
+				    ( * )
+
+"Print screen"
+	[Msg] = MSG Printing;
+	[Tip] = NULL;
+	[Printer Command] = PRINT PAGE;
+	[Page Origin] = [Display Origin];
+	[Page Width] = [Display Width];
+	[Page Height] = [Display Height];
+	isocall;
+	-> Update And Wait User Input;
+
+				    ( F1 )
+
+"Revert to cooperative display mode"
+	[KEY F1] = OFF;
+	[Display Command] = SET COOPERATIVE MODE;
+	isocall;
+	[Display X Position] = MIDDLE;
+	[Display Y Position] = MIDDLE;
+	isocall;
+	-> Update And Wait User Input;
+
+				    ( F2 )
+
+"Set physical resolution 320x240"
+	[KEY F2] = OFF;
+	[Display Command] = SET COOPERATIVE MODE; isocall;
+	[Pointer Delta X] = 320; [Pointer Delta X] - [Display Width];
+	[Pointer Delta Y] = [Display Height]; [Pointer Delta Y] - 240;
+	=> Things To Do While Resizing;
+	[Display Command] = SET EXCLUSIVE MODE;
+	isocall;
+	-> Update And Wait User Input;
+
+				    ( F3 )
+
+"Set physical resolution 512x384"
+	[KEY F3] = OFF;
+	[Display Command] = SET COOPERATIVE MODE; isocall;
+	[Pointer Delta X] = 512; [Pointer Delta X] - [Display Width];
+	[Pointer Delta Y] = [Display Height]; [Pointer Delta Y] - 384;
+	=> Things To Do While Resizing;
+	[Display Command] = SET EXCLUSIVE MODE;
+	isocall;
+	-> Update And Wait User Input;
+
+				    ( F4 )
+
+"Set physical resolution 640x480"
+	[KEY F4] = OFF;
+	[Display Command] = SET COOPERATIVE MODE; isocall;
+	[Pointer Delta X] = 640; [Pointer Delta X] - [Display Width];
+	[Pointer Delta Y] = [Display Height]; [Pointer Delta Y] - 480;
+	=> Things To Do While Resizing;
+	[Display Command] = SET EXCLUSIVE MODE;
+	isocall;
+	-> Update And Wait User Input;
+

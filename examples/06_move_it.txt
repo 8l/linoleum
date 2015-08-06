@@ -1,0 +1,206 @@
+
+      ( *** LINOLEUM Example 6: Move it! *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "06_move_it.TXT", WITH THE RIGHT
+	   MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Animates a spinning spiral.
+	It's pratically an evolution of example number 5. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Move_it! };
+	unit = 32;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	LIGHT BLUE = 80A0FFh;
+
+"variables"
+
+	Spiral Center X = 0;
+	Spiral Center Y = 0;
+	Spiral Growth K = 1f;
+	Spiral Entry Angle = 0f;
+	Spiral Exit Angle = 1f;
+	Spiral Entry Radius = 10f;
+	Spiral Color = FFFFFFh;
+	Spiral Growth K Step = 0f;
+	Current Spiral Radius = 0f;
+	Current Spiral Angle = 0f;
+	Current Spiral Step = 0f;
+	Animation Angle Delta = 0.1f;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+	[Spiral Center X] ,= [Display Width]; [Spiral Center X] // 2f;
+	[Spiral Center Y] ,= [Display Height]; [Spiral Center Y] // 2f;
+	[Spiral Growth K] = 0.85f;
+	[Spiral Entry Angle] = 0f;
+	[Spiral Exit Angle] = 30f;
+	[Spiral Entry Radius] = 5f;
+	[Spiral Color] = LIGHT BLUE;
+
+    "Move it"
+	=> Clear the display;
+	=> Spiral;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	[Spiral Entry Angle] ++ [Animation Angle Delta];
+	[Spiral Exit Angle] ++ [Animation Angle Delta];
+
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> Move it;
+
+	end;			(of MAIN PROGRAM)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Spiral"
+    ( Draws a spiral, using the Plot subroutine. A, B, C destroyed. )
+    ( Spiral Center X = center X coordinate, of integer type;
+      Spiral Center Y = center Y coordinate, of integer type;
+      Spiral Growth K = spiral's growth ratio, determines how much the
+	distance from the center grows for each time
+	the tracing point turns a full circle around
+	spiral's center;
+      Spiral Entry Angle = the angle at which the tracing point begins
+	spinning, which determines the rotation of the whole figure;
+      Spiral Exit Angle = the angle at which the tracing point stops
+	spinning, determining where the spiral is no longer traced,
+	that is, the end of the figure.
+      Spiral Entry Radius = the initial radius of the tracing point's
+	curse around the center.
+      Spiral Color = the color of the dots forming the figure. )
+	[Spiral Growth K Step] = [Spiral Growth K];
+	[Spiral Growth K Step] // TwoPI;
+	[Current Spiral Angle] = [Spiral Entry Angle];
+	[Current Spiral Radius] = [Spiral Entry Radius];
+	C = [Spiral Color];
+    "Spiral tracement loop"
+	A = [Current Spiral Angle]; ~~A;
+	B = [Current Spiral Angle]; ~B;
+	A ** [Current Spiral Radius]; A ++ [Spiral Center X];
+	B ** [Current Spiral Radius]; B ++ [Spiral Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	[Current Spiral Step] = 0.999f;
+	[Current Spiral Step] // [Current Spiral Radius];
+	[Current Spiral Angle] ++ [Current Spiral Step];
+	[Current Spiral Radius] ++ [Spiral Growth K Step];
+	?? [Current Spiral Angle] < [Spiral Exit Angle]
+		-> Spiral tracement loop;
+	end;
+
+"Clear the display"
+	A = [Display Width];
+	A * [Display Height];
+	B = [Display Origin];
+    "Loop to clear all of it"
+	[B] = 0; B+;
+	A ^ Loop to clear all of it;
+	end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+( This time we tried to animate the display, by showing a spinning spiral.
+First of all, let's take a look to the changes since last example:
+there isn't very much to say, indeed, however there's a new subroutine
+called "Clear the display" which REALLY needs in-depth explanations.
+As I explained in the "Testing the Display.txt" sample file, to move the
+pointer to a dot over the video display memory you have to increase or
+decrease that pointer by ONE UNIT to move one pixel RIGHT or LEFT, while
+you have to add or subtract the value of "Display Width" in order to skip
+over whole lines and move that pointer DOWN or UP.
+But the video display is also JUST a matrix.
+It can be cleared completely by performing a single loop: if you take
+the pointer to its first dot, [Display Origin], and increment this
+pointer in a loop repeated for [Display Width] * [Display height],
+you'll be processing all the dots in the video matrix. To understand this
+with a pratical scheme, open a text editor and set it to WORD-WRAP at the
+end of a long line, then press the X key and hold it down so that it will
+repeat quite fast. When the sequence of X's reaches the end of a line, it
+will continue on the NEXT line. If you imagine X's to be pixels, and the
+text editor's window to be the display, you'll get an idea of how the said
+loop comes to process all the pixels in the display. The loop is only one:
+write the X, advance to next character / make the dot black, advance to the
+next dot / store a zero in the pixel's location, advance the pointer /
+and finally, in LINOLEUM's way to say that... [B] = 0; B+; )
+
+( Another difference from the other examples is the loop within the main
+program, which now performs a few simple steps, frame by frame, until
+the user presses a key. )
+
+( Three steps are needed to advance the animation: first we clear the
+display which, since the second frame, would still hold the contents
+of the previous frame otherwise (try NOT clearing it by removing the
+"=> Clear the display" instruction from the main program: recompile and
+see what happens). The second step is tracing the figure again, which is
+a trivial task since the parameters are already loaded and we just call
+the subroutine to trace the spiral again. The third step is changing
+something in the parameters so that our figure will change frame by frame,
+realizing the effect of the animation. In particular, the parameter which
+is to be changed so that the spiral will "spin" is "Spiral Entry Angle".
+At each frame, that variable is incremented by 0.1 radians, because it's
+added the pre-initialized value of "Animation Angle Delta".
+Accordingly, the "Spiral Exit Angle" has to be changed too, otherwise
+the spiral would become shorter frame by frame, until it would be made
+of a single dot, because of the "Spiral" function's behavior. )
+
+( This animation was quite rough. Depending on your equipment's speed,
+your eyes may be not even able to discern every single frame. That's
+because animations, usually, need to be synchronized. The goal is to
+slow them down on fast computers, while they should still run at full
+speed when seen on slower ones. Take the next example for a nice solution
+to the synchronization problem... )

@@ -1,0 +1,973 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><title>Lock library documentation</title><meta name="Author" content="Vladimir Klicic"><meta name="keywords" content="lock library Linoleum programming language documentation memory manager management source code Vladimir Klicic"><style>p{margin-top:0pt;margin-bottom:0pt}</style></head><body bgcolor="navy"><font style="font-family: Verdana; font-size: 12pt; color: white;"><font style="font-size: 24pt;"><br><p style="text-align: center;">Lock library documentation</p><br><p style="text-align: center;">Contents:</p><br><br><br></font><b><a href="#Introduction" style="color: yellow;">Introduction</a></b><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#What_is_the_Lock_library" style="color: yellow;">What is Lock library for Linoleum?</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Why_is_the_Lock_library" style="color: yellow;">Why is Lock library for Linoleum?</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#What_do_you_get" style="color: yellow;">What do you get?</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Licence" style="color: yellow;">Lock library license</a><br><b><a href="#Details_and_implementation" style="color: yellow;">Details and implementation</a></b><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Lock_library_conventions" style="color: yellow;">Lock library conventions</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Library_service" style="color: yellow;">Library service</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Implementation" style="color: yellow;">Implementation</a><br><b><a href="#Reference" style="color: yellow;">Reference</a><br></b>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Functions" style="color: yellow;">Functions</a><br><font style="font-family: Courier New;"><b>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#lock" style="color: yellow;">lock</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#free" style="color: yellow;">free</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#resize" style="color: yellow;">resize</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#set_lock" style="color: yellow;">set lock</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#release_lock" style="color: yellow;">release lock</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#resize_lock" style="color: yellow;">resize lock</a><br></b></font>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Error_messages" style="color: yellow;">Error messages</a><br><font style="font-family: Courier New;"><b>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#success" style="color: yellow;">success</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#illegal_request" style="color: yellow;">illegal request</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#not_enough_memory" style="color: yellow;">not enough memory</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#fragmented" style="color: yellow;">fragmented</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#empty" style="color: yellow;">empty</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#not_found" style="color: yellow;">not found</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#no_copy" style="color: yellow;">no copy</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#stack_hit" style="color: yellow;">stack hit</a><br></b></font>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Service_variables_and_constants" style="color: yellow;">Service variables and constants</a><br><b><a href="#Further_comments" style="color: yellow;">Further comments</a><br></b>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Improvements" style="color: yellow;">Improvements</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Experimental" style="color: yellow;">Experimental?</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#bcopy_and_bset" style="color: yellow;">"bcopy" and "bset"</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Synonyms" style="color: yellow;">Synonyms</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#The_Lock_library_comments" style="color: yellow;">The original Lock library is badly commented</a><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<a href="#Bugs" style="color: yellow;">Bugs</a><br><br><br><font style="font-size: 24pt;"><p style="text-align: center;"><a name="Introduction"></a>Introduction</p></font><br><br><br><b><a name="What_is_the_Lock_library"></a>What is Lock library for Linoleum?</b><br><br>Lock
+library is a memory manager for Linoleum. If experienced in C/C++
+you’ll recognize it’s functionality corresponding to malloc, realloc
+and free. However, there are some important differences worth noting.<br><br><br><b><a name="Why_is_the_Lock_library"></a>Why is Lock library for Linoleum?</b><br><br>I have decided to do my programming in Linoleum for several reasons, all of them tracing back to:<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+1. the capability of the CPU-instruction-level code control,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+2. simplicity of I/O access, and<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+3. the compiled code speed beeing 90% of the native assembler as
+claimed by the Linoleum author which I, unable to prove it myself,
+dogmatically accept.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Also, Linoleum being a cross-platform <i>assembler</i>
+made me wish for the ability of translating my custom C++ project
+libraries into the Linoleum syntax. This could not have been done
+without emulating the most basic functions of all OOP - namely malloc
+and free of the memory management. Now having provided yourself with a
+useful form of these functions I suggest you read the chapter on
+constructors / destructors from "Thinking in C++" by Bruce Eckel. This
+eminent book is logically and fairly easy read as well as free and made
+available on internet in many standard formats.<br><br><br><b><a name="What_do_you_get"></a>What do you get?</b><br><br>The Lock library provides you with the functionality to:<br>- <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> a requested amount of memory units in a single sequence and recieve a pointer to the start, the first unit of this sequence.<br>- <font style="font-family: Courier New; color: lime;"><b>"free"</b></font> a pointer you no longer need, allowing for reusage of the previously "locked" memory space.<br>- <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> an already "locked" area of memory through the original pointer to it.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Also, you must <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to a part of your allocated heap space in order for you to use the library. There are also functions provided to change the <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> disponible size and to release the <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font>.<br><br><br><b><a name="Licence"></a>Lock library license</b><br><br>This
+source code is absolutely free to use, distribute and modify at will.
+You may wish to distribute this documentation to go with the original
+release of the source code, or not. I’ll think you’re bad if you don’t.
+You are also free to take money for any derivative of it, should anyone
+feel like paying.<br><br><b>However, by using it, you <i>do</i> agree that this original source code is a source of much <i>good</i> and that you will not turn to <i>evil ways</i>
+and driven by jealousy and/or greed prevent anyone from distributing,
+re-distributing and/or altering the originally made available release
+of the "lock.txt" library source code or any non-commercial, freely
+available, modifications thereof, and not to go about blaming anyone
+but yourself should it cause <i>any</i> sort of harm to yourself or anyone or anything yourself or anyone else may be able to percieve of or not.</b><br><br>This
+particular detailed documentation applies only to the original release
+of the Lock library (source code) and should not be distributed or
+re-distributed along with any functionally altered source code without
+truthful and suitable adaptation.<br><br>I, Vladimir Klicic, calling to
+my legal right, claim and am able to legally prove to be the author of
+the original release of the Lock library source code, and the fitting
+original documentation as of in May-October 2002 AD. You, as the
+user/programmer are both allowed and encouraged to credit me as the
+author of the Lock library source code and the fitting original
+documentation. In any of the modifications, alterations or improvements
+upon the items mentioned within this original paragraph:<br>1. you <i>should not</i> credit me as the <i>sole author</i> of a derivative,<br>2. you <i>should</i> credit yourself authoring the derivative,<br>3.
+you are in no way legally bound to mention me, Vladimir Klicic, as the
+original author of the original items. However, I’ll think you’re bad
+if you don’t...<br>4. ...and should you <i>commercially</i> benefit from the use of this original release or a self-made derivative thereof in <i>a programming language other than Linoleum</i>, it <i>would be kind</i> of you to credit myself with the original memory manager version <i>and</i> the Linoleum programming language as the language it has been developed for, as follows:<br>"[This or that item] is built upon the original memory management library by Vladimir Klicic for Linoleum programming language."<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Your product could <i>kindly</i> contain this quote legible where your product credits are due.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+"[This or that item]" could <i>kindly</i>
+be replaced with the actual and truthful nominative of the particular
+where you’d used this library. No, I am not joking - you are in no way
+bound, nor will ever be, to pay for using this original release or any
+of the self-made derivatives thereof. However, keep in mind that a
+working memory management source code with fitting documentation is
+hard to come by as the programming community, pushing the standards
+towards abstraction, seems to have forgotten the importance of
+understanding the most basic primitives. This final rule given, my
+intention is clearly one of having the Linoleum programming language
+acknowledged as well as boosting my own esteem as a programmer a bit,
+and I think I’m in the right of simply and kindly asking of you to obey
+the rules. No persecutions, no bonds.<br><br>A particular final license
+rule and encouragement is given to Alessandro Ghignola to distribute,
+re-distribute and/or alter the contents of this library and this
+documentation and it’s format as he sees fit to go through his site(s)
+in any way, with or without the Linoleum programming language
+distribution provided by him through his site(s), any mirror site/s
+and/or any other site(s) providing distribution of the Linoleum
+programming language or in any other way he seems fit under the
+aforementioned rules. Him I think good of.<br><br>Also I'd like to
+thank Peterpaul Klein Haneveld for helping me out with beta testing the
+library code and (unknowingly, I'm certain) making me reconsider and
+decisively redesign the functionality and implementation of this
+library prior to release.<br><br><br><font style="font-size: 24pt;"><p style="text-align: center;"><a name="Details_and_implementation"></a>Details and implementation</p></font><br><br><br>You
+ought to already know that the Lock library is what the C/C++ and most
+of the assembler programmers have been dealing with quite well for ages
+now and is quite easily mastered to the point of becoming a second
+programming nature. The bad thing about it is that, just as the
+original malloc-realloc-free counterpart, after some locking, resizing
+and freeing, it fragments the heap space. This means it works a bit
+like your hard disk when you request it to save a file, then delete
+some other file. I have a more advanced memory manager in mind (more
+advanced than any I've seen thus far), but I have decided not to
+release it before redesigning some of it's functionality and knowing it
+won't need a second redesign. It will be slower, but also capable of
+using the last single unit of your heap space by run-time
+defragmentation. However, you can still make some serious OOP with Lock
+library (as serious as it ever was) if you work hard enough creating
+yourself some classes!<br><br><br><b><a name="Lock_library_conventions"></a>Lock library conventions</b><br><br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<b>1</b>. Before call, pass variables through registers. (You can
+easily re-code the functions’ entrance and exit points if you want to
+use variables instead.)<br>
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<b>2</b>. After call, receive results through registers. (You can
+easily re-code the functions’ exit to use variables instead or to
+complement with variables.)<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+<b>3</b>. After call, check for function <font style="font-family: Courier New; color: lime;"><b>failed</b></font> condition:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+? failed -&gt; handle error;</b></font><br><br>No Lock library function call should be taken successful for granted.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+A function failure will <i>not</i> crash your application in itself. The Lock library has been designed simply <i>not</i> to alter the memory contents on a failure to meet your demand. On the other hand, <b>a
+failure from your side to deal with an event of a function failure
+before proceeding with the application execution will most certainly
+result in irrevocably crashing the application and losing the
+application memory contents not saved to a disk</b>.<br><br>All functions are plain-English symbols of one or two words. All of the internal variables are prefixed with the word "lock".<br><br><br><b><a name="Library_service"></a>Library service</b><br><br>There are 5 common service variables that should never be altered by an unexperienced user:<br>1. <font style="font-family: Courier New; color: lime;"><b>[lock start]</b></font> - pointer to the first unit address from the heap available to the Lock library.<br>2. <font style="font-family: Courier New; color: lime;"><b>[lock locked]</b></font> - exact amount of memory instances locked.<br>3. <font style="font-family: Courier New; color: lime;"><b>[lock free]</b></font> - total units available to lock. Each call to <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font>
+decreases this value by the size requested plus two units denoting
+pointer and size. This addition is made because the Lock library uses
+the same heap for storing the locked pointer stack, locked sizes and
+the locked space itself.<br>4. <font style="font-family: Courier New; color: lime;"><b>[lock total]</b></font> - total units between <font style="font-family: Courier New; color: lime;"><b>[lock start]</b></font> and <font style="font-family: Courier New; color: lime;"><b>[lock exclusive top]</b></font> - total units available to the Lock library.<br>5. <font style="font-family: Courier New; color: lime;"><b>[lock exclusive top]</b></font> - pointer to the last unit address from the heap available to the Lock library, plus 1.<br><br>There are two more service variables you are allowed to change. These will be discussed in <a href="#Service_variables_and_constants" style="color: yellow;">"Service variables and constants"</a> part of this manual.<br><br>All
+of the other, non-service variables of the Lock library can be changed,
+but a call to any of the Lock library function will probably alter them.<br><br><br><b><a name="Implementation"></a>Implementation</b><br><br>The "heap", the memory you assign to the Lock library is a sequence of units starting at <font style="font-family: Courier New; color: lime;"><b>[lock start]</b></font> and ending at <font style="font-family: Courier New; color: lime;"><b>[lock exclusive top] - 1</b></font>. It looks like this for a 60 unit heap with no allocations:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>+--------------------------------------------------------+<br>[lock start]..........................[lock exclusive top]<br></b></font><br></font><p><font style="font-family: Verdana; font-size: 12pt; color: white;">Consider you allocate 10 units:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+A = 10;<br>&nbsp;
+&nbsp;
+&nbsp;
+=&gt; lock;<br>&nbsp;
+&nbsp;
+&nbsp;
+[ptr] = A;</b></font><br><br>You end up with this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>Sabcdefghij----------------------------------------------P<br>[lock start]..........................[lock exclusive top]<br></b></font><br>And then:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+A = 8;<br>&nbsp;
+&nbsp;
+&nbsp;
+=&gt; lock;<br>&nbsp;
+&nbsp;
+&nbsp;
+[ptr] = A;<br></b></font><br>Ending with:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>SabcdefghijSabcdefgh------------------------------------PP<br>[lock start]..........................[lock exclusive top]<br></b></font><br>What <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> does for you is to look for a space of requested amount of units size plus 1, and keep the pointer to that place (<font style="font-family: Courier New; color: lime;"><b>P</b></font>), puts the size (<font style="font-family: Courier New; color: lime;"><b>S</b></font>) the pointer (<font style="font-family: Courier New; color: lime;"><b>P</b></font>) points at and returns you (<font style="font-family: Courier New; color: lime;"><b>P</b></font>)
+plus 1, pointing to the letter a, the first available unit of the
+allocated vector. This design has a positive and a negative side effect:<br><br>The positive side effect is that you can easily retrieve the vector <i>size</i> looking up the value at <i>the pointer minus 1</i>:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+A = [ptr];<br>&nbsp;
+&nbsp;
+&nbsp;
+[size] = [A minus 1];<br></b></font><br>The
+negative side effect is that you must never write to the pointer minus
+1 unit, making it even more important to tripple check your code.
+Writing to this value is as dangerous as writing directly to the Lock
+library stack and may result in crashing your application. Really. Heed
+the warnings and you will prosper. There is also a quick and dirty way
+to resize the actual pointer to a lower value, but it is dangerous (and
+potentially fatal) to apply on increasing the size. If you don't
+understand what the following code does, avoid the hacking business:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+A = [ptr];<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock free] + [A minus 1];<br>&nbsp;
+&nbsp;
+&nbsp;
+[A minus 1] = [new size];<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock free] - [new size];</b></font><br><br>That's about that. Now, <font style="font-family: Courier New; color: lime;"><b>"free"</b></font>
+will remove any given pointer from the stack list at the top. Say that
+you release the first pointer we've allocated, the heap will look like
+this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>+----------Sabcdefgh-------------------------------------P<br>[lock start]..........................[lock exclusive top]<br></b></font><br>The lock stack list is <font style="font-family: Courier New; color: lime;"><b>[lock locked]</b></font> units large. All the pointers are <i>sorted</i> in reverse order to the order of allocated sizes they point to. In the previous example:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>SabcdefghijSabcdefgh------------------------------------PP<br>[lock start]..........................[lock exclusive top]<br></b></font><br>Pointers are mapped like this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>11111111111222222222------------------------------------21<br>[lock start]..........................[lock exclusive top]<br></b></font><br>A couple of more allocations, resizes and frees later, the heap may look something like this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>111111111112222222223333333----------44444445555-----54321<br>[lock start]..........................[lock exclusive top]<br></b></font><br>There are very important reasons to this <i>reverse order sorting</i>:<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+1.
+&nbsp;-&nbsp;
+memory allocation at top (when top is to the right on the scheme above)
+is faster. The vectors allocated at the start of the program tend to
+stay allocated for the longest time, and the fragmentation is postponed
+by the functions' <a href="#Functions" style="color: yellow;">look-up design</a>.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+2.
+&nbsp;-&nbsp;
+that's the only way to find the fragmented free space (like the one between the "<font style="color: lime;">3</font>" and "<font style="color: lime;">4</font>")
+to lock without resorting to recursive functions looping or the BSP
+trees (which can actually all be done in Linoleum by stacking the
+parameters, popping and pushing the stacked IP around from within the
+functions... but, it's a bloody overkill for this kind of purpose).<br><br>Thus, a new allocation of 8 units will result in this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>111111111112222222223333333666666666-44444445555----546321<br>[lock start]..........................[lock exclusive top]<br></b></font><br>It
+surely looks like a tight fit, but, heck, we've only got 60 units of
+memory heap to manage. Using a larger heap than needed is mandatory for
+OOP and memory managers (just take a look at MSWindows and laugh your
+tears out).<br><br>And, as for the <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> function, you needn't know more than the <a href="#resize" style="color: yellow;">Reference</a>
+part explains. It's more convenient, memory economic and always at
+least one loop faster than locking a new size, copying data from the
+old to the new size and the freeing the old size. Looking at the source
+code, you'll see it's a rather complex 200+ instructions function
+taking up half the library code in order to simplify things for you and
+me as fast as possible.<br><br><br><font style="font-size: 24pt;"><p style="text-align: center;"><a name="Reference"></a>Reference</p></font><br><br><b><a name="Functions"></a>Functions<br></b><br>These
+functions provide you with a contract to your application. You request
+your application to reserve, claim or allocate a vector, a sequence of
+units for you to use and to associate to through a pointer. Then you
+may access it, or any part of it, and operate on all of the size of it
+in any way you like for as long as you like from within your
+application. It may contain a text string or a picture to edit, for
+example. Should you at any time request another sequence of units, you
+may rest assured that the old one will be kept intact and that you will
+be able to refer to it and operate on it through it's given pointer
+until you decide to release it.<br>
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Always remember to <font style="font-family: Courier New; color: lime;"><b>"free"</b></font> the vectors you no longer use.<br>
+<br><br><font style="font-family: Courier New;"><a name="lock"></a><b>"lock"<br></b></font><br>Allocates
+(allows you) a requested amount of units from the heap. On success it
+gives you a pointer to the first unit allocated and the amount of units
+available to you to operate on. You are free to adress any unit from <font style="font-family: Courier New; color: lime;"><b>[pointer]</b></font> up to <font style="font-family: Courier New; color: lime;"><b>[pointer] + size - 1</b></font>
+(in a vector of size 32, the first unit is indexed 0, the last one 31)
+with no fear of affecting any other data allocated from within your
+application.<br><br><font style="font-family: Courier New; color: lime;"><b><br>lock:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - amount units requested;<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|A - pointer to locked units vector,<br>FAIL:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - trash;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000000h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000001h) - illegal request<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000002h) - not enough memory<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000003h) - fragmented<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000007h) - stack hit<br>-------------------|----------------------------------------<br></b></font><br><br><font style="font-family: Courier New;"><b><a name="free"></a>"free"<br></b></font><br>Releases an allocated amount of units associated with the pointer to the first unit from an earlier call to <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font>. It returns this amount to the heap rendering it available for further calls to <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font>.<br><br><font style="font-family: Courier New; color: lime;"><b><br>free:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - pointer to locked units vector;<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|A - unaltered;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000001h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000004h) - empty<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000005h) - not found<br>-------------------|----------------------------------------<br></b></font><br><br><font style="font-family: Courier New;"><a name="resize"></a><b>"resize"<br></b></font><br>Changes the amount of units associating the given pointer, when possible without a new <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> to the new requested amount of units, copying all of the <a href="#Service_variables_and_constants" style="color: yellow;">relevant</a> units to the new vector and a <font style="font-family: Courier New; color: lime;"><b>"free"</b></font>-ing the old pointer. This can sometimes be avoided by simply changing the size of the unit vector you wish to <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font>.
+If that should not be possible, the function will do all of the above
+quicker than the above procedure and return the new pointer to you.<br><br><font style="font-family: Courier New; color: lime;"><b><br>resize:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - pointer to locked units vector,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|B - new size;<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|A - pointer to locked units vector,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|B - unaltered;<br>FAIL:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A, B - trash;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000002h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000001h) - illegal request<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000002h) - not enough memory<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000003h) - fragmented<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000004h) - empty<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000005h) - not found<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000006h) - no copy<br>-------------------|----------------------------------------<br></b></font><br><br><font style="font-family: Courier New;"><a name="set_lock"></a><b>"set lock"<br></b></font><br>This
+one sets the Lock library to a heap space starting at A of size B. A
+peculiarity of this function allows you to have several heap spaces.
+Provided you have released any previous heap space with <font style="font-family: Courier New; color: lime;"><b>"release lock"</b></font> and kept the <font style="font-family: Courier New; color: lime;"><b>[lock start]</b></font>, <font style="font-family: Courier New; color: lime;"><b>[lock total]</b></font> and <font style="font-family: Courier New; color: lime;"><b>[lock locked]</b></font> values of it, you may continue working your way on it at a later time provided you call <font style="font-family: Courier New; color: lime;"><b>"set</b></font> lock" with the correctly set <font style="font-family: Courier New; color: lime;"><b>[lock start]</b></font> (<font style="color: lime;"><b>A</b></font>) and <font style="font-family: Courier New; color: lime;"><b>[lock total]</b></font> (<font style="color: lime;"><b>B</b></font>) and <font style="font-family: Courier New; color: lime;"><b>[lock locked]</b></font> (<font style="color: lime;"><b>C</b></font>). I must warn you though, that this "old" heap space, in order to work properly, should <i>not</i> be altered in <i>any single way</i> once released, as any modifications to the heap space you intend to <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to again, using the old stack, may result in your application irrecoverably crashing.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Mind you: You can not successfully use <i>any</i> of the Lock library functions prior to <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font>.<br><br><font style="font-family: Courier New; color: lime;"><b><br>set lock:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - pointer to heap,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|B - size requested,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|C - locked already, 0 if new,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;| &nbsp; &nbsp;(-the lock stack size-);<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|unaltered;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000003h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000001h) - illegal request<br>-------------------|----------------------------------------<br></b></font><br><br><font style="font-family: Courier New;"><a name="release_lock"></a><b>"release lock"<br></b></font><br>Releases the <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> heap space and returns you the current state of the Lock library memory allocation heap, in case you should wish to re-<font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to the same place later on. (That is possible unless you <a href="#set_lock" style="color: yellow;">modify</a> the contents of the heap. Any such a modification may irrecoverably crash your application once you attempt to <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to the modifyed heap. The best advice is not to touch anything if you want to re-<font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to a once released lock prior calling the <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> to the old heap. You have been <i>thoroughly</i> warned.)<br><br><font style="font-family: Courier New; color: lime;"><b><br>release lock:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|nothing;<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|A - pointer to heap<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|B - size requested,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|C - locked already, 0 if new,<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;| &nbsp; &nbsp;(-the lock stack size-);<br>FAIL:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|unaltered;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000004h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000004h) - empty<br>-------------------|----------------------------------------<br></b></font><br><br><font style="font-family: Courier New;"><a name="resize_lock"></a><b>"resize lock"<br></b></font><br>The
+last but not the least function of the Lock library will assign the
+given amount of units to the Lock library heap. You may change this
+amount at any time by calling this function. Mind you that you must
+make sure not to allow the Lock library to exceed the legal heap
+allocated to your application by assigning too many units to it. If you
+are going to use this function to increase the lock heap, I suggest you
+allocate the heap for the Lock library at the top of all the Linoleum
+heap space. Also, the function will fail if the amount of units you
+wish to assign to the Lock library is less than the actual amount units
+currently in use <i>including</i> the fragmented memory space.<br><br><font style="font-family: Courier New; color: lime;"><b><br>resize lock:<br>-------------------|----------------------------------------<br>IN:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|A - size requested;<br>OUT:
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+|unaltered;<br>-------------------|----------------------------------------<br>FUNCTION CODE:
+&nbsp;
+&nbsp;
+|(00000005h)<br>ERROR MESSAGES:
+&nbsp;
+&nbsp;|(00000000h) - success<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;|(00000001h) - illegal request<br>-------------------|----------------------------------------<br></b></font><br><br><a name="Error_messages"></a><b>Error messages<br></b><br>The
+error messages, just like the function codes are enumerated. This way
+you should be able to set up a jump table to handle all the cases. A
+jump table is a faster way for the processor to make decisions than a
+row of the usual <font style="color: lime;"><b>"?"</b></font> statements. Here comes an explanation of what each and every one of them means:<br><br><font style="font-family: Courier New; color: lime;"><b><a name="success"></a>func success
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000000h;<br></font></b><font style="font-family: Courier New;"></font><br>The function has succeeded. No need to do anything, just relax and proceed with your application execution.<br><br><font style="font-family: Courier New; color: lime;"><b><a name="illegal_request"></a>func illegal request
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000001h;<br></font></b><font style="font-family: Courier New;"></font><br>Have you requested the Lock library to give you a negative size? Have you requested the Lock library to "resize lock" too small?<br><br><font style="font-family: Courier New; color: lime;"><b><a name="not_enough_memory"></a>func not enough memory
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000002h;<br></font></b><font style="font-family: Courier New;"></font><br>There is not enough memory to allow you the size you requested. Try increasing the heap with <font style="font-family: Courier New; color: lime;"><b>"resize lock"</b></font>
+to fit your request or just increase it beyond considerable need (and
+more importantly, make sure that Linoleum heap space is large enough
+for such a request!).<br><br><font style="font-family: Courier New; color: lime;"><b><a name="fragmented"></a>func fragmented
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000003h;<br></font></b><font style="font-family: Courier New;"></font><br>There <i>is</i> enough memory to meet your request, but it's all fragmented. You may try increasing the heap with <font style="font-family: Courier New; color: lime;"><b>"resize lock"</b></font>,
+just as with the previous error code, or simply save all the contents
+of all the vectors to your hard disk, free all of the contents and then
+re-load them again, implying some complexity with the vector pointers
+stored as variables. After handling the error in any of the
+aforementioned ways, your request should be met successfully.<br><br><font style="font-family: Courier New; color: lime;"><b><a name="empty"></a>func empty
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000004h;<br></font></b><font style="font-family: Courier New;"></font><br>Have you called the <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font>
+function? Have you by any chance "released lock"? Are you releasing an
+already "released lock"? Perhaps there aren't any previously allocated
+vectors on the Lock library heap, i.e. it's not an error, it just tells
+you that nothing has been allocated yet?<br><br><font style="font-family: Courier New; color: lime;"><b><a name="not_found"></a>func not found
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000005h;<br></font></b><font style="font-family: Courier New;"></font><br>The vector pointer you requested to manipulate through the Lock library is invalid. If you haven't lost it after <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> or <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font>, chances are you've got a bad pointer. Otherwise, you won't be able to <font style="font-family: Courier New; color: lime;"><b>"free"</b></font> up the lost size until you <font style="font-family: Courier New; color: lime;"><b>"release"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"set lock"</b></font> anew.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Mind you: Always keep the pointer passed to you by <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> untill <font style="font-family: Courier New; color: lime;"><b>"free"</b></font>!<br><br><font style="font-family: Courier New; color: lime;"><b><a name="no_copy"></a>func no copy
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000006h;<br></font></b><font style="font-family: Courier New;"></font><br>This can happen only with the <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> function, if the <font style="font-family: Courier New; color: lime;"><b>"lock no copy on resize"</b></font> flag has been set in the <font style="font-family: Courier New; color: lime;"><b>"lock set"</b></font> service variable. For more information, view the <a href="#Service_variables_and_constants" style="color: yellow;"><font style="color: yellow;">"Service variables and constants"</font></a><font style="color: yellow;"></font> topic.<br><br><font style="font-family: Courier New; color: lime;"><b><a name="stack_hit"></a>func stack hit
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;</b></font><b><font style="font-family: Courier New;">
+= 00000007h;<br></font></b><font style="font-family: Courier New;"></font><br>This message can only come from the <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font>
+function. It means that there is enough space to allocate a new amount
+of units, but the top vector is colliding with the lock stack like this:<br><br><font style="font-family: Courier New; color: lime;"><b>0.......................................................59<br>11111111111--222222222-------------------------33333333321<br>[lock start]..........................[lock exclusive top]<br></b></font><br>Say that you wanted 10 units, and yes, there are continous units available to you, between <font style="font-family: Courier New; color: lime;"><b>"2"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"3"</b></font>. <b>But</b>, the heap is so badly used that there is no way you can allocate any more vectors unless you release, <font style="font-family: Courier New; color: lime;"><b>"free"</b></font> the size number <font style="font-family: Courier New; color: lime;"><b>"3"</b></font> - the topmost vector. The error handling procedure is practically the same as with the <a href="#fragmented" style="color: yellow;"><font style="color: yellow;">func fragmented</font></a><font style="color: yellow;"></font> error.<br><br><br><b><a name="Service_variables_and_constants"></a>Service variables and constants<br></b><br>While
+programming in C/C++ with the standard malloc, realloc and free
+functions, I've always hated the way realloc worked with my strings
+class. Take a look at this:<br><br><font style="font-family: Courier New; color: lime;"><b>String.........................Null terminator &lt;-Unused space-&gt;<br>I have a string and this is it.0And this is the space reserved for my string, but I am not using it.<br></b></font><br>My
+string class worked by allocating more space to the string contents
+then what was necessary in order not to resort to calling the C/C++
+realloc (the Lock library <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font>)
+to often. This function always has an unknown overhead (though I just
+as always assume it's written by good programmers who had it optimized)
+so I never liked it.<br><br>This string contains 31 characters and a null terminator. I have further 68 allocated characters that are <i>not</i>
+used, i.e., not part of the string - a total of 100 characters. Now,
+for some reason, I have to reserve 250 characters. My string uses 32
+characters, and there are 68 characters I don't need. If I call realloc
+(counterpart to <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font>)
+and realloc / resize decides it must allocate 250 characters of the
+heapspace somewhere else on the heap, it will copy all of the 100
+characters to the new place and return me a pointer to this new space.
+Now, what it just did was copying 68 characters of crap to the new
+heap, wasting at least 68*3 =204 processor clock cycles for me! I hate
+it!<br><br>You can avoid this now. Instead of calling both <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"free"</b></font> (wasting some further cycles - resize is here to simplify <i>and</i> do things faster for you), simply use:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+[lock set] | lock resize using size on;<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock using size] = amount of important units;<br></b></font><br><font style="font-family: Courier New; color: lime;"><b>[lock using size]</b></font> is there for such a purpose. You have to enable it by setting the flag in the <font style="font-family: Courier New; color: lime;"><b>[lock set]</b></font> service variable to <font style="color: lime;"><b>on</b></font>.</font></p><font style="font-family: Verdana; font-size: 12pt; color: white;"><br>If you, for some reason, don't feel like using it any more, turn it <font style="color: lime;"><b>off</b></font>, disable it with:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+[lock set] &amp; lock resize using size off;<br></b></font><br>Mighty
+simple, isn't it? And don't worry. The amount of important units can
+never exceed the size of the vector. It's a built-in check.<br><br>Should you want to, you may forbid <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> to copy at all:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+[lock set] | lock no copy on resize on;<br></b></font><br>And enable it back with:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+[lock set] &amp; lock no copy on resize off;<br></b></font><br>That's all there is to know about it.<br><br><br></font><p style="text-align: center;"><font style="font-family: Verdana; font-size: 12pt; color: white;"><font style="font-size: 24pt;"><a name="Further_comments"></a>Further comments</font></font></p><font style="font-family: Verdana; font-size: 12pt; color: white;"><br><br><br></font><p><font style="font-family: Verdana; font-size: 12pt; color: white;"><b><a name="Improvements"></a>Improvements</b></font></p><font style="font-family: Verdana; font-size: 12pt; color: white;"><br>This library can and should be improved upon and optimized and I encourage that.<br><br><br><b><a name="Experimental"></a>Experimental?<br></b><br>Of
+course, there is a possibility of having several instances of lock
+banks, but there is no function within the library to provide you with
+this - you’d have to write a function to keep and swap the main five
+variables:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+[lock start]<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock locked]<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock free]<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock total]<br>&nbsp;
+&nbsp;
+&nbsp;
+[lock exclusive top]<br></b></font><br>And how about "setting" smaller "locks" to within allocated vectors? It can be done in the same manner!<br><br><b>"End of Experimental"<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+end;<br></b><br><br><b><font style="font-family: Courier New; color: lime;"><a name="bcopy_and_bset"></a>"bcopy"</font> and <font style="font-family: Courier New; color: lime;">"bset"<br></font></b><font style="font-family: Courier New; color: lime;"></font><br>There are two additional functions in the Lock library which actually belong to the string.c library. Fast <font style="font-family: Courier New; color: lime;"><b>"bcopy"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"bset"</b></font>. <font style="font-family: Courier New; color: lime;"><b>"bcopy"</b></font> is extensivelly used by the Lock library itself and <font style="font-family: Courier New; color: lime;"><b>"bset"</b></font> is there should you wish to clear the allocated vector to some value.<br><br><br><b><a name="Synonyms"></a>Synonyms<br></b><br>For all of you backwards enthusiasts, you can call <font style="font-family: Courier New; color: lime;"><b>"lock"</b></font> <font style="font-family: Courier New; color: lime;"><b>"malloc"</b></font> and <font style="font-family: Courier New; color: lime;"><b>"resize"</b></font> <font style="font-family: Courier New; color: lime;"><b>"realloc"</b></font> from your application like this:<br><br><font style="font-family: Courier New; color: lime;"><b>&nbsp;
+&nbsp;
+&nbsp;
+A = [size];<br>&nbsp;
+&nbsp;
+&nbsp;
+=&gt; malloc;<br></b></font><br>Ain't that great?...<br><br><br><b><a name="The_Lock_library_comments"></a>The original Lock library is badly commented<br></b><br>Yes.
+I only use comments for development-time pseudocode and then remove as
+I go about translating each line of the pseudocode to Linoleum
+assembly. I write no more than a single assembly instruction per line
+except for the stack pushes and pops at development-time. I handwrite
+the entire code on small pieces of paper <i>not</i> looking at the
+computer screen but comparing with the design lines I’ve handwritten
+far before having the computer switched on. I split the code into
+"in-contract", "prepare", "loop" and "out-contract", the code
+interlaced with jump labels. I design a flow-chart between the jump
+labels using these paper pieces instead of the standard geometric
+programming forms (the rombs and squarec etc.). Using the handwritten
+code I then correct all of the inconsistencies in the code from within
+my text editor and compile the code for the first time. (I enjoy the
+mind excercise this implies and I usually don’t get any bugs but the
+stack faults and sloppy typos) I systematically and thoroughly write
+all of the tests for the latest function coded, adding one function at
+a time, most often having some sort of visual tests combined with the
+text output. Once assured all of the elements work, I remove all of the
+redundant code from the editor, marking not yet implemented ideas and
+consider rewriting the current or any of the previously written working
+library functions, using the sum of expirience gained up until and
+while developing the latest code. I rewrite some of the tests and
+compile all of it again. I remove the redundant code again, implement
+what is to be implemented. If I should see any further design
+improvements I rewrite it all again and again from the stretch and with
+a different angle if applicable. What I get is more time creativelly
+designing and less time bug-hunting. In the end, all of my comments and
+design ideas end up handwritten and thus can be easily related to any
+previous and further library function development on paper. I optimize
+only once all of the library functions and their corresponding
+up-to-date tests had been written and then align the code with tabs. I
+have basically written the Lock library about five times from scratch,
+including the latest radical re-implementation.<br>&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+Using the "in-contract", "prepare", "loop" and "out-contract" mindset
+and the documentation provided here you can easily see what’s going on
+between the symbol labels of the Lock library. If you think it’s hard -
+just take your time. I’ll zealously take the chance of friendly
+advising you never to hesitate exercising your gift of intelligent
+reasoning and thinking.<br><br><br><b><a name="Bugs"></a>Bugs<br></b><br>No! It <i>is</i>
+possible, though not likely. The library has been thoroughly tested. It
+works for me! However, should you find a bug, why not trying to correct
+it yourself? It’s a good programming excercise and I do encourage it.
+Or, why not post a message on the Linoleum forum at "anywhere.i.am"
+(Just type it in your browser and see an interesting new world unfold
+before your eyes)? As for any help from me, the author, I don’t like
+being available - most often I am not available and I’d feel bad giving
+false promises. Should I run into a bug myself, or see it discussed or
+posted on the Linoleum forum, or even e-mailed to me (extreme cases
+only), I’ll certainly consider an altering and re-posting of the
+original Lock library. Heck, maybe even redesigning it! Yes, I am an
+egocentric fool and I like keeping my dealings to a very reasonable
+few, and <b>that is not a bug</b>.<br><br>"Nothing I ever did was a standard issue."<br><br>Well, have fun!<br><br><br><br><br><br><b>This documentation is happy when in Linoleum/Docs folder.<br><br>
+<small>er... I hope it's not too unhappy here in "main/lib/vk"... oh, and yes, don't take it too literal that the speed of Lino is 90% of assembly: it depends on situations, what I meant there
+is that Lino allows writing assembly much more easily, and that what you write IS pratically assembly, although it does not allow a few of those tricky assembly optimizations such as splitting a
+comparison from a conditioned jump, which could be useful for multiscalar optimizations, and the like; that's it, I hope it's clear that in the end it can't be much slower than assembly, because
+of the lack of such minor optimizations, although I reckon these tricks do pay in terms of speed, and that's why I consider appropriate to say that in many circumstances the speed of Lino might
+obscillate around the 90% of the speed of the same code written in bare-metal assembly. Then heh... if you have a genius assembly coder and a beginner writing the same in Lino, you are of course
+likely to find pretty significant differences, but it's only a question of practice/experience, never a question of skill or (at least not entirely) the environment design's fault. - Alex</small>
+</b><br><br><font style="font-size: 8pt;"><b>The original Lock library source code and the original documentation is written by Vladimir Klicic. For rules, see the <a href="#Licence" style="color: yellow;"></a></b><a href="#Licence" style="color: yellow;"></a></font><a href="#Licence" style="color: yellow;"><font style="font-size: 8pt; color: yellow;"><b>"Lock library license"</b></font></a><font style="font-size: 8pt; color: yellow;"></font><font style="font-size: 8pt;"><b>.<br></b></font></font></body></html>

@@ -1,0 +1,319 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        Subroutines<br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        SUBROUTINES<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        They've been called in a lot of ways.
+        They've been called procedures, functions, subprograms...
+        but despite all that groovy blabber, the most "ancient"
+        and descriptive way to call them is still "subroutines".
+
+        <br><br>
+
+        Basically, a subroutine is a piece of program which can be used
+        many times in the rest of the program, without having to write
+        it all again. A classical example is the following one.
+
+        <br><br>
+
+        I wrote down a routine to raise a number to an arbitrary power.
+        It's the program below: you don't need (now) to understand how
+        it works because there are some instructions not explained yet.
+        Just consider that when the program begins, the number to be raised
+        is held in register A, and the power is held in register B. In the
+        end, the result will be held by register C.
+
+        <pre>
+        "programme" (beginning of programme period)
+        "raise" (calculates A raised to B and gives result to C)
+                C = 1;
+                ? B = 0 -> finished;
+        "raise again"
+                C * A;
+                B ^ raise again;
+        "finished"
+                end;
+        </pre>
+
+        It's quite obvious that, used like so, the process is rather useless.
+        We don't even know which is the value of A and B on entry. As a first
+        thing, let's assign to A and B what we want to be the terms of our
+        calculation, before the "raise" label begins execution. Say we want
+        to calculate 7 raised to the power of 10 (BTW it's 282,475,249).
+        As in EXAMPLE number 1, we have:
+
+        <pre>
+        "programme" (beginning of programme period)
+                A = 7;
+                B = 10;
+        "raise" (calculates A raised to B and gives result to C)
+                C = 1;
+                ? B = 0 -> finished;
+        "raise again"
+                C * A;
+                B ^ raise again;
+        "finished"
+                end;
+        </pre>
+
+        Yes, now C has got the solution. But what if we needed to use the
+        same process (with different numbers) for more than one time?
+        We would make "raise" to be a subroutine of our main program.
+        If "raise" is to be a subroutine, then we have to CALL it from the
+        so-called "main program". The main program is distinguished from its
+        subroutines because it's the one beginning with the "programme" label.
+        And here's another example calling the "raise" subroutine twice.
+
+        <pre>
+        "programme" (beginning of main program)
+                A = 7; B = 10;
+                => raise;               (1st calculation: raise 7 to the power of 10)
+                [first result] = C;     (remember the result)
+                A = 2; B = 15;
+                => raise;               (2nd calculation: raise 2 to the power of 15)
+                [second result] = C;    (remember the result)
+                (you may show the results in some way here)
+                end;    (end of main program)
+
+        "raise" (calculates A raised to B and gives result to C)
+                C = 1;
+                ? B = 0 -> finished;
+        "raise again"
+                C * A;
+                B ^ raise again;
+        "finished"
+                end;    (end of the "raise" subroutine)
+        </pre>
+
+        Note: for simplicity, the "variables" or the "workspace" periods, in one
+        of which "first result" and "second result" might be declared, have been
+        omitted in the above example, as well as the "directors" period where at
+        least a "unit=32;" specification might be present, for the resulting
+        program to be accepted by the compiler.
+
+        <br><br>
+
+        There you see the main program as the code laying between "programme"
+        and the first "end" tag. The subroutine, instead, is declared below
+        the end of the main program, and it's got a personal "end" tag.
+
+        <br><br>
+
+        Finally take a look to the main program: there's a new instruction,
+        used to CALL the subroutine. The said instruction is <span class="inverse">=&gt;</span>, and looks
+        similar to the JUMP instruction <span class="inverse">-&gt;</span> but gives you the important
+        possibility of resuming execution from the first instruction following <span class="inverse">=&gt;</span>
+        once the subroutine completes its work. When the subroutine wants the
+        calling program to resume execution, it issues an "end" command.
+
+        <br><br>
+
+        Now, for a more detailed explanation, calling a subroutine and from
+        it, returning to the main program, involves using stack memory to
+        remember the address from which execution will resume upon return.
+        Naturally the CPU knows, at any time, the memory address of next
+        instruction to be executed (it's maintained in a hidden CPU register
+        called IP, the instruction pointer). When you issue a simple JUMP
+        instruction, the destination operand (either a code label or a register)
+        determines a change in the IP register. CALLing a subroutine means,
+        basically, the same thing, but also the CPU will automatically save
+        current IP (pointing to the instruction below the one calling the
+        subroutine) to the stack memory, as if you wrote
+        <span class="inverse">IP--&gt;</span> (which is,
+        however, a non-existing command on itself, and you can't do that
+        unless it's implicitly performed by a CALL instruction). So a CALL,
+        <u>expanding its mechanism inside the CPU</u>, in reality translates
+        to the following:
+
+        <pre>
+                IP-->; (push IP on stack)
+                -> destination address; (jump to destination)
+        </pre>
+
+        What happens when the subroutine returns (when, in other words, the
+        source code reads an "end" tag after the label of a subroutine)?
+        The CPU just restores IP from the stack, instantly causing execution
+        flow to resume from below the calling instruction.
+
+        <pre>
+                <--IP;
+        </pre>
+
+        Oh, and by the way, as you can expect, you can also NIDIFY subroutine
+        calls: this means calling a subroutine from inside another subroutine,
+        and so on. If you're an expert programmer, you can also code recursive
+        subroutines (a RECURSIVE subroutine is a subroutine calling itself,
+        but I recommend you take some practice before attempting to use such
+        a subroutine: if you didn't clearly make the routine decide when to
+        stop running, you'd get an endless loop where soon no stack memory
+        would be available, and a system stack fault would occur; plus, recursive
+        subroutines have to be aware not to interfere with their former "runs",
+        and condequentially, a well-known technique to avoid messing them up is
+        saving any variables used in the recursive subroutine on stack memory,
+        to restore them all when a single "run" ends, because you have to consider
+        the single "run" is going to start another "run" before it ends, anyway
+        if you're unfamiliar with recursion, nevermind for now, it's rarely used).
+
+        <br><br>
+
+        One final thing: failing a subroutine.<br>
+        A subroutine may encounter some troubles while executing, and for some
+        reason it may not be able to return correct results to the main code.
+        Well, in this case it would be a good idea to inform the main code of
+        the failure. There's an easy way to do that: the "fail" tag. Exactly
+        like "end", "fail" will return to the caller immediately. BUT,
+        if you write "fail" at a critical point of your subroutine, the main
+        program will be able to examine the return status ("ok" or "failed")
+        with a couple of simple directives, called "JUMP ON FAILURE" and
+        "JUMP ON SUCCESS". They look like so:
+
+        <pre>
+                => the subroutine to be called;
+                ?failed -> code label managing errors from the subroutine;
+                (code to proceed as normal)
+        </pre>
+
+        or
+
+        <pre>
+                => the subroutine to be called;
+                ?ok -> code label to proceed as normal;
+                (code to manage failure)
+        </pre>
+
+        Such directives to determine "branching" of the execution flow are also
+        used with "isocalls", calls to a very special subroutine that resides
+        inside the run-time module, and which provides communication between the
+        application and the peripherals attached to the CPU. When an "isocall"
+        fails its duty, it signals the problem in the same way as a normal
+        subroutine would do. Isocalls can do a huge amounts of tasks, but here's
+        a pretty simple example; for detailed informations about how isocalls work
+        you will have to take a look at the <a href = "ikrnl_qr.htm">IsoKernel
+        quick reference</a>.
+
+        <pre>
+                [Display Width] = 512;
+                [Display Height] = 384;
+                [Display Command] = SET EXCLUSIVE MODE;
+                isocall;
+                ? failed -> couldnt set 512x384 display resolution;
+        </pre>
+
+        The rest is at your own choice: for instance, a complex subroutine may
+        have more than a single way to fail its duty, and would need to inform
+        the main code of the exact nature of the failure. This is done by
+        returning an error code along with failure status generated by the
+        "fail" tag. You may return the code in a variable or in a register,
+        at your choice. The main program, in case of failure, may manage the
+        error like in the following example, where error code is supposed to
+        be returned in register A:
+
+        <pre>
+                => the subroutine to be called;
+                ?ok -> code label to proceed as normal;
+                ?A = 1 -> code label managing error code 1;
+                ?A = 2 -> code label managing error code 2;
+                (and so on until an optional...)
+                -> code label magaging unexpected error codes;
+            "code label to proceed as normal"
+                (rest of the program)
+        </pre>
+
+        Oh, and remember: TEST FOR "ok" AND "failed" ONLY IMMEDIATELY AFTER
+        HAVING CALLED THE SUBROUTINE. Since the subroutine status is saved
+        inside the auxiliary register X (<a href="glossary.htm">the glossary</a>
+        explains what's register X) performing other operations may change
+        the status and mess up the program's flow. Just remember to write:
+
+        <pre>
+                ?ok -> code label;
+                ?failed -> code label;
+        </pre>
+
+        only <u>right after</u> the call to the subroutine whose status is to be
+        checked by the main program.
+
+        <br><br>
+
+        IMPORTANT: <i>Versions past, and including 1.13.9b, of the L.in.oleum
+        compiler allow using one further tag to return from a subroutine: the
+        </i>"leave"<i> tag, which is probably going to replace former sources'
+        "end" tags in most cases.</i> "leave" returns from a subroutine without
+        reporting state informations (i.e. wether the subroutine succeeded or
+        failed its duty). State report, which is performed by loading a value
+        on register X, takes 1 CPU cycle in most processors, so it's never been
+        a slow operation; however, in time-critical subroutines (for example the
+        pixel fillers in <a href="../main/lib/gen/pixelfx.txt">main/lib/gen/pixelfx.txt</a>,
+        having that single more cycle may sensibly influence the subroutine's speed.
+        To conclude, when you - (as the subroutine's author) and others possibly
+        calling your subroutine (reading the way it works, hopefully from notes
+        and indications written by you) - know that your subroutine does <i>not</i>
+        need to eventually report for failures (does not return in different ways,
+        sometimes by an "end" and other times by a "fail" tag), THEN you might use
+        the "leave" tag to end that subroutine. Of course callers have to be aware
+        that that subroutine's status will be <i>undefined</i> on return, that is,
+        it will not be possible to use a "?ok/failed -> label" construct after
+        calling that subroutine, and that if such a check is made, its resulting
+        action (jumping or not) will be unpredictable, based on what register X
+        randomly contained at that moment.
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

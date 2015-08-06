@@ -1,0 +1,228 @@
+(
+
+  =================================================================
+  TARGET PLATFORM:
+  Intel Pentium processors, late 486s, and later or compatibles
+  =================================================================
+  _________________________________________________________________
+ |								   |
+ | PLATFORM-SPECIFIC SOURCE CODE * DECLARATION OF NON-PORTABILITY: |
+ |								   |
+ |	This program contains native machine language fragments,   |
+ |	designed EXCLUSIVELY for the abovely mentioned platform,   |
+ |	and SOLELY for that platform! Attempting to use portions   |
+ |	provided within this program in applications intended to   |
+ |	be fully cross-platform will UNRECOVERABLY COMPELL those   |
+ |	applications to be executable only on the said platform.   |
+ |								   |
+ |	Should you need porting your application to systems other  |
+ |	than the indicated TARGET PLATFORMS of this program, then  |
+ |	you MUST CHANGE THIS PROGRAM to reflect the corresponding  |
+ |	operations for all pieces of pure machine language code.   |
+ |								   |
+ |  Also, projects built by including this program SHOULD INHERIT  |
+ |  THIS WARNING MESSAGE. Please do, this is very very important!  |
+ |  This declaration might be placed at the top of a source file.  |
+ |_________________________________________________________________|
+
+ Written by Alessandro Ghignola as part of L.in.oleum's examples.
+ This commented source code is presented to learn from.
+ Feel free to use this code the way you want: copy, paste, edit it.
+ Please compile with L.in.oleum compiler version 1.13.11b or later,
+ because machine language fragments were introduced with 1.13.11b.
+
+ This program uses the "getcpuid" function of library utils/586utils
+ to query the CPU for its 12-character identification string, which
+ is a vendor ID. For instance my Duron 950 returns "AuthenticAMD" as
+ its ID string. Also it uses "getcpuspeed" from the same library for
+ calculating how many megacycles the CPU is doing in 1 second, hence
+ the speed of the microprocessor in MHz. Mine returns 948, and it's
+ a good question why it isn't 950: it might be the true speed while
+ AMD declares 950, or, it might equally be a slight precision error
+ from the "read time" command, coming from the system timer. Anyway
+ it's just a couple megahertz over 950, I think it's precise enough
+ to give an idea. Incidentally, WinXP home Control Panel returns the
+ same exact value of 948MHz on its system properties form, heh, yup:
+ it's not just me... but I really don't care, do you? And anyway it
+ was the best I could do to get the CPU's beat.
+
+ Well, this only works on Intel Pentiums and later/compatibles, but
+ the ID string may be reported also by some of the late i486's. The
+ Time Stamp Counter is used by the utilities library, so there's no
+ way to elapse the processor's speed with this library on 486s, and
+ older processors. If you execute this on a 486, it won't crash but
+ it'll show "NotAvailable, Speed=0" as its report. It doesn't crash
+ because the utils library checks wether CPUID is supported before
+ executing CPUID, and also prior to attempting to read the TSC.
+
+)
+
+"libraries"
+
+	gen/stdfont;
+	utils/586utils;
+
+"directors"
+
+	unit = 32;
+	symbols map = off;
+
+	display width  = w;
+	display height = h;
+
+	program name = { CPU_test };
+
+"constants"
+
+    (primary display size)
+	w = 256;
+	h = 48;
+
+"variables"
+
+    (main program)
+	waitmsg = { Wait... };
+	idstring = { ????????????,_Speed:_?????????? };
+
+"workspace"
+
+    (main program)
+	screen = w mtp h; (frame buffer)
+
+    (subroutine "convert ascii to fourbyte")
+	source string = 1;
+	string length = 1;
+
+    (subroutine "convert binary to ascii")
+	string binary = 1;
+	xicout = 11;
+
+    (common to "convert ascii to fourbyte", "convert binary to ascii")
+	target string = 1;
+
+"programme"
+
+    (select the frame buffer)
+	[display origin] = screen;
+
+    (preload some variables concerning the stdfont.txt library)
+	[text display origin] = screen;
+	[text display width] = [display width];
+	[text display height] = [display height];
+
+    (see how many pixels it takes to display 7 characters, to center "Wait...")
+	a = [std font width];
+	a * 7;
+
+    (write "Wait..." into the exact middle of the display)
+	[string] = waitmsg;
+	[text x] = [display width];
+	[text x] - a;
+	[text x] >> 1;
+	[text y] = [display height];
+	[text y] - [std font body];
+	[text y] >> 1;
+	=> stdwrite;
+
+    (show wait message)
+	[display command] = retrace;
+	isocall;
+
+    (call the two funs from the utils library)
+	=> getcpuid;
+	=> getcpuspeed;
+
+    (convert id string to 1 unit per byte: the string has a fixed length of 12 chars.)
+	[source string] = GCPUID string;
+	[target string] = idstring;
+	[string length] = 12;
+	=> convert ascii to fourbyte;
+
+    (make ASCII string out of the integer number of MHz of the cpu)
+	[target string] = idstring plus 21;
+	[string binary] = [cpumhz];
+	=> convert binary to ascii;
+
+    (clear the frame buffer to erase "Wait...")
+	=> cfb;
+
+    (see how many pixels it takes to display idstring, for centering the message)
+	a = 0;
+	b = [std font width];
+	c = idstring;
+      "count chars"
+      ? [c] = zero -> cc stop;
+	a + b;
+	c +;
+	-> count chars;
+      "cc stop"
+
+    (write the id string into the exact middle of the display)
+	[string] = idstring;
+	[text x] = [display width];
+	[text x] - a;
+	[text x] >> 1;
+	[text y] = [display height];
+	[text y] - [std font body];
+	[text y] >> 1;
+	=> stdwrite;
+
+    (show it up)
+	[display command] = retrace;
+	isocall;
+
+    (wait 5 seconds)
+	[processcommand] = sleep;
+	[sleeptimeout] = 5000;
+	isocall;
+
+    (quit)
+	end;
+
+
+
+    "cfb"
+      (clears the frame buffer)
+	a = [display origin];
+	b = [display width];
+	b * [display height];
+      "cfb loop"
+	[a] = 0; a +;
+	b ^ cfb loop;
+	leave;
+
+    "convert ascii to fourbyte"
+      (converts string pointed by [source string], given in ascii format, to fourbyte
+       format, and uses [target string] as a pointer to where resulting string is to be
+       stored: [string length] gives how many ascii bytes are in the string to convert)
+	a = [source string];
+	b = [target string];
+	c = [string length];
+      ? c = zero -> ca2fb done;
+	d = zero;
+      "ca2fb loop"
+	e = [a]; e > d; e & ffh; [b] = e;
+	d + 8;
+      ? d < 32 -> ca2fb same;
+	d = 0;
+	a +;
+      "ca2fb same"
+	b +;
+	c ^ ca2fb loop;
+      "ca2fb done"
+	leave;
+
+    "convert binary to ascii"
+      (converts value held by [string binary], which is supposed to be an unsigned
+       integer value, to ascii, and stores the resulting text within [target string])
+	a = zero;
+	b = [string binary];
+    "cb2a forward"
+	c = b; c '% 10; c + 48; [a plus xicout] = c;
+	a+; b '/ 10; ? b > zero -> cb2a forward;
+	b = [target string];
+    "cb2a reverse"
+	[b] = [a plus xicout minus 1];
+	b+; a ^ cb2a reverse;
+	[b] = null;
+	leave;

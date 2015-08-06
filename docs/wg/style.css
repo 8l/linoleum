@@ -1,0 +1,72 @@
+/*
+
+	L.in.oleum programmers manual and technical reference guide
+	stylesheet definitions
+
+*/
+
+a:link, a:active, a:visited { color: #F8F0FF; font-style: italic; text-decoration: none; }
+a:hover { color: #F8606F; font-style: italic; text-decoration: none; }
+
+body {
+	background-color: #484050;
+	scrollbar-face-color: #C0C0C0;
+	scrollbar-shadow-color: #C0C0C0;
+	scrollbar-highlight-color: #C0C0C0;
+	scrollbar-3dlight-color: #D0D0D0;
+	scrollbar-darkshadow-color: #606060;
+	scrollbar-track-color: #909090;
+	scrollbar-arrow-color: #000000;
+}
+
+body, table, th, tr, td, p, font {
+	color: #B8B0C0;
+	font-family: "Trebuchet MS", Arial;
+	font-weight: bold;
+	font-size: 13px;
+	line-height: 125%;
+	text-align: justify;
+}
+
+table, th, tr, td {
+	border: 0px; margin: 0px; padding: 2px;
+	border-collapse: collapse;
+}
+
+.sidebar {
+	background-color: #686070;
+}
+
+div {
+	color: #000000; background-color: #FFFFFF;
+	border: 0px; margin: 0px; padding: 2px;
+	text-align: center;
+}
+
+hr {
+	border: #C8C0D0 dashed 1px;
+	border-top-width: 1px;
+}
+
+pre {
+	color: #C8C0FF;
+	font-family: "Courier New", "Monofur";
+	font-weight: normal;
+	font-size: 12px;
+	line-height: 100%
+}
+
+.inverse {
+	color: #484050;
+	background-color: #A090A8;
+	padding: 0px 2px 0px 2px;
+}
+
+.pattern {
+	color: #FFFFFF;
+	border: dashed 1px #C0C080;
+	font-family: "Courier New", "Monofur";
+	font-weight: normal;
+	font-size: 13px;
+	padding: 0px 1px 0px 1px;
+}

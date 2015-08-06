@@ -1,0 +1,61 @@
+
+	Okay this is the result of 21 days of hard, but quite motivated, work!
+
+	This is an "update" to your existing L.in.oleum installation,
+	and a preview of the soon-to-come v1.14 package.
+	To apply the "patch":
+
+	FIRST, backup your existing files should you need them back later...
+
+	THEN, add/replace files in "linoleum" folder with those provided by this
+	archive: this archive reproduces the directory structure for the files'
+	corresponding paths.
+
+	You can keep using the same option for running the visual compiler:
+	"Compile as LINOLEUM source code",
+	or drag-and-drop the source code file to compiler.exe,
+	or drag-and-drop it onto a shortcut.
+
+	The option installed by the previous patches, Compile with L.in.oleum compiler,
+	can be deleted by opening start -> run -> "regedit" -> ok,
+	and then deleting the key HKEY_CLASSES_ROOT/TXT_SRC/Shell/compiler
+	along with its "command" subkey.
+	The key installed there by the previous patches was "compiler".
+	The original key was "compile".
+	So you might delete "compiler", and not "compile".
+	Sorry for this inconvenience... after all it was a preview and needed testing.
+
+	You may also want to update your ConText highlighter, which is included: it has a
+	quite dark (but relaxing) color scheme now, and highlights the new tags "make",
+	"array" and "shared".
+
+	For "what's new" see "compiler.txt", it has a long and detailed initial commentary.
+	But in short, it's better and much, MUCH, MUCH faster.
+	Did I mention it's FASTER?
+
+		Alex
+
+	ps. to compile the visual compiler (the one for which the binary is given), you have
+	to place "compiler.txt" into the main/lib/gen folder as said above.
+	If you compile, there, "compiler.txt", you get a pure version of the compiler with no
+	GUI at all, but still working via a command prompt or a shortcut to set the required
+	arguments. If you compile "visual_compiler.txt" you get a copy of the executable
+	provided in this archive. "visual_compiler.txt" is a pretty cheap front-end to the
+	compiler's core, showing that the core can be either a standalone application AND a
+	library. If you include "gen/compiler" in an application of yours, then your
+	application will be able to call the "=> compile;" routine and compile other
+	L.in.oleum applications. This is exactly what "visual_compiler.txt" does!
+
+	Note that a pure compiler (non-visual) requires --src, --env, --sys, --cpu, --ext
+	arguments to be passed via the command line, so it will NOT be compatible with the
+	legacy C++ version of the compiler, which wasn't requiring them. However, it might
+	work from the right-click option added with this update's install.reg. But not via
+	drag-and-drop: the visual compiler handles drag-and-drop and provides parameters
+	given by its configuration form, but not the pure library (which has no
+	configuration form at all and assumes arguments to be set in the command line).
+
+	The reason for this difference is that the pure compiler is supposed to never, or
+	almost never, change, no matter for which platform it's used: hence, the defaults
+	of "i386.bin", "win32.bin", and "exe" as an extension, are not, by the pure compiler,
+	assumed to be defaults. There's no defaults there. What's supposed to be changed and
+	freely customized is the visual extension of the compiler.

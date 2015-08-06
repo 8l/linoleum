@@ -1,0 +1,4 @@
+#!/bin/sh
+tar -xzvf linux_compiler.tar.gz
+./main/compile ./examples/visual_compiler/linux_compiler.txt
+mv ./examples/visual_compiler/linux_compiler.bin ./main

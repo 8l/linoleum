@@ -1,0 +1,381 @@
+
+      ( *** LINOLEUM Example 17: Exclusive display mode *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "17_exclusive_display_mode.TXT",
+	   WITH THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Shows the same spiral animation seen in examples 7 and 8,
+	but does it using exclusive display mode, which causes the display
+	to be turned fullscreen and program to have direct video memory
+	access. This speeds up things and allows to change the physical
+	resolution of the screen. Please note blitting functions are
+	not from DirectDraw, under Windows. They are direct machine-code
+	loops implemented in the run-time module, even if the DDraw APIs
+	are still used to revert the screen to the desired video mode. )
+
+      ( Slight modifications to the management of the animation and to
+	the "Fade the display" subroutine allow for a new burning style:
+	I guess you'll find it rather cool, even if it's hot. :o)
+
+      ( WARNING:
+	Exclusive - or hardware - display mode is a functionality that may or
+	may not be working on your system. More precisely, your video adapter
+	may not be able to use the resolution the program tries to setup.
+	In this case, the display is turned back to cooperative mode, where
+	it works as normal. The resolution this program tries to setup is
+	320x240 pixels and 32bit color depth. Most of today's video cards
+	should be able to use this kind of resolution. For more information
+	on the topic of compatibility, see the notes after the code. In any
+	cases, to change the resolution and try if the new one works, you just
+	have to change the values of the two constants called SCREEN WIDTH and
+	SCREEN HEIGHT, then recompile this program. In the notes after the
+	code, there's a list of the most common resolutions indicating which
+	are the most standard ones. Just for how this program works, avoid
+	setting resolutions below 320x200 or it will crash, because it doesn't
+	expect such a small display. If you program wanted to WARN the user
+	that it tried to setup an exclusive display but then failed, you can
+	check [Display Status] for the flag bit "EXCLUSIVE", as in:
+
+	  ? [Display Status] - EXCLUSIVE -> Show warning message;
+	  ? [Display Status] + EXCLUSIVE -> Its alright;
+
+	before version 1.13.6b, the run-time module did that kind of check on
+	startup, and displayed a standard warning message on failure; starting
+	with the said version, this intrusive way to work was removed, and the
+	responsibility to eventually warn the user left to the application. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Fire_Spiral };
+	display width = SCREEN WIDTH;
+	display height = SCREEN HEIGHT;
+	display mode = EXCLUSIVE;
+	unit = 32;
+
+"constants"
+
+	(adjust screen resolution here:)
+
+	SCREEN WIDTH = 320;
+	SCREEN HEIGHT = 240;
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+"variables"
+
+	Spiral Center X = 0;
+	Spiral Center Y = 0;
+	Spiral Growth K = 1f;
+	Spiral Entry Angle = 0f;
+	Spiral Exit Angle = 1f;
+	Spiral Entry Radius = 10f;
+	Spiral Color = FFFFFFh;
+	Spiral Growth K Step = 0f;
+	Current Spiral Radius = 0f;
+	Current Spiral Angle = 0f;
+	Current Spiral Step = 0f;
+
+	Animation Angle Delta = 0.05f;
+
+	vector Default Resolutions Live Region = UNDEFINED *** 4;
+
+	Fade Start Line = UNDEFINED;
+	Fade End Line = UNDEFINED;
+	Fade Start Pixel = UNDEFINED;
+	Fade End Pixel = UNDEFINED;
+
+"workspace"
+
+	Primary Display = SCREEN WIDTH mtp SCREEN HEIGHT;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+	[vector Default Resolutions Live Region plus 0] = [Display Width];
+	[vector Default Resolutions Live Region plus 0] / 2;
+	[vector Default Resolutions Live Region plus 1] = [Display Height];
+	[vector Default Resolutions Live Region plus 1] / 2;
+
+	[vector Default Resolutions Live Region plus 2]
+		= [vector Default Resolutions Live Region plus 0];
+	[vector Default Resolutions Live Region plus 3]
+		= [vector Default Resolutions Live Region plus 1];
+
+	[vector Default Resolutions Live Region plus 0] - 100;
+	[vector Default Resolutions Live Region plus 1] - 100;
+	[vector Default Resolutions Live Region plus 2] + 100;
+	[vector Default Resolutions Live Region plus 3] + 100;
+
+	[Display Live Region] = vector Default Resolutions Live Region;
+
+	[Fade Start Line] = [vector Default Resolutions Live Region plus 1];
+	[Fade End Line] = [vector Default Resolutions Live Region plus 3];
+	[Fade Start Pixel] = [vector Default Resolutions Live Region plus 0];
+	[Fade End Pixel] = [vector Default Resolutions Live Region plus 2];
+
+	[Spiral Center X] ,= [Display Width]; [Spiral Center X] // 2f;
+	[Spiral Center Y] ,= [Display Height]; [Spiral Center Y] // 2f;
+	[Spiral Growth K] = 0.6f;
+	[Spiral Entry Angle] = 0f;
+	[Spiral Exit Angle] = 44f;
+	[Spiral Entry Radius] = 1.4142f;
+	[Spiral Color] = FFFFFFh;
+
+    "Move it"
+	=> Fade the display;
+	=> Spiral;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	[Spiral Entry Angle] ++ [Animation Angle Delta];
+	[Spiral Exit Angle] ++ [Animation Angle Delta];
+
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> Move it;
+
+	end;			(of MAIN PROGRAM)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width];
+	B + [Display Origin];
+	B + A;
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Spiral"
+    ( Draws a spiral, using the Plot subroutine. A, B, C destroyed. )
+    ( Spiral Center X = center X coordinate, of integer type;
+      Spiral Center Y = center Y coordinate, of integer type;
+      Spiral Growth K = spiral's growth ratio, determines how much the
+	distance from the center grows for each time
+	the tracing point turns a full circle around
+	spiral's center;
+      Spiral Entry Angle = the angle at which the tracing point begins
+	spinning, which determines the rotation of the whole figure;
+      Spiral Exit Angle = the angle at which the tracing point stops
+	spinning, determining where the spiral is no longer traced,
+	that is, the end of the figure.
+      Spiral Entry Radius = the initial radius of the tracing point's
+	curse around the center.
+      Spiral Color = the color of the dots forming the figure. )
+	[Spiral Growth K Step] = [Spiral Growth K];
+	[Spiral Growth K Step] // TwoPI;
+	[Current Spiral Angle] = [Spiral Entry Angle];
+	[Current Spiral Radius] = [Spiral Entry Radius];
+	C = [Spiral Color];
+    "Spiral tracement loop"
+	A = [Current Spiral Angle]; ~~A;
+	B = [Current Spiral Angle]; ~B;
+	A ** [Current Spiral Radius]; A ++ [Spiral Center X];
+	B ** [Current Spiral Radius]; B ++ [Spiral Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	[Current Spiral Step] = 0.999f;
+	[Current Spiral Step] // [Current Spiral Radius];
+	[Current Spiral Angle] ++ [Current Spiral Step];
+	[Current Spiral Radius] ++ [Spiral Growth K Step];
+	?? [Current Spiral Angle] < [Spiral Exit Angle]
+		-> Spiral tracement loop;
+	end;
+
+"Fade the display"
+	A = [Fade End Line]; A - [Fade Start Line]; A+;
+	B = [Fade Start Line]; B * [Display Width];
+	B + [Fade Start Pixel]; B + [Display Origin];
+	D = [Fade End Pixel]; D - [Fade Start Pixel]; D+;
+    "Loop to fade all of it"
+	B-->; D-->;
+	"Loop to fade single scan line"
+		C = [B];
+		? C - FE0000h -> Dont fade red; (red fades 2 units/frame)
+		C - 020000h;
+	    "Dont fade red"
+		? C - 00F800h -> Dont fade green; (green fades 5 units/frame)
+		C - 000500h;
+	    "Dont fade green"
+		? C - 0000F8h -> Dont fade blue; (blue fades 8 units/frame)
+		C - 000008h;
+	    "Dont fade blue"
+		[B] = C;
+		B+;
+		D ^ Loop to fade single scan line;
+	<--D; <--B;
+	B + [Display Width];
+	A ^ Loop to fade all of it;
+	end;
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+( Did you see how I made the spiral "burn"?
+I have modified the "Fade the display" subroutine to fade green and blue
+faster than red, then I traced the spiral with white (FFFFFFh). When you
+can get to imagine and obtain this sort of effects, you're authorized to
+think to yourself as "someone who understands"! )
+
+( Speaking of the basics, hoping your adapter has been able to show the
+animation in fullscreen, you may be curious about how many other
+resolutions are available, how many "video modes" are there in Lino.
+The answer is: theoretically every possible resolution could be setup.
+Pratically, today's video cards only allow some. The range varies from
+card to card, but you can expect the following ones to be widely supported:
+
+	- 320 x 200 (NTSC)
+	- 320 x 240 (PAL)
+	- 640 x 400 (NTSC)
+	- 640 x 480 (PAL)
+	- 800 x 600 (STANDARD)
+	- 1024 x 768 (STANDARD)
+
+NTSC/PAL is normally not a limitation: you can run PAL modes on NTSC
+and vice-versa; simply, the pixel's aspect ratio may not be "square"
+if you don't use the video mode corresponding to your adapter's
+localization. This example program has been coded in Italy and in
+Italy we have PAL adapters: running NTSC, the spiral may appear
+slightly shrunk along the vertical axis.
+If you developer/user are so lucky to have a video card with lots
+of onboard RAM on a fast enough BUS and good monitor, you may also try:
+
+	- 1280 x 1024 (STANDARD)
+	- 1600 x 1200 (STANDARD)
+
+the following ones are non-standard but there are chanches that they
+may be supported by your video adapter:
+
+	- 512 x 384 (NON-STANDARD)
+	- 512 x 482 (NON-STANDARD)
+	- 640 x 350 (NON-STANDARD)
+	- 720 x 348 (NON-STANDARD)
+	- 720 x 400 (U.S. TEXT, see notes)
+
+the last one (720 x 400) is the one normally used in text mode.
+If you run the DOS Prompt at fullscreen, that's what you get as
+pixel resolution, but the screen is divided in 80 columns, 25 rows,
+and characters' shapes are held in matrixs 8x16 pixels in size.
+Text modes are unsupported, and totally ignored, by Lino, but the
+720 x 400 display is sometimes echoed by a corresponding graphic
+mode. In very little cases, however.
+
+Now for an important thing:
+
+	THE SCREEN RESOLUTION IS NOT FIXED!
+	When you start up the program and specify "directors"
+	regarding the display, the values given are not forbidden
+	to change. The IsoKernel can change them during runtime:
+	just perform isocalls after changing them. Here's an
+	example to close the "exclusive mode" and force the program
+	to get back to "cooperative mode" (shown in a window):
+
+		[Display Command] = SET COOPERATIVE MODE;
+		isocall;
+
+	The same can be done while in cooperative mode to change
+	to exclusive mode. In this case, however, be aware of the
+	fact that the application's display area can have any size
+	when in cooperative mode, while it won't enter exclusive mode
+	if the corresponding resolution is not allowed by the video
+	card. So, making something like:
+
+		[Display Width] = 555;
+		[Display Height] = 321;
+		[Display Command] = SET EXCLUSIVE MODE;
+		isocall;
+
+	will almost certainly leave things as they are, because that
+	555x321 resolution is probably meaning nothing to your card.
+	The IsoKernel doesn't display messages to the user while in
+	runtime, because that's your program's duty: you should check
+	the status of the isocall to see if the requested resolution
+	was effectively setup. So:
+
+		[Display Width] = 640;
+		[Display Height] = 480;
+		[Display Command] = SET EXCLUSIVE MODE;
+		isocall;
+		? failed -> Sorry cannot setup 640x480 screen mode;
+		? ok -> Yeah weve got the new screen mode;
+
+Let the users choose:
+when using exclusive display mode, your program should have some kind of
+"configuration form", programmed by yourself to present the user a set of
+widely supported resolutions to choose from. So, when the user's adapter
+can't setup a certain mode, it'll be almost certainly supporting at least
+one of the other modes.
+
+Provide enough memory in your display layer(s):
+the "Primary Display" here is declared for 320 by 240 pixels.
+If you need higher resolution, remember to allocate enough memory
+for the "Primary Display". It's not needed that you call your display
+layer "Primary Display", and you also may have more than one layer
+(see, for instance, how "The Narrator" works) to accomodate for moving
+pictures, sprites and cursors over a common background. It's all at your
+choice: your only limit is the memory physically available in the system.
+It's *always* at your choice. You're the programmer. You're the GOD for
+your PC. That's Lino phylosophy...
+
+Chromatic resolution, or color depth:
+Lino is a seriously standard environment and the minimal chromatic
+resolution it considers is 32 bpp (bits-per-pixel). This way, if
+the CPU has the registers' unit = 32, memory can be directly copied
+to video RAM with an extremely fast loop (in facts, as fast as the
+video adapter's BUS allows to). On Intel processors, the loop is made
+up of the only "rep movsd" instruction, which is the fastest way to
+operate as assembly coders will certainly know. On future processors
+eventually having unit=64 or more, the bits per pixel will be padded
+to the new unit when copied to the display memory, and eventually the
+RGB direct color values will be emulated for full backward compatibility
+with today's Linoleum applications. Saying "eventually" I mean they'll
+be emulated if, for instance, future video cards will only enable 64-bpp
+resolutions, or for some obscure reasons, the RGB pixel format (which is
+actually 8:8:8:8) will be changed (presumably improved to have more than
+256 levels per color component). If improvements will be there, I'll make
+sure developers could possibly use them if they want to, by adding an
+alternate display mode.
+
+Tough the chromatic resolution allowed by the card may be any while
+working in COOPERATIVE mode (because your program's display memory is
+refitted to the actual depth of the physical screen), when working with
+EXCLUSIVE mode the video adapter MUST be able to use 32 bits per pixel.
+If not, the screen will be reverted to cooperative mode, and nothing is
+going to be done to change this behaviour from the IsoKernel, because the
+exclusive display mode is there to provide direct VRAM memory access and
+many of its advantages would be lost if it couldn't operate this way. )
+

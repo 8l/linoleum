@@ -1,0 +1,111 @@
+(
+
+    PROGRESSIVE BYTE STREAMS MANIPULATION
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		128 bytes *
+    | Allocates:	 12 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      These functions preserve both registers and entry parameters.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      Has similar uses as bits.txt, but it's oriented to a stream of bytes. It
+    also has the advantage of preserving all registers, other than parameters.
+    It is Pentium-optimized, therefore considering two pipelines, and typical
+    restrictions of those processors, like shifting operations only on pipe u.
+    The average CPU cycles per memory access, considered 4, however, reflect
+    the behaviour of faster processors having slow DRAM, being the worst case.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+    Synopsis for "get progressive byte":
+
+      [pb stream] = ptr to the area that you intend to use as a byte stream;
+      [pb offset] = progressive number based at zero of the byte to read;
+      => get progressive byte;
+      [returned value of that byte from the stream] = [pb bvalue];
+
+    Synopsis for "set progressive byte":
+
+      [pb stream] = ptr to the area that you intend to use as a byte stream;
+      [pb offset] = progressive number based at zero of the byte to write;
+      [pb bvalue] = value you need writing into that byte;
+      => set progressive byte;
+
+)
+
+"workspace"
+
+	pb stream = 1;
+	pb offset = 1;
+	pb bvalue = 1;
+
+"programme"
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"get progressive byte"		(PCM/PipeCyclesMemoryaccess)
+	a -->;			(u1+)
+	c -->;			(v0-)
+	a = [pb offset];	(u1+)
+	c = a;			(v0-)
+	a > 2;			(u1-)
+	c & 3;			(v0-)
+	a + [pb stream];	(u1+)
+	b -->;			(v0+)
+	c < 3;			(u1-)
+	b = 000000FFh;		(v0-)
+	b <@ c; 		(u1-)
+	a = [a];		(v0+)
+	a & b;			(u1-)
+	<-- b;			(v0+)
+	a > c;			(u1-)
+	<-- c;			(v0+)
+	[pb bvalue] = a;	(u1+)
+	<-- a;			(v0-)
+	leave;			(u1-)
+				(10cy+8ma=10+4*8=42avgcy)
+
+(>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>)
+"set progressive byte"		(PCM/PipeCyclesMemoryaccess)
+	a -->;			(u1+)
+	d -->;			(v0+)
+	b -->;			(u1+)
+	c -->;			(v0+)
+	a = [pb offset];	(u1+)
+	c = a;			(v0-)
+	a > 2;			(u1-)
+	c & 3;			(v0-)
+	a + [pb stream];	(u1+)
+	b = FFFFFF00h;		(v0-)
+	c < 3;			(u1-)
+	d = [a];		(v0+)
+	b <@ c; 		(u1-)
+	d & b;			(v1-)
+	b = [pb bvalue];	(u1+)
+	b <@ c; 		(v1-)
+	<-- c;			(u1+)
+	d | b;			(v0-)
+	<-- b;			(u1+)
+	[a] = d;		(v0+)
+	<-- d;			(u1+)
+	<-- a;			(v0+)
+	leave;			(u1-)
+				(14cy+13ma=14+4*13=66avgcy)

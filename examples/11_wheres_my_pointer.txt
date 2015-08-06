@@ -1,0 +1,274 @@
+
+      ( *** LINOLEUM Example 11: Where's my pointer? *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "11_wheres_my_pointer.TXT", WITH THE
+	   RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Shows a little arrow following the movements of the pointing device,
+	usually the mouse, until the first button, left button, is clicked. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Pointing_out... };
+	unit = 32;
+
+	display width	= 384;
+	display height	= 64;
+
+"constants"
+
+	(these are for the "Show that arrow" subroutine)
+
+	SHOW IT = 1;
+	ERASE IT = 2;
+
+"variables"
+
+	BG color = FFFFFFh;
+	BG color negative shader = 040200h;
+
+	Arrow color = 004400h;
+	Current arrow X = 0;
+	Current arrow Y = 0;
+
+	My pointer width = 32;
+	My pointer height = 18;
+ vector Arrow shape =	00000000000100000000000000000000b;
+			00000000000110000000000000000000b;
+			00000000000111000000000000000000b;
+			00000000000111100000000000000000b;
+			00000000000111110000000000000000b;
+			00000000000111111000000000000000b;
+			00000000000111111100000000000000b;
+			00000000000111111110000000000000b;
+			00000000000111111111000000000000b;
+			00000000000111111111100000000000b;
+			00000000000111111100000000000000b;
+			00000000000110000000000000000000b;
+			00000000000000000000000000000000b;
+			10001010010111010001110101010001b;
+			10001011010101010001000101011011b;
+			10001010110101010001100101010101b;
+			10001010010101010001000101010001b;
+			11101010010111011101110111010001b;
+
+	Dot X = 0; Dot Y = 0; Stop X = 0; Stop Y = 0;
+	Current shape unit = 0; Dot Mask = 0;
+	Function for the arrow routine = SHOW IT;
+
+"workspace"
+
+	Primary Display = 24576;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+	=> Clear the display with BG color;
+
+( --- start of GUI control loop and mouse pointer animation --- )
+
+    "GUI control loop"
+
+	[Function for the arrow routine] = ERASE IT;
+	=> Show that arrow;
+
+	[Pointer Command] = READ POINTER; isocall;
+
+	[Current arrow X] = [Pointer X Coordinate];
+	[Current arrow Y] = [Pointer Y Coordinate];
+
+	[Function for the arrow routine] = SHOW IT;
+	=> Show that arrow;
+
+	[Display Command] = RETRACE; isocall;
+
+	? [Pointer Status] - PD LEFT BUTTON DOWN -> GUI control loop;
+
+( --- end of GUI control loop and mouse pointer animation --- )
+
+    "Wait left btn to be released"
+	? [Pointer Status] + PD LEFT BUTTON DOWN
+		-> Wait left btn to be released;
+
+	end;			(of MAIN PROGRAM)
+
+"Show that arrow"
+	[Stop X] = [Current arrow X]; [Stop X] + [My pointer width];
+	[Stop Y] = [Current arrow Y]; [Stop Y] + [My pointer height];
+	[Dot Y] = [Current arrow Y];
+	[Current shape unit] = vector Arrow shape;
+    "Loop for scan lines in pointer shape"
+	[Dot X] = [Current arrow X];
+	[Dot Mask] = 80000000h; [Dot Mask] <@ [My pointer width];
+    "Loop for pixels in pointer shape"
+	E = [Current shape unit];
+	? [E] - [Dot Mask] -> No dot in shape at this point;
+	A = [Dot X];
+	B = [Dot Y];
+	C = [Arrow color];
+	? [Function for the arrow routine] = SHOW IT -> Do the dot;
+	C = [BG color];
+	D = [BG color negative shader];
+	E = [Display Height]; E - [Dot Y]; E-;
+	D * E; C - D;
+    "Do the dot"
+	=> Plot;
+    "No dot in shape at this point"
+	[Dot Mask] @> 1;
+	[Dot X]+;
+	? [Dot X] < [Stop X] -> Loop for pixels in pointer shape;
+	[Current shape unit]+;
+	[Dot Y]+;
+	? [Dot Y] < [Stop Y] -> Loop for scan lines in pointer shape;
+	end;
+
+"Plot"
+    ( Draws a single dot.
+      Two display types supported: 16 and 32 bit.
+      Coordinates are checked. All regs destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Clear the display with BG color"
+	A = [Display Width];
+	B = [Display Height];
+	E = [BG color];
+    "Loop to clear all the lines"
+	D = E;
+	B-;
+	C = B;
+	C * [Display Width];
+	C + [Display Origin];
+	A -->;
+    "Loop to clear single scan line"
+	[C] = D;
+	C+;
+	A ^ Loop to clear single scan line;
+	<-- A;
+	E - [BG color negative shader];
+	? B > 0 -> Loop to clear all the lines;
+	end;
+
+( I think at this point there's no real need to explain how the subroutines
+work. Having read previous examples about drawing graphics, along with the
+compiler manual, you should be able, if curious, to figure out what goes on
+in the subroutines presented here. Of course, after some efforts... don't
+expect understanding how a program works to become easy and "natural": I've
+been doing this for almost 19 years, and it did never became easy... )
+
+( The very new thing is about decoding mouse movements. Note the mouse isn't
+explicitly mentioned by the runtime module variables. It's generically called
+the "pointer", because it's connected to a general pointing device: it is not
+intended to be always a mouse. Think, for instance, to portable computers
+having trackpads, touch-screens, optical pens, and so on... )
+
+( Here's some terminology:
+
+	GUI   - an acronym for Graphical User Interface.
+		For instance, windows, push-buttons, pull-down menus,
+		combo boxes, lists, dialogs are all elements in a GUI.
+
+	GUI
+	Control
+	Loops - the loops that check when the user interacts with the GUI.
+		Usually, such loops run continuously, until a function is
+		selected by pressing an icon, a button, whatever. Then the
+		control is transferred to a subroutine. At the end of the
+		subroutine, it will be transferred back to the control loop.
+		There may be more than one control loops in the application.
+		For instance, MS Windows calls the control loop from within
+		"WinMain", where a Windows application continuously polls
+		for events, until event numbered zero which means "quit". )
+
+( Tracking the pointing device isn't difficult:
+there are two ways to control the pointing device.
+
+	BY COORDINATE
+	the one used in this example, and also the most common one.
+	The run-time module updates two variables for you, in reply
+	to a call to the IsoKernel made as:
+
+		[Pointer Command] = READ POINTER;
+		isocall;
+
+	and the two returned values are:
+
+		[Pointer X Coordinate]
+		[Pointer Y Coordinate]
+
+	representing the actual coordinates of the pointing device's cursor,
+	relatively to your display area's upper left corner.
+
+	BY DELTA
+	this one allows tracking the pointing device wihtout limits due
+	to the display area's borders. The pointer can't get out of the
+	display area, when using the BY DELTA mode, and your application
+	uses the pointing device exclusively. Because of this last thing,
+	you shouldn't use the BY DELTA mode if not for short loops where
+	this feature is really needed. When in this mode, calling the
+	IsoKernel with:
+
+		[Pointer Command] = READ POINTER;
+		isocall;
+
+	will return two other values:
+
+		[Pointer Delta X]
+		[Pointer Delta Y]
+
+	giving the amount of "pointer units" the pointing device was
+	moved since last time you performed a "READ POINTER" command.
+
+Normally, BY DELTA mode is entered in reply to one of the buttons
+being held down, to allow the pointing device performing some limitless
+movements in every direction. As the manual says, to enter BY DELTA mode
+you can type:
+
+	[Pointer Mode] = BY DELTA;
+	isocall;
+
+And to get back to BY COORDINATE:
+
+	[Pointer Mode] = BY COORDINATE;
+	isocall;
+
+One last thing: whatever your program does, try to use right and middle
+buttons for non-vital operations, or as shortcuts for commands which are
+also accessible in some other way. The pointing device is, pratically,
+"guaranteed" to have at least one button, the one defined as "left button":
+the other two may not be present. )

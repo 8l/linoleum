@@ -1,0 +1,266 @@
+
+      ( *** LINOLEUM Example 2: Testing the display *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, '02_testing_the_display.TXT" WITH
+	   THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Plots a single, white dot, in the middle of the virtual display,
+	then waits the user to press a key. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Display_Test };
+	unit = 32;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+      ( *** Brief introduction to the graphic display management *** )
+
+       (As you will have learned from the manual - by the way you DID read
+	it didn't you? - the n-FLAT video display is organized as a big
+	memory matrix, whose visual dimensions are called the "Display Width"
+	and "Display Height". Each pixel in the video display is by default
+	represented by a single memory unit, containing red, green and blue
+	components of the corresponding pixel's color. This is always the
+	same within LINOLEUM applications' way-of-life, regardless of the
+	type of screen your system is actually using. Now, if you don't
+	specify the directors giving the width and height of the display,
+	the run-time module will set up them for you to have a "minimal"
+	display matrix, exactly 256 pixels wide and 192 pixels tall.
+	In this program we will start drawing on this default display,
+	but most of these things will also work in any other displays of
+	different sizes.)
+
+       (Since we must provide some memory for the video matrix, here's how
+	to do that: the next instruction loads the pointer to the display
+	memory, which has been allocated in the "workspace" period as a
+	matrix of 49152 units, being 49152 = 256 x 192...)
+
+	[Display Origin] = Primary Display;
+
+       (This indicates the run-time module that when the display is to be
+	retraced, its contents are held within the memory area called
+	"Primary Display". So we will have to draw within this area, in
+	order to see what we draw.)
+
+       (Now, [Display Origin] points to the very first dot in the display
+	matrix. This corresponds to the first location in that matrix, and
+	the referenced dot is in the upper-left corner of our display.
+	Suppose you wrote:
+
+		E = [Display Origin];
+
+	You would be referencing the dot in the upper left corner, so that
+	if you used register E as a pointer, you could plot, for instance,
+	a white dot in that point, as in:
+
+		[E] = FFFFFFh; (FFFFFFh corresponds to colour white)
+
+	By adding a single unit to E, we will be referencing the dot
+	immediately to the right of the first dot.
+
+		E +; [E] = FFFFFFh; (would plot at X=1;Y=0)
+
+	By adding the length of a whole horizontal line of pixels to E,
+	we will be referencing the dot immediately below the first one,
+	and the length of a horizontal line is given by [Display Width].
+
+		E + [Display Width];
+		[E] = FFFFFFh; (would plot at X=1;Y=1)
+
+	That's it: for each unit we ADD, we move one dot right, for each
+	time we add [Display Width], we move one dot down.
+	Vice-versa, by SUBTRACTING a unit we'll be moving left,
+	and SUBTRACTING [Display Width] we'll be moving up.)
+
+       (Let's say we want our dot to appear in exactly the MIDDLE of
+	the video display. We first need to find the coordinates of
+	the middle point. Quite obviously, they are the following...)
+
+	A = [Display Width]; A / 2;	(A = X coordinate of middle point)
+	B = [Display Height]; B / 2;	(B = Y coordinate of middle point)
+
+	(Ok. It's not very difficult to imagine what we should do to
+	"travel" our pointer to refer to the middle point. We will have
+	to move right by A units, and move down by B units. For what we
+	said before about "how to move" the pointer, the result is a very
+	simple formula to translate X;Y coordinates to a pointer. It is:
+	  DOT POINTER = Y * [Display Width] + X + [Display Origin])
+
+       (This is exactly the calculation performed by the following
+	lines, where register C is given the final pointer. Remember:
+		A holds the X coordinate
+		B holds the Y coordinate
+	 So the above formula, in our case,
+	 translates to C = B * [Display Width] + A + [Display Origin])
+
+	C = B;			( loads Y in C )
+	C * [Display Width];	( multiplies Y by the width of the display )
+	C + A;			( adds the X coordinate, held by A )
+	C + [Display Origin];	( adds current display's origin pointer )
+
+       (Looks difficult? No, really. Just needs a little bit of practice.
+	Well, now that we have the pointer, the next step is trivial: just
+	load the color of the DOT inside location pointed by register C.
+	BTW - remember when you specify a symbol name, an expression or
+	a register like C, between BRACKETS, you are referencing to the
+	memory location POINTED by that value. The following line does
+	NOT assign a new value to C; instead, it uses C as a POINTER to
+	the memory location to be modified: in particular, due that C has
+	been previously added with the display's origin pointer, now C
+	points to a location placed inside "Primary Display" memory area.)
+
+	[C] = FFFFFFh;		( draws a WHITE DOT )
+
+       (Why is the dot white? It depends from the hexadecimal value
+	loaded inside its location, which in this case is FFFFFFh.
+	Because there are 8 bits per primary color and 3 primary colors.
+	8 bits set to the maximum positive value are FF in hexadecimal,
+	being 255 in decimal. (The manual explains binary arithmetics,
+	do you remember the paragraph talking of constants?)
+	The three primary colors are RED, GREEN and BLUE.
+	The format of an hex value for a pixel is then RRGGBBh,
+	where RR, GG and BB are 2 hex. digits representing the value
+	associated with the corresponding primary color. That value also
+	gives the brightness of that primary color inside the final color.
+	FF is the maximum, and if you set all 3 primaries to FF you'll
+	get white. Vice-versa, setting all of them to zero, you'll get
+	it black. Setting them to mid-way (which is 128 in decimal and 80h
+	in hexadecimal) you'll get it grey. Changing the relative quantity
+	of each primary color, you'll get all of the other shades, upto 16.7
+	million possible shades. It's LINOLEUM's default chromatic resolution,
+	and it's always the same, no matter which is your processor unit, no
+	matter which is your current video card's chromatic resolution, even
+	if very low resolution with the card will give a crappy output, of
+	course, but until your card can go at least in 16-bit hicolor mode
+	(when not 24-bit truecolor) it will always look quite good.
+	Try some other HEX values... for example...
+		FF0000h will give you a very bright red,
+		00FF00h will be green and very bright also,
+		0000FFh will be electric blue,
+		00FFFFh will be cyan,
+		FFFF00h is light yellow,
+		FF00FFh is light magenta,
+	and so on with the intermediate values.
+	You can try such values with any painting programs working
+	in true-color modes, to give you an idea of the possible shades
+	and how they're formed. Imagine to be a painter mixing colors on
+	the palette. By adding more or less of a primary color, you'll get
+	all the colors you want, make very smooth shades and so on...)
+
+       (Another few considerations: if you want to halve the brightness
+	of a certain pixel, divide all 3 primary colors in its color by 2.
+	A very fast way (find these instructions in the quick reference)
+	is writing the following, assuming the C register as the pointer
+	to the pixel to be processed.
+		A = [C];
+		A & FEFEFEh;
+		A > 1;
+		[C] = A;
+	If you want to mix a color with another color, divide both colors
+	by 2 as above, and then add them together to form the final color,
+	which will then be an average. See the next sample of code, where
+	C points to the first pixel and D points to the second one.
+		A = [C];
+		B = [D];
+		A & FEFEFEh;
+		B & FEFEFEh;
+		A > 1;
+		B > 1;
+		A + B;
+		[C] = A;
+	If you want the NEGATIVE version of a color, as in a photo film,
+	just COMPLEMENT ALL THE BITS in the color, using a bit-wise
+	"NOT" instruction, represented by an exclamation point like in:
+		![C];
+	so if the color was white, you'll get it black, and vice-versa. )
+
+       (Getting back to this example, we have this white dot in the middle
+	of the display memory. Is it already visible? No, not until we ask
+	the run-time module to copy our display memory to the video card's
+	onboard memory. This is performed with a call to the IsoKernel,
+	after setting control variable [Display Command] to the value of
+	a pre-defined constant, called RETRACE.)
+
+	[Display Command] = RETRACE;
+	=> [IsoKernel];
+
+       (Alternatively to =>[IsoKernel], you could simply write isocall;
+	which is shorter and easier to spell. Like so...)
+
+	[Display Command] = RETRACE;
+	isocall;
+
+       (NOW WAIT! Don't quit the program immediately.
+	You woudn't have time to see the result of this program.
+	Using another IsoCall, we can make the program wait until
+	a key is pressed. It's easy: when reading the keyboard in
+	ASCII mode (there's also another way to read the keyboard,
+	but it will be examined in example 14...) you need setting
+	[Console Command] = GET CONSOLE INPUT; and then isocall.)
+
+    "wait keystroke"
+	[Console Command] = GET CONSOLE INPUT;
+	isocall;
+
+       (At this point, the IsoKernel returned successfully only if
+	a keystroke was present inside the keyboard buffer. Otherwise,
+	the IsoKernel returned with error status set. We can check for
+	successful return thanks to special comparison directives.
+	Here's the one reacting to an error...)
+
+	? failed -> wait keystroke;
+
+       (And that will jump to the abovely defined label, "wait keystroke",
+	until the IsoKernel returns succesfully after reading the keyboard,
+	which would mean at least one key had been pressed.)
+
+       (What will you see? You'll see a black display of 256 x 192
+	pixels, with a single white dot in the middle. The rest of the
+	display is black because all the memory is initialized with a
+	standard pattern of zeroes.)
+
+       (If you want to experiment, here's a thing you should know of:
+	do not attempt to plot outside the video display. Your program
+	knows how big is the display, and the coordinates range. If you
+	get out of this range, your program will crash, and Windows
+	would call that crash a "page fault". This happens because your
+	program would be referencing a memory location that it doesn't
+	own. The same thing happens if you get out of the workspace
+	in general. In the next example we'll see a subroutine plotting
+	a single dot where requested by the main program. That subroutine,
+	as you will notice, is crash-safe, because it checks the display
+	range before attempting to plot.)
+
+	end;

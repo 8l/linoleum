@@ -1,0 +1,80 @@
+
+      ( *** LINOLEUM Example 1: Raising the power! *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "01_raise_the_power.TXT", WITH THE
+	   RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	It will calculate 7 raised to the power of 10,
+	and store the result in register C. Then it will open
+	a message box to show the contents of all registers.
+	As you can see from the message box, C holds the result. )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Raise_the_power! };
+	unit = 32;
+
+"programme"
+
+       (A and B are assigned these values for later calculations.)
+
+		A = 7;
+		B = 10;
+
+       (The following routine calculates A raised to B,
+	and gives result to C. Registers A and B are both preserved,
+	because A is not influenced by the calculation, while B is
+	temporary stored in STACK memory during the process.)
+
+	"raise"
+		--> B;			(this saves B to the stack)
+		C = 1;			(C is first assigned to 1)
+		? B = 0 -> finished;	(IS B EQUAL 0? IF YES, FINISHED)
+	"raise again"
+		C * A;			(multiply C by A)
+		B ^ raise again;	(repeat "raise again" until B = 0)
+	"finished"
+		<-- B;			(get back the initial value of B)
+		show registers; 	(terminate app, and show results)
+
+( SOURCE CODE ENDS HERE ---------------------------------------------------- )
+
+( Well, this first example is very very simple.
+To understand the commands, use the related quick reference included
+in the manual (remember you have to read all of it before learning from
+the examples). This short program serves the purpose of giving an idea
+about how a LINOLEUM program is structured in general. The program
+uses a "comparison directive", when it checks for B = 0 and, if it's true,
+jumps to the "finished" label. That's what comparison directives are for.
+Pushing and popping B (B --> and <-- B) shows the basic meaning to the
+use of stack memory, as explained in the manual. Register B is also
+used to perform an "integer loop until zero" (B ^ raise again).
+Remember the manual and try to figure out how the program works.
+I'm pretty sure you'll be able to understand it. )

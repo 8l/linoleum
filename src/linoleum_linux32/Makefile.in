@@ -1,0 +1,63 @@
+.POSIX:
+# Inserted settings
+
+# C-compiler flags
+CFLAGS	= -O2 -m32 -W -Wall --ansi --pedantic
+LDFLAGS	= -L/usr/X11R6/lib
+LDLIBS	= -lX11 -lpthread
+
+# Assembler flags
+AS	= as
+ASFLAGS = --32
+
+# Installation prefix
+prefix=/usr/local
+
+# Install program to use (should provide -m and -d options)
+INSTALL=install
+
+# Miscelaneous install paths
+#bindir=$(prefix)/bin
+#docdir=$(prefix)/share/doc/dwdiff-<VERSION>
+#mandir=$(prefix)/share/man
+
+all:	rtmp.bin
+
+.PHONY: all clean install 
+.SUFFIXES: .s
+
+ASSOURCES=isokernel.s
+
+CSOURCES=rtm.c lino_xdisplay.c lino_file.c lino_socket.c \
+	lino_xevent.c lino_mouse.c lino_keyboard.c lino_globalK.c lino_xclip.c \
+	lino_sound.c
+
+OBJECTS=$(CSOURCES:.c=.o) $(ASSOURCES:.s=.o)
+
+LPATH	= ~/linoleum/main
+
+clean:
+	rm -rf *.o rtm*.bin
+
+.c.o:
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+.s.o:
+	$(AS) $(ASFLAGS) -o $@ $<
+
+rtm01.bin: $(OBJECTS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o rtm01.bin $(OBJECTS) $(LDLIBS)
+
+install: rtmp.bin
+	cp rtmp.bin ${LPATH}/sys/linux.bin
+
+rtmp.bin: rtm01.bin
+	strip rtm01.bin
+	cp rtm01.bin rtm02.bin
+	cp rtm01.bin rtm03.bin
+	cp rtm01.bin rtm04.bin
+	cp rtm01.bin rtm05.bin
+	cp rtm01.bin rtm06.bin
+	cp rtm01.bin rtm07.bin
+	cp rtm01.bin rtm08.bin
+	${LPATH}/makertmp.bin

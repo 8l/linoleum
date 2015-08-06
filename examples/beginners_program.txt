@@ -1,0 +1,28 @@
+
+	"directors"
+		unit = 32;
+		display width = 400;
+		display height = 300;
+	"workspace"
+		Grid of pixels = 400 multiplied 300;
+	"programme"
+		[Display Origin] = Grid of pixels;
+		C = 60;
+	"fill the next row"
+		A = 80;
+		A + Grid of pixels;
+		D = 400; D * C;
+		A + D;
+		B = A;
+		B + 200;
+	"fill the next pixel"
+		[A] = FFFFFFh;
+		A + 1;
+		? A < B -> fill the next pixel;
+		C + 1;
+		? C < 160 -> fill the next row;
+		[Display Command] = RETRACE;
+		isocall;
+		A = 1000000000;
+	"lemme see it you shit"
+		A ^ lemme see it you shit;

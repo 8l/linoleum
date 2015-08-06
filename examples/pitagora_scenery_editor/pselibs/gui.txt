@@ -1,0 +1,312 @@
+(
+
+    LEGACY GUI, AN ANCESTOR OF THE iGUI, STILL USED BY PITAGORA SCENERY EDITOR
+    Written by Alessandro Ghignola but no longer included in default libraries
+    --------------------------------------------------------------------------
+    | Weighs:		  ? bytes *
+    | Allocates:	  ? bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      As a first thing to do, the program should setup a hidden video layer,
+    called the "backdrop layer". It is used to mantain background graphics and
+    drawing GUI controls. The mechanism is similar to triple-buffer graphics:
+    the layout is copied to an intermediate layer - the display memory in this
+    case - where it's merged with all of the animated shapes [such as the
+    pointer's arrow]. Then, the intermediate layer is copied to the on-board
+    video RAM so that it can be shown in its final look. In case of LINOLEUM
+    applications, the on-board VRAM is updated by calling to the IsoKernel
+    after having set:
+      [Display Command] = RETRACE;
+
+      In a nutshell, the main program first draws controls and background onto
+    the backdrop layer. Then it issues one [or more] control loops, as in the
+    following example:
+
+      "Sample Control Loop"
+		  => Begin Control Loop;
+		  ...code checking for GUI controls...
+		  => End Control Loop;
+	  -> Sample Control Loop;
+
+      This library will take care of moving the arrow pointer, and of display
+    synchronization, that is, the arrow's periodical retrace.
+
+)
+
+"libraries"
+	/gen/AllowDD;
+	/gen/Region;
+	/gen/Layers;
+	/gen/STDFont;
+	/gen/Rect;
+	/gen/TGA;
+
+"variables"
+	Control Loop Idle Slice 	= 10;
+	Pointer To Backdrop Layer	= 0;
+	Pointer To Arrow Shape		= 0;
+	Pointer To Arrow Shadow 	= 0;
+	Arrow Region Width		= 0;
+	Arrow Region Height		= 0;
+	Arrow Shape Transparent Color	= 0;
+	Arrow Shape Effect		= service FX Superimpose;
+	Horizontal Arrow Shadow Drift	= 4;
+	Vertical Arrow Shadow Drift	= 8;
+	Arrow Altitude Over Background	= 40;
+	Arrow Hot Spot X		= 0;
+	Arrow Hot Spot Y		= 0;
+	Balloon Relative X Position	= 16;
+	Balloon Relative Y Position	= 24;
+	Balloon Wraparound Margin	= 256;
+	Balloon Background Shaders	= vector Default Balloon Shaders;
+	Balloon Text Color		= 0;
+	Balloon Background Effect	= service FX Raw;
+	Balloon Text String		= NULL;
+	Balloon Text Padding		= 3;
+
+	Arrow Region Auxiliary Width	= 0;
+	Arrow Region Auxiliary Height	= 0;
+	Arrow Width Accumulator 	= 0;
+	Arrow Height Accumulator	= 0;
+	Arrow Aux Width Accumulator	= 0;
+	Arrow Aux Height Accumulator	= 0;
+	Arrow Region X Correction	= 0;
+	Arrow Region Y Correction	= 0;
+	Arrow X Correction Accumulator	= 0;
+	Arrow Y Correction Accumulator	= 0;
+	Arrow X In This Frame		= 0;
+	Arrow Y In This Frame		= 0;
+	Arrow Shadow X In This Frame	= 0;
+	Arrow Shadow Y In This Frame	= 0;
+	Arrow X In Previous Frame	= 0;
+	Arrow Y In Previous Frame	= 0;
+	Arrow Shadow X In Previous Frame= 0;
+	Arrow Shadow Y In Previous Frame= 0;
+	Balloon Width			= 0;
+	Balloon Height			= 0;
+
+ vector Arrow Region			= 0; 0; 0; 0;
+ vector Balloon Region			= 0; 0; 0; 0;
+ vector Balloon Window			= 0; 0; 0; 0;
+ vector Default Balloon Shaders 	= 1f; 1f; 1f; 0.4f; 0.8f; 1.0f; 0.2f; 0.4f; 0.8f;
+
+"programme"
+
+"Begin Control Loop"
+(*)	[Arrow Width Accumulator] = [Arrow Region Width];
+	[Arrow Height Accumulator] = [Arrow Region Height];
+	[Arrow Aux Width Accumulator] = [Arrow Region Auxiliary Width];
+	[Arrow Aux Height Accumulator] = [Arrow Region Auxiliary Height];
+	[Arrow X Correction Accumulator] = [Arrow Region X Correction];
+	[Arrow Y Correction Accumulator] = [Arrow Region Y Correction];
+(*)	[Arrow X In Previous Frame] = [Arrow X In This Frame];
+	[Arrow Y In Previous Frame] = [Arrow Y In This Frame];
+(*)	[Pointer Command] = READ POINTER; isocall;
+	[Arrow X In This Frame] = [Pointer X Coordinate];
+	[Arrow X In This Frame] - [Arrow Hot Spot X];
+	[Arrow Y In This Frame] = [Pointer Y Coordinate];
+	[Arrow Y In This Frame] - [Arrow Hot Spot Y];
+(*)	A = [Arrow X In Previous Frame];
+	A / [Arrow Altitude Over Background];
+	A + [Horizontal Arrow Shadow Drift];
+	A + [Arrow X In Previous Frame];
+	[Arrow Shadow X In Previous Frame] = A;
+(*)	B = [Arrow Y In Previous Frame];
+	B / [Arrow Altitude Over Background];
+	B + [Vertical Arrow Shadow Drift];
+	B + [Arrow Y In Previous Frame];
+	[Arrow Shadow Y In Previous Frame] = B;
+(*)	A = [Arrow X In This Frame];
+	A / [Arrow Altitude Over Background];
+	A + [Horizontal Arrow Shadow Drift];
+	A + [Arrow X In This Frame];
+	[Arrow Shadow X In This Frame] = A;
+(*)	B = [Arrow Y In This Frame];
+	B / [Arrow Altitude Over Background];
+	B + [Vertical Arrow Shadow Drift];
+	B + [Arrow Y In This Frame];
+	[Arrow Shadow Y In This Frame] = B;
+(*)	? [Control Loop Idle Slice] = ZERO -> CL Is never idle;
+	[Process Command] = SLEEP;
+	[Sleep Timeout] = [Control Loop Idle Slice];
+	isocall;
+    "CL Is never idle"
+	end;
+
+"End Control Loop"
+(*)	[Arrow Region Auxiliary Width] = ZERO;
+	[Arrow Region Auxiliary Height] = ZERO;
+	[Arrow Region X Correction] = ZERO;
+	[Arrow Region Y Correction] = ZERO;
+(*)	[Source Layer] = [Pointer To Backdrop Layer];
+	[Destination Layer] = [Display Origin];
+	[L2L Region] = vector Arrow Region;
+	=> Copy L2L Region;
+(*)	[TGA Display Alignment] = [Display Width];
+	[TGA Display Height] = [Display Height];
+(*)	? [Pointer To Arrow Shadow] = NULL -> GUI No Shadow;
+	[TGA Picture Data] = [Pointer To Arrow Shadow];
+	[TGA Picture Left] = [Arrow Shadow X In This Frame];
+	[TGA Picture Top] = [Arrow Shadow Y In This Frame];
+	[TGA Target Layer] = [Display Origin];
+	[TGA Effect] = service FX Alpha Dim;
+	=> Load TGA Picture;
+    "GUI No Shadow"
+(*)	[TGA Picture Data] = [Pointer To Arrow Shape];
+	[TGA Picture Left] = [Arrow X In This Frame];
+	[TGA Picture Top] = [Arrow Y In This Frame];
+	[TGA Target Layer] = [Display Origin];
+	[TGA Effect] = [Arrow Shape Effect];
+	[FX Transparent Color] = [Arrow Shape Transparent Color];
+	=> Load TGA Picture;
+	? [Balloon Text String] = NULL -> GUI No Balloon;
+(*)	A = vector Balloon Window;
+	[A plus 0] = 0;
+	[A plus 1] = 0;
+	[A plus 2] = [Balloon Wraparound Margin];
+	[A plus 3] = [Display Height];
+	[String] = [Balloon Text String];
+	[Text X] = 0;
+	[Text Y] = 0;
+	[Text Display Width] = [Display Width];
+	[Text Display Height] = [Display Height];
+	[Text Window] = vector Balloon Window;
+	[Text Word Wrap] = ON;
+	[Text Ghost Mode] = ON;
+	=> STD Write;
+	[Balloon Width] = [Width Of Latest Form];
+	[Balloon Height] = [Height Of Latest Form];
+	[Balloon Width] + [Balloon Text Padding];
+	[Balloon Width] + [Balloon Text Padding];
+	[Balloon Height] + [Balloon Text Padding];
+	[Balloon Height] + [Balloon Text Padding];
+(*)	[Arrow Region Auxiliary Width] = [Balloon Width];
+	[Arrow Region Auxiliary Width] + [Balloon Relative X Position];
+	[Arrow Region Auxiliary Width] - [Arrow Shadow X In This Frame];
+	[Arrow Region Auxiliary Width] + [Arrow X In This Frame];
+	[Arrow Region Auxiliary Width] - [Arrow Region Width];
+	? [Arrow Region Auxiliary Width] >= 0 -> GUI AUXW OK;
+	[Arrow Region Auxiliary Width] = 0;
+    "GUI AUXW OK"
+(*)	[Arrow Region Auxiliary Height] = [Balloon Height];
+	[Arrow Region Auxiliary Height] + [Balloon Relative Y Position];
+	[Arrow Region Auxiliary Height] - [Arrow Shadow Y In This Frame];
+	[Arrow Region Auxiliary Height] + [Arrow Y In This Frame];
+	[Arrow Region Auxiliary Height] - [Arrow Region Height];
+	? [Arrow Region Auxiliary Height] >= 0 -> GUI AUXH OK;
+	[Arrow Region Auxiliary Height] = 0;
+    "GUI AUXH OK"
+(*)	A = [Arrow X In This Frame];
+	A + [Balloon Relative X Position];
+	A + [Balloon Width];
+	? A < [Display Width] -> GUI BXCORR OK;
+	[Arrow Region X Correction] = [Display Width];
+	[Arrow Region X Correction] - A;
+	[Arrow Region Auxiliary Width] + [Arrow Region X Correction];
+    "GUI BXCORR OK"
+(*)	A = [Arrow Y In This Frame];
+	A + [Balloon Relative Y Position];
+	A + [Balloon Height];
+	? A < [Display Height] -> GUI BYCORR OK;
+	[Arrow Region Y Correction] = [Display Height];
+	[Arrow Region Y Correction] - A;
+	[Arrow Region Auxiliary Height] + [Arrow Region Y Correction];
+    "GUI BYCORR OK"
+(*)	A = vector Balloon Region;
+	[A plus 0] = [Arrow X In This Frame];
+	[A plus 0] + [Balloon Relative X Position];
+	[A plus 0] + [Arrow Region X Correction];
+	[A plus 1] = [Arrow Y In This Frame];
+	[A plus 1] + [Balloon Relative Y Position];
+	[A plus 1] + [Arrow Region Y Correction];
+	[A plus 2] = [A plus 0]; [A plus 2] + [Balloon Width];
+	[A plus 3] = [A plus 1]; [A plus 3] + [Balloon Height];
+	[Region To Normalize] = vector Balloon Region; => Normalize Region;
+(*)	A = vector Balloon Region;
+	B = vector Balloon Window;
+	[B plus 0] = [A plus 0]; [B plus 0] + [Balloon Text Padding];
+	[B plus 1] = [A plus 1]; [B plus 1] + [Balloon Text Padding];
+	[B plus 2] = [A plus 0]; [B plus 2] + [Balloon Wraparound Margin];
+	[B plus 3] = [A plus 3]; [B plus 3] + [Display Height];
+(*)	[Rectangle Target Layer] = [Display Origin];
+	[Rectangle Display Alignment] = [Display Width];
+	[Rectangle Bounds] = vector Balloon Region;
+	[Rectangle Gradients] = [Balloon Background Shaders];
+	[Rectangle Effect] = [Balloon Background Effect];
+	=> Rectangle;
+(*)	[String] = [Balloon Text String];
+	[Ink] = [Balloon Text Color];
+	[Text X] = 0;
+	[Text Y] = 0;
+	[Text Display Width] = [Display Width];
+	[Text Display Height] = [Display Height];
+	[Text Display Origin] = [Display Origin];
+	[Text Region] = vector Balloon Region;
+	[Text Window] = vector Balloon Window;
+	[Text Word Wrap] = ON;
+	[Text Ghost Mode] = OFF;
+	=> STD Write;
+    "GUI No Balloon"
+(*)	[vector Arrow Region plus 0] = [Arrow X In This Frame];
+	[vector Arrow Region plus 0] + [Arrow Region X Correction];
+	? [Horizontal Arrow Shadow Drift] >= 0 -> GUI Shadowing X ok;
+	[vector Arrow Region plus 0] + [Horizontal Arrow Shadow Drift];
+    "GUI Shadowing X ok"
+	[vector Arrow Region plus 1] = [Arrow Y In This Frame];
+	[vector Arrow Region plus 1] + [Arrow Region Y Correction];
+	? [Vertical Arrow Shadow Drift] >= 0 -> GUI Shadowing Y ok;
+	[vector Arrow Region plus 1] + [Vertical Arrow Shadow Drift];
+    "GUI Shadowing Y ok"
+	[vector Arrow Region plus 2] = [Arrow Shadow X In This Frame];
+	[vector Arrow Region plus 2] + [Arrow Region Width];
+	[vector Arrow Region plus 2] + [Arrow Region Auxiliary Width];
+	[vector Arrow Region plus 3] = [Arrow Shadow Y In This Frame];
+	[vector Arrow Region plus 3] + [Arrow Region Height];
+	[vector Arrow Region plus 3] + [Arrow Region Auxiliary Height];
+	[Region X Vector] = [Arrow Shadow X In This Frame];
+	[Region X Vector] - [Arrow Shadow X In Previous Frame];
+	[Region Y Vector] = [Arrow Shadow Y In This Frame];
+	[Region Y Vector] - [Arrow Shadow Y In Previous Frame];
+	[Region To Update] = vector Arrow Region; => Update Region By Vector;
+	[Region X Vector] = [Arrow Region Width];
+	[Region X Vector] - [Arrow Width Accumulator];
+	[Region X Vector] + [Arrow Region Auxiliary Width];
+	[Region X Vector] - [Arrow Aux Width Accumulator];
+	[Region Y Vector] = [Arrow Region Height];
+	[Region Y Vector] - [Arrow Height Accumulator];
+	[Region Y Vector] + [Arrow Region Auxiliary Height];
+	[Region Y Vector] - [Arrow Aux Height Accumulator];
+	[Region To Update] = vector Arrow Region; => Update Region By Vector;
+	[Region X Vector] = [Arrow Region X Correction];
+	[Region X Vector] - [Arrow X Correction Accumulator];
+	[Region Y Vector] = [Arrow Region Y Correction];
+	[Region Y Vector] - [Arrow Y Correction Accumulator];
+	[Region To Update] = vector Arrow Region; => Update Region By Vector;
+	[Region To Normalize] = vector Arrow Region; => Normalize Region;
+(*)	[Display Live Region] = vector Arrow Region;
+	[Display Command] = RETRACE;
+	isocall;
+(*)	=> Allow Display Dragging;
+	end;

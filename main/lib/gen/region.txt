@@ -1,0 +1,148 @@
+(
+
+    Rectangular areas [regions] management.
+    --------------------------------------------------------------------------
+    | Weighs:		484 bytes *
+    | Allocates:	 16 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+	Normalize Region
+	    [Region To Normalize] - input
+		Specifies the pointer to a vector of four units.
+		These units contain integer values giving the borders
+		of the region to normalize. The sequence of coordinates is:
+			left; top; right; bottom
+	    Note: normalizing means fitting the borders to match display's
+	    physical limits, so that subsequent operations performed on a
+	    normalized region will not try to access parts of the display
+	    which are not existing, therefore avoid possible alteration of
+	    other areas within or outside application's workspace.
+
+	Update Region By Vector
+	    [Region To Update] - input
+		Specifies the pointer to a vector of four units holding
+		coordinates about the region to update, see previous sub-
+		routine for format specifications...
+	    [Region X Vector]; [Region Y Vector] - input
+		They are "vectors" in mathematical sense, not memory vectors.
+		In practice, they are two integer values, which can be both
+		positive or negative. The region is expanded in the direction
+		given by the two values, using following rules:
+		* if x < 0 then left = left + x
+		* if x > 0 then right = right + x
+		* if y < 0 then top = top + x
+		* if y > 0 then bottom = bottom + y
+	   Note: this scheme will make things easier to understand, I hope.
+
+		Original region:
+
+	    left; top		   right; top
+		.........................
+		.			.
+		.			.
+		.			.
+		.			.
+		.........................
+	    left; bottom	   right; bottom
+
+		After updating by vector, with X = +9; Y = -4...
+
+	    left; top			    right;top
+		..................................
+		.			.	 .
+		.	expand Y [up]	.	 .
+		.			.	 .
+		..................................
+		.			.	 .
+		.	previous	. expand .
+		.	region area	.    X	 .
+		.			. [right].
+		..................................
+
+)
+
+"constants"
+	LEFT MARGIN   = 0;
+	TOP MARGIN    = 1;
+	RIGHT MARGIN  = 2;
+	BOTTOM MARGIN = 3;
+
+"workspace"
+	Region To Normalize = 1;
+	Region To Update = 1;
+	Region X Vector = 1;
+	Region Y Vector = 1;
+
+"programme"
+
+"Normalize Region"
+	E = [Region To Normalize];
+	? [E plus 2] >= [E plus 0] -> NR Horizontal Intersection Ok;
+	[E plus 2] -->; [E plus 0] -->;
+	<-- [E plus 2]; <-- [E plus 0];
+    "NR Horizontal Intersection Ok"
+	? [E plus 3] >= [E plus 1] -> NR Vertical Intersection Ok;
+	[E plus 3] -->; [E plus 1] -->;
+	<-- [E plus 3]; <-- [E plus 1];
+    "NR Vertical Intersection Ok"
+	? [E plus 0] >= 0 -> NR Left Low Ok;
+	[E plus 0] = 0;
+    "NR Left Low Ok"
+	? [E plus 1] >= 0 -> NR Top Low Ok;
+	[E plus 1] = 0;
+    "NR Top Low Ok"
+	? [E plus 0] < [Display Width] -> NR Left High Ok;
+	[E plus 0] = [Display Width]; [E plus 0]-;
+    "NR Left High Ok"
+	? [E plus 1] < [Display Height] -> NR Top High Ok;
+	[E plus 1] = [Display Height]; [E plus 1]-;
+    "NR Top High Ok"
+	? [E plus 2] >= 0 -> NR Right Low Ok;
+	[E plus 2] = 0;
+    "NR Right Low Ok"
+	? [E plus 3] >= 0 -> NR Bottom Low Ok;
+	[E plus 3] = 0;
+    "NR Bottom Low Ok"
+	? [E plus 2] < [Display Width] -> NR Right High Ok;
+	[E plus 2] = [Display Width]; [E plus 2]-;
+    "NR Right High Ok"
+	? [E plus 3] < [Display Height] -> NR Bottom High Ok;
+	[E plus 3] = [Display Height]; [E plus 3]-;
+    "NR Bottom High Ok"
+	end;
+
+"Update Region By Vector"
+	E = [Region To Update];
+	? [Region X Vector] > 0 -> URBV Add To Leading X Coordinate;
+	[E plus 2] - [Region X Vector];
+	-> URBV Added To Trailing X Coordinate;
+    "URBV Add To Leading X Coordinate"
+	[E plus 0] - [Region X Vector];
+    "URBV Added To Trailing X Coordinate"
+	? [Region Y Vector] > 0 -> URBV Add To Leading Y Coordinate;
+	[E plus 3] - [Region Y Vector];
+	-> URBV Added To Trailing Y Coordinate;
+    "URBV Add To Leading Y Coordinate"
+	[E plus 1] - [Region Y Vector];
+    "URBV Added To Trailing Y Coordinate"
+	end;
+

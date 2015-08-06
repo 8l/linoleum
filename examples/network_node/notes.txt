@@ -1,0 +1,745 @@
+-----------------------------------------------------------------------------
+Linoleum 1.13.6b Experimental Berkeley Sockets Interface ----- July 7th, 2003
+All trade marks appearing is this file are property of the respective owners.
+-----------------------------------------------------------------------------
+
+This implementation, although 100% working, is still to be considered
+experimental, due to the fact that it may be subject to changes as time
+goes by and the internet evolves; efforts have been pointed to the
+implementation of an interface for an extremely simplified subset of
+the sockets paradigm, in the explicit intent to make the interface use
+only atomic network commands, to make it easy to use, and as portable
+as possible; in a nutshell, to perfectly match Linoleum's phylosophy.
+
+Because this recent feature of the Linoleum environment is experimental,
+detailed informations about its workings are given in this file, and not
+in the official programmer's guide.
+
+Since this is the Windows package of the Linoleum compiler (ports for
+other platforms still being unavailable), we'll be using wsock32.dll:
+in this contest, all socket functions used in the interface are declared
+by MSDN as available since Windows95, and the requested "wsocks" version
+is 1.1, not 2.0, in the hope of best backward-compatibility.
+
+One last thing to note before getting in detail is: this interface uses
+exclusively internet IPv4 addresses. However, it has been designed to
+support future IPv6 address family without having to change the layout of
+the run-time module's communication data area. Hence, two facts arise:
+
+	1. Linoleum considers Internet THE ONLY network.
+	   When speaking of addresses, they're IPv4 addresses.
+	   When speaking of host names, they're domain names or aliases.
+	   I have no knowledge about the possible use of this interface
+	   for intranet purposes: in case you know there may be ways to
+	   perform duties concerning non-internet connections with this
+	   interface, you have to consider that only the IPv4 address
+	   family is intentionally supported by this interface, and that
+	   other possibilities, if even present at all, were not really
+	   considered as the scope of this interface.
+
+	2. Addresses are -NEVER- given in binary 32-bit notation, but as
+	   TEXT STRINGS; i.e. for "localhost", you DON'T refer to a unit
+	   loaded with 7F000001h (or, considering that network byte order
+	   does not match small-endian PC byte order, 0100007Fh): instead,
+	   you refer to { 127.0.0.1 }, declared and manipulated as a text
+	   string, whose length in units could be any (the string is in
+	   facts null-terminated, to account for any possible expansions
+	   given by and subsequent to the introduction of IPv6 addresses).
+	   I'd like to make clear that IPv6 is absolutely NOT supported
+	   as of yet, but that it is on the to-do list for the future.
+
+_____________________________________________________________________________
+
+
+Network group of run-time module's communication data area:
+
+| REMEMBER TO ACTIVATE THE NETWORK GROUP BY SPECIFYING:
+|	modular extensions = network;
+| IN THE "DIRECTORS" PERIOD.
+
+	variable: [NetCommand]		data type: write-and-isocall
+	variable: [NetStatus]		data type: read-write (bitmask)
+	    flag: READY
+		  network subsystem ready, permit to issue async. request
+	    flag: GODEAF
+		  network subsystem must not listen to incoming connections
+	    flag: NETSUCCESS
+		  asynchronous request (GETHOSTBYXXXX) completed successfully
+	    flag: NETFAILURE
+		  asynchronous request (GETHOSTBYXXXX) completed, but failed
+	variable: [Socket]		data type: read-write
+	variable: [HostName]		data type: read-write (string ptr)
+	variable: [HostAddress] 	data type: read-write (string ptr)
+	variable: [Port]		data type: read-write
+	variable: [NetBlockPointer]	data type: read-write (buffer ptr)
+	variable: [NetBlockSize]	data type: read-write
+	variable: [MaxConnections]	data type: read-write (*)
+	variable: [Connections] 	data type: read-only
+	variable: [Clients]		data type: read-write (*)(vector ptr)
+
+(*) variables MaxConnections and Clients are normally initialized once, or
+    changed only while your eventual server application is in "deaf mode",
+    that is, it does not listen to incoming connections: malfunctions could
+    occur otherwise, because the vector pointed by [Clients] and the number
+    in [MaxConnections] are asynchronously updated, they may change at any
+    time while the server is not in "deaf mode"; "deaf mode" is entered by
+    setting the flag "GODEAF" of the [NetStatus] bitmask.
+
+_____________________________________________________________________________
+
+
+A brief client-side connection overview: details about each command are given
+in the next paragraph.
+
+      - see if the network subsystem is working on the local computer, by
+	checking for the READY flag of [NetStatus]:
+		? [NetStatus] + READY -> ok its working;
+		? [NetStatus] - READY -> oy its not working;
+
+      - if you have a domain name, resolve it by passing the domain as a
+	string to the GETHOSTBYNAME command - you will have to wait for
+	success or failure of the domain lookup in the following way, yet
+	you may perform other operations in the loop while you wait:
+	    "loop to wait"
+		( other operations here )
+		? [NetStatus] - READY -> loop to wait;
+		? [NetStatus] + NETSUCCESS -> got the address;
+		? [NetStatus] + NETFAILURE -> domain lookup error;
+
+      - open a new socket using the NETOPEN command, and get its numeric
+	descriptor (sort of handle), which is stored in [Socket] on return
+	from that command
+
+      - request to connect the socket by passing:
+		socket descriptor
+		remote host address
+		port number
+	to the NETCONNECT command
+
+      - wait for the answer from the remote host:
+		if NETISWRITABLE returns successfully, you're connected
+		if NETISEXCEPTED returns successfully, you're rejected
+
+      - eventually send data throught the connected socket by passing:
+		socket descriptor
+		pointer to data
+		number of bytes to send
+	to the NETSEND command: beware that large amounts of informations
+	need to be sent in smaller pieces, and that in this case the pieces
+	may not reach the destination in the same order they were sent by
+
+      - eventually poll for data, and receive them, by passing:
+		socket descriptor
+		pointer to buffer receiving data
+		maximum number of bytes to receive in one shot
+	to the NETRECV command: if the number of bytes received is zero,
+	it barely means no data is available at that moment, so you can
+	wait (poll) for data by issuing this command repeately until you
+	get some data bytes from the socket
+
+      - when you're done using the socket, close it with NETCLOSE,
+	and... no, there's no need to disconnect first, there's no disconnect
+	command at all in the sockets paradigm: the server on the other end
+	is supposed to realize you're no longer active and time you out
+
+_____________________________________________________________________________
+
+
+To begin examining the interface at application level, here follows a list
+of all commands affected by the "network group" of the so-called "run-time
+module communication data area". If you're interested in seeing the network
+group "at work" without having to program yourself, you may try the Node
+application, a general-purpose network node for which source code is given
+as "Node.TXT". Explanations about interesting ways to play around with Node
+instances are given at the end of this file.
+
+[NetCommand] is the network command unit: it can be loaded with one of 14
+values, as defined by the following constants, to perform the corresponding
+operations. There are a few other units such as [NetStatus], [HostName],
+[HostAddress], [Port], etc... in the network group: they will be mentioned
+as the various commands are explained, wherever a certain unit plays a role
+in the execution of a certain command.
+
+	IDLE
+      - Synopsis:
+	[NetCommand] = IDLE;
+	isocall;
+      - Remarks:
+	Does nothing. [NetCommand] is re-assigned to this value after an
+	isocall, to signal that the operation has been performed, or at
+	least attempted, and keep the run-time module from re-attempting to
+	do the same at the next isocall.
+
+	GETHOSTBYNAME
+      - Synopsis:
+	[NetCommand] = GETHOSTBYNAME;
+	[HostName] = pointer to a string giving the domain name;
+	[HostAddress] = pointer to a string to receive the IPv4 address;
+	isocall;
+	? ok -> wait DNS lookup to finish;
+	? failed -> failure initiating domain name lookup;
+	"wait DNS lookup to finish"
+		(... your control code here, performed while waiting ...)
+		? [NetStatus] - READY -> wait DNS lookup to finish;
+		? [NetStatus] + NETFAILURE -> domain name not resolved;
+		? [NetStatus] + NETSUCCESS -> domain name resolved;
+	"failure initiating domain name lookup"
+		(a subroutine would fail to signal operation failed)
+		fail;
+	"domain name not resolved"
+		(a subroutine would fail to signal operation failed)
+		fail;
+	"domain name resolved"
+		(the [HostAddress] string has been filled with the IPv4
+		address corresponding to the [HostName] string, in the
+		form of a dot-quadded, null-terminated string, such as
+		"www.xxx.yyy.zzz", where all values are decimal numbers)
+		end;
+      - Remarks:
+	Initiates a request for a host name lookup.
+	This is an asynchronous operation: it will not block the application
+	while the domain is being resolved to an IPv4 address. Thus, when the
+	IsoKernel returns successfully, it DOES NOT MEAN that the domain
+	address has been successfully resolved: it only means that a request
+	for a DNS lookup has been successfully issued. That request will take
+	some time to complete, and it could subsequently fail or succeed:
+	while the request is in progress, the [NetStatus] unit will have its
+	READY flag cleared, and when the request completes, the READY flag in
+	[NetStatus] will be set back, and another couple of flags in the same
+	unit, namely NETSUCCESS and NETFAILURE, will report the result of the
+	asynchronous operation. At that point, if the operation succeeded,
+	the string pointed by [HostAddress] will be filled with the IPv4 of
+	the host corresponding to the string pointed by [HostName]. The IPv4
+	will be a null-terminated, dot-quadded string such as "127.0.0.1".
+      - Warning:
+	Only one lookup request can be initiated per time by a thread, and
+	since Linoleum is single-threaded, you must wait for the request to
+	complete before issuing another request. Attempting to issue another
+	request while the first one is still in progress will fail.
+
+	GETHOSTBYADDR
+      - Synopsis:
+	[NetCommand] = GETHOSTBYADDR;
+	[HostAddress] = pointer to a string giving the IPv4 address;
+	[HostName] = pointer to a string to receive the domain name;
+	isocall;
+	(... rest goes on similarly to GETHOSTBYNAME ...)
+      - Remarks:
+	Initiates a request for a reverse host name lookup.
+	Works similarly to GETHOSTBYNAME, only that the input parameter is
+	the string pointed by [HostAddress], and the string that gets filled
+	when the request completes successfully is pointed by [HostName].
+	The rest of remarks for GETHOSTBYNAME also apply to GETHOSTBYADDR.
+
+	GETPEERBYSOCKET
+      - Synopsis:
+	[NetCommand] = GETPEERBYSOCKET;
+	[Socket] = [socket to lookup]; (32-bit socket descriptor)
+	[HostAddress] = pointer to a string to receive the IPv4 address;
+	isocall;
+	? ok -> operation succeeded;
+	? failed -> operation failed;
+	"operation succeeded"
+		([Port] contains local port to which the peer is attached,
+		and [HostAddress] string is filled with the peer's IPv4)
+		end;
+	"operation failed"
+		(a subroutine would fail to signal operation failed)
+		fail;
+      - Remarks:
+	Performs a lookup for the address and port number associated with the
+	specified peer, indicated by its socket's descriptor. This command is
+	to be used by servers, once the server has been bound to a local IPv4
+	address and told to listen to incoming connections via a remote port.
+	The command returns address and local port number of the remote peer.
+
+	CANCELREQUEST
+      - Synopsis:
+	[NetCommand] = CANCELREQUEST;
+	isocall;
+      - Remarks:
+	Cancels anynchronous requests for domain name or address lookups.
+	If the request, in your application's opinion, is taking too much
+	time to complete, in the loop that waits for a GETHOSTBYXXXX request
+	to complete, you may place an emergency exit condition which, after
+	breaking out of the loop, issues this command to break the request,
+	allowing for the lookup to be retried or other requests to be issued.
+	Anyway it might be rare that such lookup requests should undefinitely
+	block: by default, they might timeout at a certain point; yet, the
+	CANCELREQUEST command could be useful anyway if the user doesn't want
+	to wait any further, and wishes to abort the operation implying the
+	lookup (such as hitting a STOP button in a browser's navigation bar).
+
+	NETOPEN
+      - Synopsis:
+	[NetCommand] = NETOPEN;
+	isocall;
+	? ok -> operation succeeded;
+	? failed -> operation failed;
+	"operation succeeded"
+		([Socket] contains the newely opened socket's descriptor,
+		a bare 32-bit value, you can imagine it such as a "handle")
+		end;
+	"operation failed"
+		(a subroutine would fail to signal operation failed)
+		fail;
+      - Remarks:
+	Opens a new socket.
+	Beware that before sending or receiving anything, a socket must be
+	connected (client-side) or placed in a listening state (server-side).
+	There is no theoretical limit to the number of sockets that could be
+	opened at the same time, but AFAIK, you rarely need more than one, at
+	least in applications that are supposed to play the "client's part".
+	Before exiting the application, you MIGHT close all of your sockets:
+	I'm not sure what implies to quit without closing them, I suppose it
+	causes some socket resources not to be released by wsock32.dll. I've
+	tried, and it didn't do something immediately noticeable. Presumably,
+	leaving lots of open sockets might cause troubles at a certain point.
+	The returned socket descriptor ([Socket]) is intended to be COPIED,
+	after a successful opening, to a unit of your workspace, that is, to
+	a variable you reserved for that. Now for a silly addition: of course
+	if you want to keep operating an undefined number of sockets, you
+	should store their descriptors in a vector (a linear array of units)
+	you have put apart somewhere in your "workspace" period.
+
+	NETCLOSE
+      - Synopsis:
+	[NetCommand] = NETCLOSE;
+	[Socket] = [socket to close]; (32-bit socket descriptor)
+	isocall;
+	? ok -> operation succeeded;
+	? failed -> operation failed;
+	"operation succeeded"
+		(return successfully, no values are returned by NETCLOSE)
+		end;
+	"operation failed"
+		(a subroutine would fail to signal operation failed)
+		fail;
+      - Remarks:
+	Closes an open socket.
+	Of course, any subsequent attempts to perform operations on a socket
+	that has been closed, will merely fail.
+
+	NETCONNECT
+      - Synopsis:
+	[NetCommand] = NETCONNECT;
+	[Socket] = [socket to connect]; (32-bit socket descriptor)
+	[HostAddress] = string giving the IPv4 of the remote host;
+	[Port] = [port number];
+	isocall;
+	? ok -> connection request initiated;
+	? failed -> failure initiating connection request;
+	"connection request initiated"
+		(... your control code here, performed while waiting ...)
+		[NetCommand] = NETISEXCEPTED;
+		[Socket] = [socket to connect];
+		isocall;
+		? ok -> connection refused;
+		[NetCommand] = NETISWRITABLE;
+		[Socket] = [socket to connect];
+		isocall;
+		? ok -> connection accepted;
+		? failed -> connection request initiated;
+	"failure initiating connection request"
+		(the request wasn't performed successfully: the most
+		probable cause for this to happen is that the socket
+		descriptor doesn't indicate a valid socket, either
+		because that socket has been closed, or because that
+		socket is ALREADY connected, or even because that socket
+		has been placed in listening state, and the same socket
+		cannot be AT THE SAME TIME a server and a client)
+		fail;
+	"connection refused"
+		(our attempt to connect has been rejected: either the
+		remote host doesn't want to communicate with us, or the
+		network failed in some point along the way to the remote
+		host, or we've chosen a wrong address, a wrong port, or
+		there are actually no listening servers at the other end)
+		fail;
+	"connection accepted"
+		(we're successfully connected to the remote host:
+		now we could send and receive throught our socket)
+		end;
+      - Remarks:
+	Issues a request to connect an unconnected socket to a remote host.
+	The socket descriptor passed to this command must be associated with
+	a socket that is NOT YET connected to a host, and that is NOT EVEN
+	placed in a listening state. Normally, you'd pass the descriptor for
+	a socket that has just been opened, so it's in perfectly clean state.
+	This operation is anynchronous: if the command succeeds, it *only*
+	means that your application is correctly ASKING the remote host to
+	connect with it. But at that point, you have to wait for the remote
+	host's answer: the remote host can accept OR refuse your connection.
+	If the remote host refused to connect with you, your application will
+	find a successful return for [NetCommand] = NETISEXCEPTED;, which in
+	fact means that the connection request has been expected, and in
+	practice that the request was refused at the other end of the line.
+	If the remote host accepted your connection, your application will
+	find a successful return for [netCommand] = NETISWRITABLE;, which in
+	fact means that you are allowed to send data to the remote host, and
+	this also implies the possibility to receive data.
+	Thus, your application might leave the request suspended until a
+	successful NETISWRITABLE return, or until a successful NETISEXCEPTED
+	return: in either case, the wait is over. Or, if no answer is given
+	in a timeout period of your choice, disregard the connection request
+	and simply close the socket, reporting to the user that it timed out.
+	One precisation: THERE IS NO DISCONNECT operation. To disconnect from
+	a remote host, we just close the socket. The remote server might then
+	eventually realize we're not sending anything anymore, and close its
+	own socket. This is not due to Linoleum's implementation of sockets:
+	it's merely the way things work.
+	About the [Port] parameter: it's a number, and it's nothing to do
+	with hardware ports. We're speaking of logical ports, and they're
+	identified by a 16-bit number (between 1 and 65535) conventionally
+	associated with a certain service. For instance, port 80 is usually
+	the HTTP server port, 21 is for FTP, 110 for a POP email server, 25
+	for a SMTP email server, and so on... although it has to be noted
+	that these are just conventions (well, they're worldwide conventions,
+	but still conventions). In theory, if both the server and the client
+	agree to communicate with a certain protocol (HTTP is a protocol)
+	over a certain port which is not 80, things would work anyway.
+
+	NETLISTEN
+      - Synopsis:
+	[NetCommand] = NETLISTEN;
+	[Socket] = [socket to bind]; (32-bit socket descriptor)
+	[HostAddress] = string giving the IPv4 of the local host;
+	[Port] = [port number of port to listen to];
+	[MaxConnections] = [number of maximum contemporary connections];
+	[Clients] = MyClients; ("MyClients" is a placeholder for a vector)
+	isocall;
+	? ok -> server port opened and listening;
+	? failed -> failure binding socket to local address;
+	"server port opened and listening"
+		[Connections Before] = [Connections];
+	    "waiting for clients"
+		(... your control code here, performed while waiting ...)
+		=> allow some time for clients to come;
+		[NetStatus] + GODEAF; (while welcoming/droppping clients)
+		=> check clients;
+		[NetStatus] - GODEAF; (no longer welcoming/droppping clients)
+		? (quitting the server) -> quit service;
+		-> waiting for clients;
+	    "quit service"
+		end;
+	"allow some time for clients to come"
+		[ProcessCommand] = SLEEP;
+		[SleepTimeout] = 50; (milliseconds, just an example)
+		isocall; (suspend thread while server is not deaf)
+		end; (of subroutine)
+	"check clients"
+		? [Connections] <= [Connections Before] -> no new clients;
+		A = [Connections Before]; (index of first new client)
+	    "add connections to tables" (whatever your tables are)
+		[this new client socket is] = [A relating MyClients];
+		(process tables to add this client's connection)
+		A+; ? A < [Connections] -> add connections to tables;
+		[Connections Before] = [Connections]; (update tracker)
+	    "no new clients"
+		? (no connection has timed out) -> no disconnects;
+		(process server tables to delete the old connection)
+		[NetCommand] = NETCLOSE;
+		[Socket] = [socket of the client that timed out];
+		isocall; (closing socket: [Connections] will decrease)
+		[Connections Before] = [Connections]; (update tracker)
+	    "no disconnects"
+		end; (of subroutine)
+	"failure binding socket to local address"
+		(it seems we can't use the address given in [HostAddress]
+		as our local host address - this is normally 127.0.0.1,
+		or maybe we've chosen to listen to an invalid port, such
+		as port zero, or to a port that we're already listening)
+		fail;
+      - Remarks:
+	Binds a socket to a local address, and begins listening to possible
+	connections coming throught the given port number. Well, yes, things
+	get a bit more complicated here, as you might expect since we're
+	talking about how to build a server. It is difficult to understand
+	at first sight: you're therefore strongly suggested to try manually
+	building a server using the "Node" application, to gather an idea of
+	how things work. A deep look at Node.TXT, the source code of "Node",
+	*MIGHT* be straightforward.
+	The NETLISTEN command is used server-side: if you're building a web
+	server, for instance, to serve files throught the HTTP protocol, you
+	would bind one of your application's sockets to the localhost address
+	(which is conventionally 127.0.0.1) and set the [Port] to 80, which
+	is the conventional port where clients expect to find a web server.
+	To give an idea of what I'm talking about, Apache is a web server.
+	Before invoking the NETLISTEN command, you have to declare, in your
+	workspace, a vector (a linear array of memory units) to be filled
+	with incoming connections' socket descriptors. After you've bound a
+	socket to LISTEN to a certain port, every time a client somewhere
+	requests to connect with your server, the connection will be accepted
+	immediately, and the run-time module will automatically open a new
+	socket for you to dial with the client. That descriptor will be in
+	facts stored within the vector which pointer you passed throught the
+	[Clients] unit. Where, exactly, depends on how many connections are
+	simultaneously going on: if it's the first connection, it will be
+	stored into the very first unit of that vector, and the value of
+	[Connections] (which is read-only!) will change from zero to one.
+	And in effects, the value of [Connections], compared to its value in
+	the recent past ([Connections Before] in the synopsis), is the key to
+	DETECTING incoming connections. What do you do when you get a client?
+	Well, that depends on what your server is supposed to do, but if you
+	look at how "Node" works, you can insulate some basic mechanisms: of
+	course, it'd be absurd if your server didn't timeout idle connetions
+	and periodically close their sockets, because your tail of clients
+	would get filled before or later. Yes, because the value you load in
+	[MaxConnections] upon (and normally ONLY upon) starting the server,
+	and which might also be the size of the "MyClients" vector, gives the
+	limit to incoming connections that could be served and kept alive at
+	the same time. A limit must be there, it can allow for dozen thousand
+	clients, depending on how powerful you believe your server to be,
+	but a limit must be there. So, as Node does by default after 30 sec.
+	of inactivity from the client (no data received from client since 30
+	seconds), your server will have to timeout connections, and therefore
+	close them, freeing their units in the "MyClients" vector.
+	When you want to close a client's socket, you simply pass its socket
+	descriptor ("MyClients" vector contains descriptors, you know) to
+	the NETCLOSE command, via the [Socket] unit, in the same way you'd
+	close one of the sockets in a client application. The only difference
+	concerning a server application, is that if the socket you're closing
+	corresponds to a client in "MyClients" vector pointed by [Clients],
+	the corresponding unit holding its descriptor will be deleted from
+	that vector, causing all sockets that connected to your server after
+	that client to be shifted back 1 unit in that same vector. The "tail"
+	of the vector, as the vector's units are deleted, is automatically
+	re-filled by the run-time module with zeroes. Also, when a client is
+	closed, the value of [Connections] automatically drops by 1: your
+	server application must NEVER alter [Connections] by itself; that'd
+	mean interfering with the run-time module's duties.
+	One last important note is deserved by the GODEAF flag: asserting
+	GODEAF, i.e. setting that flag in the [NetStatus] unit at any time,
+	causes any listening sockets to become in facts "deaf" to connection
+	requests. What's the use? Since a connection may happen at ANY TIME
+	while your code executes, there are cases in which you MUST keep the
+	value of [Connections] and the contents of the "MyClients" vector
+	from changing. Typically, you'd want this while you're processing new
+	connections and/or reorganizing your server's internal data in reply
+	to one or more clients' timeout. Again, see how Node does that.
+	While the server is deaf, incoming connections are suspended, and no
+	longer accepted: in practice, this is the other end of the loop where
+	a client is waiting for a connection request to be accepted. Needless
+	to say, if your server remains deaf for too much time, the clients
+	attempting to connect to it will eventually get sick of waiting and
+	close the socket they were trying to connect to you, meaning that you
+	will not even realize there had been an attempt to connect.
+
+	NETSEND
+      - Synopsis:
+	[NetCommand] = NETSEND;
+	[Socket] = [socket to use]; (32-bit socket descriptor)
+	[NetBlock Pointer] = pointer to data to send;
+	[NetBlock Size] = [size of data to send]; (in bytes)
+	isocall;
+	? ok -> some or all data were successfully sent;
+	? failed -> failure sending data at all;
+	"some or all data were successfully sent"
+		[I Have Effectively Sent] = [NetBlock Size]; (bytes)
+		(and if this value is lower than [size of data to send],
+		it means the transfer was too big to completely succeed
+		in one shot: you'll have to keep trying until the socket
+		becomes writable again)
+		end;
+	"failure sending data at all"
+		(eventually, it means that the local socket buffer is full,
+		because of a big transfer that partly failed - see above -
+		and was immediately retried without waiting for a successful
+		return of NETISWRITABLE, or because the socket you're using
+		to send data is not connected, or even because the other end
+		of the line has "ceased to be" in some way, such as if it's
+		no longer reachable: if such problems repeat for enough time,
+		you might give up, timeout the transfer and close the socket)
+		fail;
+      - Remarks:
+	Sends data via an open AND connected socket.
+	Client applications can use this to send data to a server.
+	Server applications can use this to send data to their clients.
+	There's not much to say here, but be aware that if a data transfer
+	can't be completely successful in one shot, you'll have to send the
+	thing "in packets". Managing packets is something that you may do in
+	accord with a conventional protocol (such as HTTP) or by yourself,
+	but of course the client will have to reassemble the packets at the
+	other end of the line, to get the object back as a whole. Unless you
+	are going to transfer little amounts of data (such as "Node") does,
+	you have to consider that packets may NOT reach their destination in
+	the SAME order you send them, and therefore you have to "invent" a
+	way to number the packets' order for the client to understand, that
+	you'd normally give into a short header.
+	Oh, and one last note speaking of TEXTUAL data (email clients, etc):
+	Linoleum stores strings in "fourbyte format", meaning each character
+	of the string takes 1 unit of memory. 1 unit, in this version, means
+	32 bits, in fact 4 bytes. But common protocols and commands sent to
+	servers on the net expect texts to be given as ASCII, at 1 byte per
+	character, so you'll have to take care of converting your texts to
+	ASCII when sending them and (eventually, for your app's commodity)
+	translate them back to fourbyte format when you receive texts.
+	Again, Node's source code (Node.TXT) will give useful hints about
+	how those conversions are done.
+
+	NETRECV
+      - Synopsis:
+	[NetCommand] = NETRECV;
+	[Socket] = [socket to use]; (32-bit socket descriptor)
+	[NetBlock Pointer] = pointer to area where to store data;
+	[NetBlock Size] = [size of data to attempt reading]; (in bytes)
+	isocall;
+	? failed -> failure operating the socket;
+	[I Have Effectively Received] = [NetBlock Size]; (bytes)
+	end;
+	"failure operating the socket"
+		(well, general troubles with the socket)
+		fail;
+      - Remarks:
+	Polls for data coming from an open AND connected socket: if some
+	data are present, it will receive as much as it can of them upto
+	the entry value of [NetBlock Size], and store them as they are into
+	the area of memory pointed by [NetBlock Pointer].
+	When the function fails, [NetBlock Size] is assigned to zero anyway,
+	so for a quick implementation of "data polling" you may even ignore
+	the error state, and simply process received data, if any.
+	This is where a server, which might keep scanning all its clients,
+	would update the timeout counter when at least one byte of data is
+	sent by the client. If no data is received from a given client's
+	socket and the timeout counter drops to zero, the client gets
+	disconnected (you may signal the timeout to the client in some way)
+	and you simply close the client's socket. However, clients may also
+	timeout if a server doesn't answer in given time... nothing forbids
+	that kind of behaviour; besides, it's recommended.
+	For the rest, the remarks given for NETSEND apply: if you receive
+	something "in packets", beware that packets may not be in the same
+	order as they were originally sent.
+
+	NETISREADABLE
+      - Synopsis:
+	[NetCommand] = NETISREADABLE;
+	[Socket] = [socket to check]; (32-bit socket descriptor)
+	isocall;
+	? ok -> socket is open and can receive data; (?)
+	? failed -> socket is not readable or does not exist; (?)
+      - Remarks:
+	This is the only function that's not used in Node.TXT: I am not sure,
+	at the moment, wether it should be used to check if data is present
+	or if data is simply receivable from that socket. Since, once your
+	socket gets connected, the successful connection is reported by
+	allowing writes throught the socket, I am not sure about how this
+	check could get useful, but maybe I'm still too unexpert and unaware
+	of situations in which you may have read access but not write access.
+	AFAIK, it doesn't seem vital anyway. All tests gone well without it.
+
+	NETISWRITABLE
+      - Synopsis:
+	[NetCommand] = NETISWRITABLE;
+	[Socket] = [socket to check]; (32-bit socket descriptor)
+	isocall;
+	? ok -> socket is connected to remote host;
+	? failed -> socket is not yet connected or does not exist;
+      - Remarks:
+	Used to check for successful connection, while waiting for
+	a connection request via NETCONNECT to be completed.
+
+	NETISEXCEPTED
+      - Synopsis:
+	[NetCommand] = NETISEXCEPTED;
+	[Socket] = [socket to check]; (32-bit socket descriptor)
+	isocall;
+	? ok -> connection request to remote host failed;
+	? failed -> socket is already connected or does not exist;
+      - Remarks:
+	Used to check for connection denial, while waiting for
+	a connection request via NETCONNECT to be completed.
+
+_____________________________________________________________________________
+
+
+-------------------------------------------
+A couple interesting ways to play with Node
+-------------------------------------------
+
+*   Playing "server and client":
+   (you don't need to be connected to the internet for this: it's all local)
+
+1.  Run two instances of "Node", and dispose/resize their windows so you can
+    see and access both of them at the same time.
+2.  Choose one of the instances and mentally "dub" it as a local server: the
+    other instance will be its client (but if you run more than two instances
+    you can have more clients for a single server, anyway).
+3.  Pull down the server instance's menu, and choose "Operate socket>Open".
+    If everything is ok, a message will read: "open: succeeded", and you'll
+    have a socket to play with.
+4.  Pull down the server instance's menu, and choose "Operate socket>Listen".
+    A dialog box will pop. There you can see the local host address 127.0.0.1
+    to which the server will be bound, and the port that it will listen to.
+5.  Click "proceed" in the dialog, leaving the parameters as they are.
+    If everything is ok, a message will read: "bind and listen: succeeded",
+    and your socket will be now listening to any connections from port 21.
+    If it fails, be aware that it could mean your local machine is ALREADY
+    using that port to serve something, such as if you installed a FTP server
+    on your computer, since port 21 is the conventional FTP port; the problem
+    has a simple workaround: bind and listen to another port... remembering
+    to also tell the client that it must use that port instead of 21.
+6.  Pull down the client instance's menu, and choose "Operate socket>Open".
+    If everything is ok, a message will read: "open: succeeded", and you'll
+    have a socket to use for the client.
+7.  Pull down the client instance's menu and choose "Operate socket>Connect".
+    A dialog box will pop. There you might choose to connect to local host
+    address 127.0.0.1, and to port 21 (they are both default settings).
+8.  Click "proceed" in the dialog.
+    You might read a few messages BOTH on the client and on the server.
+    Specifically, the client might report that it succeeded connecting to
+    the server, and the server might report that he's got a new client.
+    If the client sends nothing, its connection will time out in 30 seconds.
+9.  Pull down the client instance's menu and choose "Operate socket->Send".
+    Use the default "Hello there!" string or type your own: it'll be sent
+    to the server when you click "Proceed".
+10. Let the connection expire by sending nothing for 30 seconds, and see the
+    server close the connection and the client receive a "time out" message.
+    Funny eh? No? oh, well... nevermind :)
+
+*   Checking your email:
+   (you DO need to be connected to the internet for this)
+
+1.  Run one instance of Node.
+2.  Pull down the menu and choose "Operate socket>Open".
+    If everything is ok, a message will read: "open: succeeded", and you'll
+    have a socket to connect to the POP server.
+3.  Resolve your POP server address, by typing its domain name in the dialog
+    that opens when you choose "GetHostByName": after clicking "proceed", the
+    program will wait for the lookup request to complete, and if it found the
+    server's address, it will report it (ex: mail.yourpop.com = 12.34.56.78).
+4.  Choose "Operate socket>Connect" and you might find the pop's address in
+    the "Host Address" field. Leave it as it is, BUT change the port to 110
+    (that's the port for the POP mail service), and click "proceed".
+5.  If you have been answered, you might see a confirmation message from the
+    POP server, something like: "+OK POP3 Server ready... (version infos)".
+    Now you can send commands to the POP, so tell it who you are, as in...
+6.  Choose "Operate socket>Send" and replace "Hello there!" (the POP won't
+    really understand that :p) with "USER yourusername", where you must not
+    copy the quotes (silly) and replace "yourusername" with the name by which
+    the server knows you as a user with an email account there.
+    If you've done it well, everything worked and the server remembers you,
+    you might receive a short message: "OK Password required".
+7.  Choose "Operate socket>Send" and replace "OK Password required" (yep,
+    it echoes the last received message, because it uses the same buffer
+    for sends and receives) with "PASS yourpassword", again, replacing
+    "yourpassword" with your real password, associated to your account.
+    If after a couple months (kidding kidding) you've remembered the password
+    and nothing went wrong, the server might finally let you take a look at
+    your account and report something like "OK xxx messages". From there you
+    know how many messages are actually present on the server. You can also
+    read them, as in...
+8.  Choose "Operate socket>Send" and replace the last server's message with
+    "TOP 1 10": this is an example. TOP is a command for the POP server, a
+    request to read the first n lines of a certain message, and in that case
+    you're asking the first 10 lines of message number 1. The server will at
+    this point reply by sending what may appear as lots of cryptic data: in
+    reality, apart from the said 10 lines of the message's body, it will just
+    send you also the message's headers. Nevermind, it's normal.
+9.  When you finished fiddling (hey don't write "DELE 1", for instance: that
+    will delete the first message from the server), you can "gently" close
+    the connection with the POP by sending a "QUIT" command. The POP will
+    report that it's closing the connection (it's closing its own socket).
+    Well, that's it: close your own socket too (Operate socket>Close) and
+    then hit the red button in the upper left corner of the Node window to
+    quit the Node application. But I guess that's been MUCH more funny than
+    the previous game, eh? ;)

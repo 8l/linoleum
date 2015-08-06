@@ -1,0 +1,626 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        Process<br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        <a href = "warns_qr.htm">Warnings</a><br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        PROCESS MANAGEMENT<br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+        This is pratically what <i>programming</i> means:
+        it's all about telling the CPU (i.e. the microprocessor)
+        what to do at every instant while your program is running.
+        There are a couple of funny quotes giving a better idea
+        of what this means in practice:<br><br>
+
+        <ul>
+        <li>The computer is a very DUMB machine.</li><br><br>
+        <li>A computer will ALWAYS do what you tell it to do,
+        but rarely what you WANTED to do.</li>
+        </ul>
+
+        So do not expect to learn everything immediately,
+        don't expect to find a thinking brain inside the PC,
+        don't even think this programming language is USELESSLY COMPLEX.
+        First because L.in.oleum is one of the most simple programming
+        languages on Earth, second because if it was more similar to
+        an ideal, incredibly high level language allowing people to
+        just tell the PC what's to do in their native language, it
+        would be pratically a toy. A very frequently asked question is
+        the following - <i>Why no one creates a real easy language where
+        you say things to do like...</i>
+
+        <blockquote>
+                if shooting<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;play "shoot_effect"<br>
+                end if
+        </blockquote>
+
+        Would there be anything wrong in creating such a language?
+        Yes, almost everything would be wrong. More precisely, it
+        would be insufficient. You just have to ask yourself a few
+        questions:
+
+        <ul>
+        <li>if shooting... shooting with what?
+        by pressing one of the joystick's buttons? by pressing the
+        left mouse button? by pressing a particular key?
+        and which key?...</li><br><br>
+        <li>play "shoot_effect"... at which volume? for how many times?
+        is "shoot_effect" a file name? of which type of file? from which
+        of the audio channels (left or right)? should it play in reverse?
+        add a reverb?...</li><br><br>
+        </ul>
+
+        Yes, of course it is possible to create a better version of
+        that "first attempt" by improving its capabilities until it
+        considers all of those parameters...
+
+        <pre>
+                if pressing joystick button A
+                        if autofire not enabled
+                                wait release of joystick button A
+                        end if
+                        play "shoot_effect.au" from disk, forwards,
+                                for 1 time, from both channels,
+                                at volume 100%, without reverb
+                end if
+        </pre>
+
+        And naturally there may be even more parameters to accomodate
+        for different ways to do the SAME thing. At this point it should
+        be clear that, altough the language would allow adjusting the
+        program to obtain <i>exactly</i> what you wanted, it would be
+        <i>no longer simple!</i> And as long as you leave more possibilities
+        to the programmer, <u>which means creating more valuable programs</u>,
+        the language and the way it operates becomes always less intuitive,
+        until you start thinking that, having one million functions and one
+        million parameters to learn about, pratically means having NONE.
+
+        <br><br>
+
+        Conclusion: to create REAL programs, valuable pieces of software,
+        you need the possibility of creating your own functions, controlling
+        every aspect of the process. So the programming language can be
+        shrunk to provide just a few fundamental "bricks" (the atomic CPU
+        instructions) and a comfortable (but LOW LEVEL) interface with the
+        peripherals. L.in.oleum is not only that: it's also <u>universal</u>,
+        which means you never have to translate a program in order for it
+        to run on various and totally different platforms. Such universal
+        languages already exist (JAVA for instance) but none of them reaches
+        the heart of the machine as L.in.oleum does.
+
+        <br><br>
+
+        On the other hand, if you were to do the same things you do in L.in.oleum,
+        but using native assembly, there would be just a couple of disadvantages,
+        but you'd soon become very annoyed for them (as happened to me, in effects):
+
+        <ul>
+        <li>Native assembly is not universal. L.in.oleum is.</li><br><br>
+        <li>With native assembly, you have to initialize the environment
+        around your program, i.e. setting up the video and audio circuitry
+        (and of course respecting the incredible amount of different interfaces
+        provided by the producers of your equipment), requesting the O.S.
+        to allocate memory for you whenever it's needed, deal with massive
+        documentation about Windows' API if you're coding under Windows...</li>
+        </ul>
+
+        Yet, coding in native assembly still gives an advantage in respect
+        to L.in.oleum: it is more flexible, because it's not needing those
+        universal interfaces L.in.oleum must provide. So in native assembly
+        you'd be able to control any kinds of peripherals, but only after
+        years of experience and after implementing your own interface with
+        that peripheral. If you also become a good optimizer, the speed of
+        your products may increase by an average 5 to 30% in respect to the
+        same program written in L.in.oleum. So, if you want to bless your
+        mind programming in native assembly, ask yourself if it worths the
+        effort. While making these considerations, think about the fact that
+        L.in.oleum is already (and averagely) TWICE as fast as C/C++, and LOTS
+        of times faster than high-level languages. L.in.oleum programs are
+        so powerful that they can:
+
+        <ul>
+        <li>Replace hardware 3D acceleration by using software 3D engines
+        such as the Pitagora library, and generally use lightspeed graphics
+        effects in both full-screen and windowed modes.</li><br><br>
+        <li>Synthetize digital audio in real-time (no need for MIDI wave
+        and effects generators based on CHIPS), personalizing the effects
+        to be performed throught the speakers (echoes, reverbs, mixing...)</li><br><br>
+        <li>Process huge streams of multimedia data (providing you're going
+        to code or find some libraries containing the proper decoders, that's
+        right).</li><br><br>
+        <li>Process wide amounts of archived data and make complex
+        calculations (for business, scientific and entertainment purposes)
+        FASTER than any other languages except bare assembly.</li>
+        </ul>
+
+        Now let's get in "business": the key to tell the computer what to
+        do is learning to split complex actions in simpler ones. Start by
+        concentrating on your goal and identify what's needed to do that.
+        I will now fix a goal to serve as example, and carefully explain
+        how the solution is found.
+
+        <br><br>
+
+        <big>The goal is: drawing a RECTANGLE on the screen.</big>
+        <hr size = 1 width = "100%" color = "white">
+
+        A rectangle is a figure, so it's a matter of graphics.
+        The first thing to learn ought to be HOW GRAPHICS ARE TRACED
+        using the L.in.oleum environment. So, if I were to learn L.in.oleum,
+        I'd take a look to those examples talking of graphics. There,
+        I could see it explains that the video display is formed by a
+        grid of pixels ("pixel" means "picture element", a single dot
+        on the screen).
+        The grid is W pixels wide and H pixels tall, where WxH is my
+        current display's resolution. The COLOUR of each pixel in the
+        grid is held by a corresponding location in the computer's memory
+        (that is, in my program's workspace). All of the pixels are disposed
+        on the grid one after the other. When I'm using pixel number 50 I'm
+        meaning the 51st pixel of the 1st row, the first pixel being pixel
+        number zero. When I'm using pixel number W+50 I'm meaning the 51st
+        pixel of the SECOND row. This way they form a region of memory which
+        is WxH units in size.
+
+        <br><br>
+
+        Since I'm provided a variable called [Display Origin], and it says
+        it's the number of the first memory unit holding the first pixel
+        in that grid, I'm going to build a memory region of WxH units and
+        store the number of its first unit inside that variable. First,
+        however, I should decide the resolution of my display and I can see
+        this is made in the <a href = "director.htm">"directors"</a> period.
+
+        <pre>
+        "directors"
+                unit = 32;
+                display width = 400;
+                display height = 300;
+        "workspace"
+                Grid of pixels = 400 multiplied 300;
+        </pre>
+
+        That's right. Now I know from the guide, when it was talking of
+        <a href = "variable.htm">"variables"</a> and of the <a href = "workspac.htm">"workspace"</a>,
+        that the number of the first memory unit of <i>Grid of pixels</i> is
+        given by the name of that memory region itself. So I'm going to store
+        that number in the [Display Origin] variable:
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+        </pre>
+
+        Now I must find the way to fill a rectangular area of the grid,
+        and let's say the area starts at 80 pixels from the display's
+        left margin, and 60 pixels from the display's top margin. Let's
+        also choose to fill a rectangle 200 pixels wide and 100 pixels tall.
+        It may be too complicated to program it all at once: let me first
+        try to fill a single row of the grid. Then, by filling 100 rows
+        one below the other, I should be done. For "counting" the pixels
+        in the row I need a memory unit where I can store the actual
+        distance of the pixel from the left margin. That "counter" should
+        start at 80, because the rectangle itself starts there. Well...
+        I may use a memory unit or a register. Memory units need to be
+        declared in the "variables" or in the "workspace" period... while
+        registers are always available. Also registers are faster than
+        memory, so I think I'm going to use a register for better
+        performance. Of course, I have 5 registers to choose from: A, B, C,
+        D and E. Well, let's say A will be that counter.
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+        </pre>
+
+        But how do I reach the grid? Considering how the workspace works,
+        I think I should add the number of the first memory unit of
+        "Grid of pixels". (This is also said to be the <i>pointer to</i>
+        or the <i>address of</i> "Grid of pixels".)
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+        </pre>
+
+        I should be on the spot. Now I have to let the pixel, selected by
+        the value of register A, take the colour of my rectangle. For how
+        the display works, I only need storing the colour's HEX value inside
+        the memory unit corresponding to that pixel. So it's the memory unit
+        pointed by A. And this is written as [A] so...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+                [A] = FFFFFFh;
+        </pre>
+
+        Yeah, because I want the rectangle to be white.
+        And the examples about graphics said FFFFFFh would be white.
+        That's the first pixel, isn't it ready? Hmm... for the second one,
+        I should move right by one pixel, so I'd simply add 1 to A and then
+        repeat the thing with the colour...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+                [A] = FFFFFFh;
+                A + 1;
+                [A] = FFFFFFh;
+        </pre>
+
+        And now the third, again 1 unit right and filling... for 200 times?
+        No it can't be done like so. It'd be miles long, that must be the
+        case where a LOOP is needed! Lemme fix one of those things said to
+        be "code labels".
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                -> fill the next pixel;
+        </pre>
+
+        No, no, that must wrong. It would keep going forever.
+        I need to tell it to stop when it reaches the pixel number 280,
+        'cos I want the rectangle to be 200 pixels wide and it started
+        from pixel number 80. I need a comparison!
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < 280 -> fill the next pixel;
+        </pre>
+
+        That's it! While A is below 280 it goes to fill the next pixel,
+        and stops when it comes to 280... but now that I think to where
+        it really started: I forgot to tell it must start from row number
+        60, or 60 rows below the first one, which is the top margin!
+        Oh, well, I suppose I should just add 60 times the number of pixels
+        in a single row... and before the loop starts, that's right.
+        400 pixels wide as a display, so it's certainly 400 x 60.
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+                A + 400 multiplied 60;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < 280 -> fill the next pixel;
+        </pre>
+
+        Yep! The first row is ok. No! Wait! Oh, no... the loop considers
+        280 as a limit, but 400x60 is obviously bigger than 280 already...
+        and now? What about using another register to keep the value where
+        the loop must stop? Let's use B for simplicity...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                A = 80;
+                A + Grid of pixels;
+                A + 400 multiplied 60;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+        </pre>
+
+        Of course! B must take A + 200.<br>
+        This way the loop goes on as long as A is less than B...
+        Alright! It must do that 100 times, moving one whole row down
+        each time. I need another counter, I think... here comes C.
+        And of course, just like A started at 80, C must start at 60
+        'cos it's the vertical counter... oh, but it's not difficult
+        after all: rather than multiplying 400 by 60, I'd just multiply
+        400 by C so I'm sure it changes as C itself is changing...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+        </pre>
+
+        Ok, I have used register D to hold value 400 and multiply that by C.
+        Then it adds D to A and well... does the same thing it was doing
+        before, just that now C can be changed to make the rows' counter
+        advance until it gets to 60 + 100, accounting for 100 rows.
+        There's obviously the need of another loop... that contains the
+        first one.
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+        "fill the next row"
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+                C + 1;
+                ? C < 160 -> fill the next row;
+        </pre>
+
+        Oohhh! Finally it should be ready! Man, I'm going to give up
+        programming immediately if everything must be that complicated!...
+        or maybe, after all, that it's just a question of <b>PRACTICE</b>.
+        Yup! Lemme compile it, I'm dying to see...
+
+        <br><br>
+
+        Satisfaction at last! Compiles... runs... No!
+        Why is my program not showing anything after all that??
+        There must be something <b>MISSING</b> somewhere!
+        There, the example about graphics says there's a command
+        to <b>RETRACE</b> the display, maybe I should
+        tell that damn isothing to retrace it... it is...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+        "fill the next row"
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+                C + 1;
+                ? C < 160 -> fill the next row;
+                [Display Command] = RETRACE;
+                isocall;
+        </pre>
+
+        No! It flashed and disappeared immediately! It's still missing
+        something... something to wait and let me see if it's alright.
+        Now I WILL TAME you silly machine! I'll tell you to do a loop
+        a MILLION times and let's see it can keep you busy while I'm
+        watching... that "loop until zero" thingy should do the trick...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+        "fill the next row"
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+                C + 1;
+                ? C < 160 -> fill the next row;
+                [Display Command] = RETRACE;
+                isocall;
+                A = 1000000;
+        "lemme see it you shit"
+                A ^ lemme see it you shit;
+        </pre>
+
+        What? It stayed on a little more it seems, but is that
+        possible that it was a fraction of a second? It would be
+        better to let it do that a BILLION times then... perhaps...
+
+        <pre>
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+        "fill the next row"
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+                C + 1;
+                ? C < 160 -> fill the next row;
+                [Display Command] = RETRACE;
+                isocall;
+                A = 1000000000;
+        "lemme see it you shit"
+                A ^ lemme see it you shit;
+        </pre>
+
+        It was exactly that! How dumb I am!!
+
+        <hr size = 1 width = "100%" color = "white">
+
+        No, he wasn't dumb. He was not familiar with the environment
+        and with programming in general: that's the happy-ending story
+        of a very intelligent beginner, learning from his mistakes and
+        continuously flippin' out. He's not pathetic, he's just normal.
+        Maybe a little above normal: the goal wasn't easy for a complete
+        beginner, so feel free to start with something easier.
+        The beginner was playing with a very powerful environment, did
+        you notice? He was hardly believing the speed a L.in.oleum void loop
+        was reaching...
+
+        <br><br>
+
+        A professional programmer seeing that first program would laugh
+        at it: the routine can trace ONLY that rectangle, while a
+        professional programmer would have built a subroutine for
+        filling a rectangle at any coordinates and with any colour.
+        A "real" programmer would have made a subroutine not only filling
+        any rectangles with any colour: look at the "RECT.TXT" file inside
+        C:\LINOLEUM\MAIN\GEN and you'll see it's tracing a rectangle with
+        two gradients of shade!
+        Not only that: it includes the "PIXELFX.TXT" library where there
+        are other subroutines to select the EFFECT to be applied to each
+        pixel that's part of the shape. And they mean rectangles can be
+        done with translucent pixels, applying colored filters, their
+        components can be added or subtracted from the background to get
+        rectangular SHADOWS... the whole bunch of options that beginner
+        will soon be able to understand and imitate.
+
+        <br><br>
+
+        If the "RECT.TXT" needs a very very good professional programmer
+        to be understood, if not a "real" programmer (better than just
+        professionally trained, someone that makes its computer a place to
+        live within)... then there are other libraries in this package
+        requiring "world champions": the Pitagora library is a fully
+        functional 3D engine, for instance. Pitagora can be USED by an
+        average programmer, while UNDERSTANDING how it works requires
+        years and years of experience. Well, <u>everyone</u> can get to those
+        levels: it's just a question of good will, and it's never too late
+        to begin.
+
+        <br><br>
+
+        By the way, you can find and compile, if you're curious,
+        the "beginner's program" inside the EXAMPLES folder.
+        Right-click the file's icon and select
+        "<u>C</u>ompile as L.in.oleum Source",
+        then double-click the PROGRAM icon to launch it...
+
+        <br><br>
+
+        You can also see from compiling "beginner's program.TXT",
+        that the ERRORLOG gives 2 warning messages, explaining
+        that no "end;" tags were found in the program's source
+        code, and that the compiler put one of those tags in
+        the code automatically (to avoid crashing the system).
+        If you want to keep such messages from appearing,
+        simply add an "end;" tag at the end of the source code...
+        here follows the full listing:
+
+        <pre>
+        "directors"
+                unit = 32;
+                display width = 400;
+                display height = 300;
+        "workspace"
+                Grid of pixels = 400 multiplied 300;
+        "programme"
+                [Display Origin] = Grid of pixels;
+                C = 60;
+        "fill the next row"
+                A = 80;
+                A + Grid of pixels;
+                D = 400; D * C;
+                A + D;
+                B = A;
+                B + 200;
+        "fill the next pixel"
+                [A] = FFFFFFh;
+                A + 1;
+                ? A < B -> fill the next pixel;
+                C + 1;
+                ? C < 160 -> fill the next row;
+                [Display Command] = RETRACE;
+                isocall;
+                A = 1000000000;
+        "lemme see it you shit"
+                A ^ lemme see it you shit;
+
+                end;
+        </pre>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

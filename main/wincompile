@@ -1,0 +1,2 @@
+#!/bin/sh
+~/linoleum/main/linux_compiler.bin --sys:win32--cpu:i386--ext:.exe--env:~/linoleum/main--src:$1

@@ -1,0 +1,1153 @@
+
+
+
+	(
+	.
+	.
+	.
+	======================================================================
+	Simple Visual Compiler Front-End for L.in.oleum
+	----------------------------------------------------------------------
+	This source is presented to learn from, and as what you find in the
+	L.in.oleum package's "main" folder, under the name of "compiler.exe".
+	It shows how to include the L.in.oleum compiler as a library, within
+	your applications, when you want them to be able to compile any other
+	L.in.oleum applications. Compile this with L.in.oleum compiler version
+	1.14 or later [yeah, you -might- compile this with the binary of this
+	program itself]. Once you've got an idea of how this little front-end
+	works, you may freely customize its behaviour.
+	----------------------------------------------------------------------
+	This library is free software; you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as
+	published by the Free Software Foundation; either version 2.1 of the
+	License, or, at your option, any later version.
+	This library is distributed in the hope that it will be useful, but
+	WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the GNU Lesser General Public License for more details.
+	You should have received a copy of the GNU Lesser General Public
+	License along with this library; if not, write to the Free Software
+	Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+	MA 02111-1307 USA
+	======================================================================
+	.
+	.
+	.
+	)
+
+
+
+"libraries"
+
+	gen/compiler;	(including the whole L.in.oleum compiler core)
+
+	igui/defstyle;	(this is the default skinning style of the iGUI)
+	igui/vcons;	(this is a virtual console using the iGUI library)
+
+
+
+"directors"
+
+	unit = 32;
+	program name = { Visual_L.in.oleum_compiler_1.14 };
+
+    (it avoids some flicker, to have the window normalized by the RTM to start
+     at the bottom of the screen, you know how I dislike flickerings...)
+	display y position = 1 000 000;
+
+
+
+"constants"
+
+	initial width		 =   512; (these are for the iGUI to know)
+	initial height		 =   248; (see the icon editor to know what they mean)
+	minimum width		 =   280;
+	minimum height		 =   248;
+	maximum width		 =  1600;
+	maximum height		 =   248;
+	max menu options	 =     8;
+	max onscreen options	 =     8;
+	max levels in show	 =     1;
+	max files in selector	 =     0;
+	max files in show	 =     0;
+	max options in question  =     4;
+	max fields in question	 =     6;
+
+ sizeof my console output buffer = 32768; (will be 32 Ku. for console output)
+
+	yes answer = 121; (it's the ASCII of "y", first letter of positive answer)
+
+
+
+"variables"
+
+	smallcap = { V-Compiler }; (will be used when window is iconized)
+
+	min compile = { COMPILING... }; (alternative small captions for the cases)
+	min success = { SUCCESS };
+	min failure = { FAILED };
+
+	mymenu = { menu }; (menu layout datascript, begins with menu tooltip string)
+	01000000h; option type normal;	 { Recompile_________F6 }; recompile;
+	02000000h; option type normal;	 { View_errors_log___F7 }; view errors log;
+	03000000h; option type normal;	 { View_symbols_map__F8 }; view symbols map;
+	04000000h; option type normal;	 { Run_application___F9 }; run application;
+	05000000h; option type disabled; { -------------------- }; null;
+	06000000h; option type normal;	 { Configure... 	}; configure;
+	07000000h; option type normal;	 { View_credits...	}; view credits;
+	08000000h; option type normal;	 { Close...______ALT+F4 }; close;
+	endofmenu; (for further info on menus see "examples/icon_editor/iconed.txt")
+
+ vector tools bar layout =
+	vector button to recompile;
+	vector button to view errors log;
+	vector button to view symbols map;
+	vector button to run application;
+	tools bar separator;
+	vector button to configure;
+	vector button to view credits;
+	vector button to close;
+	endoftools;
+
+ vector button to recompile = recompile; { Recompile_(F6) };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 b;
+	0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 b;
+	0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 b;
+	0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	2848FFh; service fx antialiasing dim;
+
+ vector button to view errors log = view errors log; { View_errors_log_(F7) };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 1 0 b;
+	0 0 1 1 1 1 1 1 1 0 0 0 1 1 1 0 0 0 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 1 1 1 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 0 0 0 0 1 0 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 0 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 1 1 1 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 0 0 0 1 1 1 0 0 0 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 1 0 b;
+	0 0 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	309090h; service fx antialiasing dim;
+
+ vector button to view symbols map = view symbols map; { View_symbols_map_(F8) };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 b;
+	0 0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 1 1 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 0 0 1 1 1 0 1 1 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 0 0 1 1 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	903090h; service fx antialiasing dim;
+
+ vector button to run application = run application; { Run_application_(F9) };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 1 0 0 0 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	909030h; service fx antialiasing dim;
+
+ vector button to view credits = view credits; { View_credits... };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	606060h; service fx antialiasing dim;
+
+ vector button to configure = configure; { Configure... };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 1 1 1 0 0 1 1 1 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 1 1 1 1 1 0 0 1 0 0 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 0 0 0 1 1 1 0 1 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 0 0 0 1 1 1 0 1 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 1 1 0 0 0 1 1 1 0 1 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 0 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 0 0 1 1 1 1 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 0 0 1 1 1 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 0 1 1 1 1 1 0 0 0 1 1 0 1 0 0 0 0 0 0 0 b;
+	0 0 1 0 0 0 0 0 0 0 0 0 1 1 0 0 1 0 0 0 0 0 0 b;
+	0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 b;
+	0 0 0 0 1 1 1 1 1 1 1 1 1 0 0 1 0 0 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	707070h; service fx antialiasing dim;
+
+ vector button to close = close; { Close_(ALT+F4) };
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 b;
+	0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 b;
+	0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 b;
+	0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 b;
+	0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 b;
+	0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 b;
+	0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 b;
+	0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 b;
+	0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 b;
+	408080h; service fx antialiasing dim;
+
+   (various window titles and accessories)
+
+	compiling = { Compiling... };
+	success   = { Successfully_compiled:_viewing_symbols_map. };
+	failed	  = { Failed. };
+	viewing   = { Viewing_errors_log. };
+	nothing   = { No_file_to_compile. };
+	no errlog = { No_errors_log. };
+	no symaps = { No_symbols_map. };
+	t credits = { Credits: };
+	period	  = { }; (void, but gets "cout"-ed to scroll at the end of the console buffer)
+
+    (these packed strings will be outputted by the "bcout" wrapper:
+     they couldn't cross 999 characters plus a null byte because the buffer
+     for the conversion, namely "temp4b", is sized to 1000 units complessively)
+
+      make: bytes;
+
+	credits =
+
+		{
+
+			L.in.oleum_Universal_Compiler_version_1.14:\cr\lf
+			Sample_Visual_Compiler_Extension.\cr\lf
+			\cr\lf
+			Compiler_Core_Library_Copyright_(c)2001-2004\cr\lf
+			iGUI_Graphical_User_Interface_Copyright_(c)2003-2004\cr\lf
+			Customizable_Visual_Compiler_Extension_Copyright_(c)2004\cr\lf
+			\cr\lf
+			by_Alessandro_Ghignola,_Home_Sweet_Pixel_software.\cr\lf
+			And..._yes,_this_compiler_is_written_in_its_own_language!
+
+		};
+
+	no application =
+
+		{
+
+			No_application_to_compile!\cr\lf
+			For_appropriate_use_(Windows_32-bit_package):\cr\lf
+			\cr\lf
+			-_rename_this_program_to:_"compiler.exe";\cr\lf
+			-_place_it_within_the_"linoleum/main"_folder;\cr\lf
+			-_if_you_didn't_yet,_launch_"linoleum/docs/install.reg".\cr\lf
+			\cr\lf
+			At_that_point,_you_can_select_the_"Compile_with_L.in.oleum_compiler"_option_from_
+			text_files'_right-click_popup_menu._Of_course_you_might_right-click_the_icon_of_
+			an_effective_L.in.oleum_source_file_to_get_significant_results,_not_of_a_random_
+			text_file_of_your_choice._:)
+
+		};
+
+	file system trouble =
+
+		(gets shown when there's no error log but the compiler failed,
+		 which probably means the compiler met some kind of error that
+		 compelled it to fail "silently", without the possibility to
+		 emit a message to the errors log... normally caused by wrong
+		 command line parameters when the compiler couldn't decipher
+		 which was the name of the source file to compile.)
+
+		{
+
+			File_system_trouble,_or_wrong_command_line._
+			The_command_line_might_look_like:\cr\lf
+			\cr\lf
+			compiler.exe_--src:/volume/path/../program.txt[--options]\cr\lf
+			\cr\lf
+			The_actual_command_line_follows:_if_it_looks_wrong,_that's_the_problem..._
+			otherwise_(rare),_it_might_have_been_a_failure_to_switch_to_the_folder_
+			holding_the_source_file_to_compile,_or_to_switch_back_to_that_folder_
+			after_seeking_a_compound_of_the_application's_stockfile.\cr\lf
+			\cr\lf
+
+		};
+
+	application saved as =
+
+		{
+
+			\cr\lf
+			\cr\lf Saved:_
+
+		};
+
+      make: units;
+
+    (the following are a few flags to remember what happened after compile time)
+
+	successfully compiled = false;
+	void command line = false;
+	recompiling = false;
+
+	configuration form =
+
+		{
+
+			Visual_Compiler_Configuration:
+
+		};
+
+		{ F/Target_CPU:________ }; target cpu; 9; 8;
+		{ F/Target_system:_____ }; target sys; 9; 8;
+		{ F/Program_extension:_ }; prg extens; 9; 8;
+		{ F/Delay_cycles:______ }; del cycles; 9; 8;
+		{ F/Close_on_success?__ }; cos option; 9; 8;
+		{ F/Start_iconized?____ }; sti option; 9; 8;
+
+		{ Save	  }; save config;
+		{ Load	  }; load config;
+		{ Default }; default config;
+		{ Use_now }; null;
+
+		null;
+
+	config k name = { VCompiler_Configuration };
+
+	option marker = { -- }; (if found in command line it assumes options are given)
+
+	opt src = { --src: };
+	opt cpu = { --cpu: };
+	opt sys = { --sys: };
+	opt ext = { --ext: };
+	ext dot = { . };
+	opt del = { --del: };
+
+    (compiler environment path default: this may be platform-specific and may be
+     customized, along with the built-in configuration data, to reflect a package's
+     default installation folder and options...)
+
+	default environment = {
+
+	    --env:/c/linoleum/main
+
+	};
+
+    (compiler options defaults: this is a global K buffer, so it must be 255 units)
+
+	configuration data = 0 *** 0; (marker)
+	target cpu = { i386  }; extend upto: 9; (+)
+	target sys = { win32 }; extend upto: 9; (+)
+	prg extens = { exe   }; extend upto: 9; (+)
+	del cycles = { 0     }; extend upto: 9; (+)
+	cos option = { no    }; extend upto: 9; (+)
+	sti option = { no    }; extend upto: 9; (+)
+	cfgdata filler = null *** 255 minus 45; (=)
+
+
+
+"workspace"
+
+    (will preserve default configuration data)
+	default configuration data = 255;
+
+    (hosts source file name found in command line)
+	source file name = 1024;
+
+    (convert upto 1023-char packed null-terminated strings via "bcout")
+	temp4b = 1024;
+
+    (will host the last 32 Kb. of errorlog.txt, smblsmap.txt)
+	file read buffer = size of my console output buffer asbytesize;
+
+    (plus 1 unit for VCons' null terminator, see VCons commentary for details)
+	my console output buffer = size of my console output buffer plus 1;
+
+
+
+"programme"
+
+	(
+	.
+	.
+	.
+	======================================================================
+	main program
+	======================================================================
+	.
+	.
+	.
+	)
+
+      (this flag prevents iGUI's "Refresh Display" from doing anything: it was added in
+       version 1.14 of the iGUI and it's used here to avoid the visual compiler's window
+       to appear before its position has been decided, because this compiler can start
+       as iconized, and in that case it shouldn't show in its initial position, because
+       it'd only flicker for a fraction of second, possibly a confusing move, and anyway
+       quite unelegant...)
+	[rd disable] = yes;
+
+      (initialize the iGUI, as always)
+	=> initialize integrated gui;
+
+      (just installing the abovely declared menu layout)
+	[menu to install] = mymenu;
+	=> install menu;
+
+      (enabling the tools bar and installing ours)
+	[tools bar to install] = vector tools bar layout;
+	=> install tools bar;
+	=> enable tools bar;
+
+      (telling the iGUI which will be our actual window management subroutines)
+	[work area manager] = service my work area manager; (indicates sort of "WndPaint")
+	[control loop] = service my control loop; (indicates sort of "WndProc")
+	[always clear work area] = no;
+
+      (console setup: see VCons commentary)
+	[conout] = my console output buffer; (the pointer to the console text buffer)
+	[cosize] = size of my console output buffer; (the size of that buffer, not incl. the final null terminator)
+	[consfx] = service fx antialiasing dim;
+	[ccolor] = FFFFFFh; (use black text: this says "reduce by white")
+
+	[console left padding] = 2;
+	[console right padding] = 2;
+	[console top padding] = 2;
+
+      (preserve configuration defaults)
+	a = configuration data;
+	b = default configuration data;
+	c = 255;
+      "copy defaults"
+	[b] = [a];
+	a +;
+	b +;
+	c ^ copy defaults;
+
+      (load configuration, once - "load config" does the same but alse refreshes the question box)
+	[global k command] = k read;
+	[global k name] = config k name;
+	[global k data] = configuration data;
+	isocall;
+
+      (ok, at this point Refresh Display, when called, may do what it has to do)
+	[rd disable] = no;
+
+      (on option, start iconized)
+      ? [sti option] != yes answer -> start windowed;
+	[sleepy control loop] = service sleepy compile;
+	=> now slep; (iconize the window and enter sleepy control loop)
+      (getting here when "now slep" returns, meaning the user clicked "Z" button, so...)
+	=> maximize to bottom;
+	-> recap what happened;
+
+      "service sleepy compile"
+      (this subroutine is hooked above, by the instruction
+       that sets it as the [sleepy control loop] for the iGUI to call)
+	[window title] = compiling;
+	[small caption] = min compile;
+	=> update sleepy title bar;
+	=> go compile;
+      (show the pointer arrow on completion: this operation would be normally
+       performed by "enter integrated gui", but the visual compiler started
+       iconized, so it entered "now slep", and consequentially this control
+       loop, and the [arrow presence] flag wasn't therefore increased...)
+	[arrow presence] +;
+      (the compiler finished processing, but the visual compiler is iconized:
+       so, if compiler succeeded, set small caption to "success", otherwise
+       set small caption to "failed", while if there was nothing to compile,
+       show the default "V-Compiler" small caption...)
+      ? [successfully compiled] = true -> in case of sleepy success;
+      ? [void command line] = true -> in case of sleepy void command line;
+      "in case of sleepy errors" (not needed as a label, but just for clearance)
+      (when the compiler fails, to save the user some work to press "Z" and see
+       the errors, let's do this automatically: forcing the iGUI to believe "Z"
+       was pressed, and disabling this loop from being called next time the user
+       may press "Z" to iconize the window...)
+	[sleepy control loop] = null;
+	=> now unslep;
+	leave;
+      "in case of sleepy void command line"
+	[small caption] = smallcap;
+	=> update sleepy title bar;
+	-> break sleepy control loop;
+      "in case of sleepy success"
+      (if there's a symbols map to show...)
+       ([file command] = test;
+	[file name] = smblsmap name;
+	isocall;
+      ? ok -> in case of sleepy errors;) (...then show it immediately: ok, this part
+					  has been disabled on suggestion, and you'll
+					  probably want it to remain disabled, but,
+					  just in case... this is the way to show the
+					  symbols' map even if the option to close on
+					  success is selected -and- visual compiler
+					  starts up iconized: it will maximize and go
+					  to the symbols map only if the program has
+					  effectively generated a smblsmap.txt file.)
+      ? [cos option] != yes answer -> dont close on success;
+      (because it's going to terminate while iconized, it needs to update iGUI's
+       global K marking sleepy windows position, to avoid disturbing other future
+       applications being iconized... it does "by hand" what the iGUI does when
+       its "now unslep" routine is called: yeah I just copied and pasted it from
+       "now unslep": after all, if I called "now slep" as it is, it would also
+       restore the window on the screen, and it'd flicker... and you know...)
+	=> find sleepy window record; (on success returns ptr in register A)
+	? failed -> sw record was not found;
+      "delete my sleepy window record"
+	[a] = [a plus 1];
+	a +;
+	b ^ delete my sleepy window record;
+	[sleepy windows data] -; (decrease iconized windows' counter)
+	[global k command] = k write; (assume you'll have to save back the global k)
+	[global k name] = sleepy windows key;
+	[global k data] = sleepy windows data;
+      ? [sleepy windows data] > zero -> this global k will not be empty so keep it;
+	[global k command] = k destroy; (transform the command so isocall will delete it)
+      "this global k will not be empty so keep it"
+	isocall;
+      "sw record was not found"
+      (end the whole program if requested to: from this point of execution we're
+       inside a lot of calls, called consequentially to other calls and so on...
+       so a simple "end" won't work: it needs something stronger, he he...
+       well, the following isocall can interrupt execution. Always.)
+	[process command] = endprocess;
+	isocall;
+      "dont close on success"
+      (in this case, the window will remain iconized, reading "SUCCESS")
+	[small caption] = min success;
+	=> update sleepy title bar;
+      "break sleepy control loop"
+      (sleepy control loops are normally called at each frame, like normal
+       control loops, but for this case the iGUI must call this service only
+       once, so at this point "service sleepy compile" disables its own hook,
+       to avoid getting called again...)
+	[sleepy control loop] = null;
+	leave;
+
+      "start windowed"
+	=> maximize to bottom;
+	[window title] = compiling;
+	[small caption] = min compile;
+	=> update title bar;
+	=> go compile;
+      ? [successfully compiled] = false -> recap what happened;
+      ? [cos option] != yes answer -> recap what happened;
+      (if there's a symbols map to show...)
+       ([file command] = test;
+	[file name] = smblsmap name;
+	isocall;
+      ? ok -> recap what happened;) (...then show it immediately: ok, this part
+				     has been disabled on suggestion, and you'll
+				     probably want it to remain disabled, but,
+				     just in case... this is the way to show the
+				     symbols' map even if the option to close on
+				     success is selected -and- visual compiler
+				     starts up windowed: it won't close and go
+				     to the symbols map only if the program has
+				     effectively generated a smblsmap.txt file.)
+	end; (otherwise end the whole program)
+
+      "recap what happened"
+	=> write proper report;
+
+      (ok, pass control to the GUI for selecting menu options and quitting)
+	=> enter integrated gui;
+
+      (and when the GUI returns, it means the user decided to quit, so that's it)
+	end;
+
+	(
+	.
+	.
+	.
+	======================================================================
+	subroutines
+	======================================================================
+	.
+	.
+	.
+	)
+
+    "maximize to bottom"
+      (send the visual compiler window to the bottom left of the screen)
+	[display x position] = zero;
+	[display y position] = [display physical height];
+	[display y position] - INITIAL HEIGHT;
+	isocall;
+      (and resize it to be as large as the full screen, if possible)
+	[new display width] = [display physical width];
+      ? [new display width] <= MAXIMUM WIDTH -> yeah its possible;
+	[new display width] = MAXIMUM WIDTH; (urgh... more than 1600... too lucky video card user)
+      "yeah its possible"
+	[new display height] = INITIAL HEIGHT; (yes nevermind, leave height as is)
+	=> resize display;
+	leave;
+
+    "go compile"
+      (analyze the command line:
+       if there's nothing more than a filename, add default options)
+      ? [recompiling] = yes -> override command line options; (to use specified ones)
+	[source string] = command line;
+	[target string] = option marker;
+	=> strstr;
+      ? ok -> call compiler;
+      (consider the whole command line as the source file if no option markers found:
+       trim any leading codes before ASCII 32 to get the significant parts of the name,
+       and preserve the result of that operation within buffer "source file name"...)
+	a = command line minus 1;
+      "trim leading formatters"
+	b = [a plus 1];
+	a +;
+      ? b = null -> nothing to compile;
+      ? b <= 32 -> trim leading formatters;
+	b = source file name;
+      "copy source file name"
+	c = [a];
+	a +;
+	[b] = c;
+	b +;
+      ? c != null -> copy source file name;
+      "trim trailing formatters"
+	b -;
+      ? [b minus 1] <= 32 -> trim trailing formatters;
+	[b] = null;
+      "override command line options"
+      (assemble command line as it should be)
+	[source string] = opt src;
+	[target string] = command line;
+	=> strcpy; (initialize new command line with a { --src: })
+	[source string] = source file name;
+	=> strcat; (add the file name)
+	[source string] = default environment;
+	=> strcat; (add --env: option and path past the name)
+	[source string] = opt cpu;
+	=> strcat; (add --cpu: option)
+	[source string] = target cpu;
+	=> strcat; (add cpu option setting from configuration data)
+	[source string] = opt sys;
+	=> strcat; (add --sys: option)
+	[source string] = target sys;
+	=> strcat; (add sys option setting from configuration data)
+	[source string] = opt ext;
+	=> strcat; (add --ext: option)
+	[source string] = ext dot;
+	=> strcat; (add a dot)
+	[source string] = prg extens;
+	=> strcat; (add ext option setting from configuration data)
+	[source string] = opt del;
+	=> strcat; (add --del: option)
+	[source string] = del cycles;
+	=> strcat; (add del option setting from configuration data)
+      "call compiler"
+      (compile the program with parameters passed via the command line)
+	=> compile;
+      ? failed -> general compiler failure;
+	[successfully compiled] = true;
+      "general compiler failure"
+	[recompiling] = true; (next time you try, in the same visual compiler session, it'll be a recompile)
+	leave;
+      "nothing to compile"
+	[void command line] = true;
+	leave;
+
+    "write proper report"
+      (if compiler succeeded, show symbols map, otherwise show errors log,
+       while if there was nothing to compile, show a simple tip...)
+      ? [successfully compiled] = true -> in case of success;
+      ? [void command line] = true -> in case of void command line;
+      "in case of errors" (not needed as a label, but just for clearance)
+	[small caption] = min failure;
+	[window title] = failed;
+	=> update title bar;
+	=> view errors log;
+	leave;
+      "in case of void command line"
+	[small caption] = smallcap;
+	[window title] = nothing;
+	=> update title bar;
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+      (output tip)
+	[szcout] = no application;
+	=> bcout;
+	leave;
+      "in case of success"
+	[small caption] = min success;
+	=> view symbols map;
+	leave;
+
+    "recompile"
+	[window title] = compiling;
+	[small caption] = min compile;
+	=> update title bar;
+	=> go compile;
+	=> write proper report;
+	leave;
+
+    "view errors log"
+      ? [void command line] = false -> yes view errors log;
+	[window title] = no errlog;
+	=> update title bar;
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+      (output tip)
+	[szcout] = no application;
+	=> bcout;
+	leave;
+      "yes view errors log"
+      (load errors log)
+	[file command] = test;
+	[file name] = errorlog name;
+	isocall;
+      ? failed -> cant read errors log;
+	[file command] = read;
+	[file name] = errorlog name;
+	[file position] = [file size];
+	[file position] - sizeof my console output buffer minus 1;
+      ? [file position] > zero -> error log is longer than console buffer;
+	[file position] = zero;
+      "error log is longer than console buffer"
+	[block pointer] = file read buffer;
+	[block size] = sizeof my console output buffer minus 1;
+	isocall;
+      ? failed -> cant read errors log;
+      (update console)
+	[pb stream] = my console output buffer;
+	[pb offset] = [block size];
+	[pb bvalue] = null;
+	=> set progressive byte;
+	[window title] = viewing;
+	=> update title bar;
+	[source string] = file read buffer;
+	[target string] = my console output buffer;
+	=> atofb;
+	[coutcp] = [block size];
+	[szcout] = period;
+	=> cout;
+	leave;
+      "cant read errors log"
+      ? [successfully compiled] = true -> its normal that theres no errors log;
+      ? [void command line] = true -> its normal that theres no errors log;
+      (show tip)
+	[window title] = failed;
+	=> update title bar;
+	[my console output buffer] = null;
+	[coutcp] = 0;
+	[szcout] = file system trouble;
+	=> bcout;
+	[szcout] = command line;
+	=> cout;
+	leave;
+      "its normal that theres no errors log"
+      (void console)
+	[window title] = no errlog;
+	=> update title bar;
+	[my console output buffer] = null;
+	[coutcp] = 0;
+	=> refresh display;
+	leave;
+
+    "view symbols map"
+      ? [void command line] = false -> yes view symbols map;
+	[window title] = no symaps;
+	=> update title bar;
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+      (output tip)
+	[szcout] = no application;
+	=> bcout;
+	leave;
+      "yes view symbols map"
+      (load symbols map)
+	[file command] = test;
+	[file name] = smblsmap name;
+	isocall;
+      ? failed -> cant read symbols map;
+	[file command] = read;
+	[file name] = smblsmap name;
+	[file position] = [file size];
+	[file position] - sizeof my console output buffer minus 1;
+      ? [file position] > zero -> symbols map is longer than console buffer;
+	[file position] = zero;
+      "symbols map is longer than console buffer"
+	[block pointer] = file read buffer;
+	[block size] = sizeof my console output buffer minus 1;
+	isocall;
+      ? failed -> cant read symbols map;
+      (update console)
+	[pb stream] = my console output buffer;
+	[pb offset] = [block size];
+	[pb bvalue] = null;
+	=> set progressive byte;
+	[window title] = success;
+	=> update title bar;
+	[source string] = file read buffer;
+	[target string] = my console output buffer;
+	=> atofb;
+	[coutcp] = [block size];
+	-> append executable name;
+      "cant read symbols map"
+	[window title] = no symaps;
+	=> update title bar;
+      ? [successfully compiled] = true -> no symbols map but successfully compiled;
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+	=> show console;
+	=> refresh display;
+	leave;
+      "no symbols map but successfully compiled"
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+      (output tip)
+	[szcout] = compiler report;
+	=> cout;
+      "append executable name"
+	[szcout] = application saved as;
+	=> bcout;
+	[szcout] = executable name;
+	=> cout;
+	leave;
+
+    "f9 run application"
+      (workaround unavoidable F9 stuck-down bug, due to EKEY session not being updated,
+       in next frame, quickly enough to realize F9 is no longer pressed, because child
+       applications might steal focus from the parent application in the meantime: it
+       is unavoidable, because it's effectively supposed to happen, when a L.in.oleum
+       application is started; when applicable, the RTM will try to keep the parent as
+       the owner of the focus - in Win32 using SW_SHOWNA with ShellExecute - but that
+       won't work here because what we're starting is another L.in.oleum runtime, and
+       it WILL capture the focus - in Win32 using SetFocus executing dc_showdisplay -
+       however this bug wouldn't apply if it wasn't that "[file command]=run;" is done
+       from inside of an EKEY session: when the event concerning F9 key's state change
+       reachs the parent application, it's no longer in the same EKEY session...)
+	[key f9] = off; 		(so, cheat and force the key off...)
+	=> serve enhanced keystrokes;	(...and update current EKEY session)
+      (the above tweak has the consequence that F9's autorepeat controlled by ekey.txt
+       won't be working for this case, yeah, but that's what we were trying to avoid.)
+    "run application"
+      ? [successfully compiled] = false -> nothing to run;
+	[file command] = run;
+	[file name] = executable name;
+	isocall;
+      "nothing to run"
+	leave;
+
+    "configure"
+	[question datascript] = configuration form;
+	=> question;
+	leave;
+
+    "save config"
+      (a few options might be forced lowercase to match case-sensitive file systems)
+	[target string] = target cpu;
+	=> strlwr;
+	[target string] = target sys;
+	=> strlwr;
+      (yes/no options might be forced lowercase to match this program's cheap checks)
+	[target string] = cos option;
+	=> strlwr;
+	[target string] = sti option;
+	=> strlwr;
+      (save the global K)
+	[global k command] = k write;
+	[global k name] = config k name;
+	[global k data] = configuration data;
+	isocall;
+	leave;
+
+    "load config"
+      (load the global K)
+	[global k command] = k read;
+	[global k name] = config k name;
+	[global k data] = configuration data;
+	isocall;
+      (refresh the question box - discard 4 units from the stack, then re-call "question":
+       the sequence of calls made by the iGUI to get to this subroutine was in fact:
+       +0 flow of "configure" subroutine
+       +1  => question; - called by "configure"
+       +2   => check hotspot; - called by "question", jumps to [when no longer pushing]
+       +3     => load config; - called by "service question option action"
+       so, a <$ + 3> discards the 4 return points to get back in the execution flow of
+       the "configure" subroutine: at that point I have to imagine to be continuing the
+       execution of "configure" from just after its call to "question", and I re-call it.
+       interesting, eh?
+       ok ok it's QUITE dirty, but I like these tweaks sometimes...
+       then you know... I'm pretty sure about how the iGUI works...
+       yup, of course the disadvatage of such tricks is that if one day someone
+       changed the iGUI to save more stuff on the stack for a "question" call,
+       then this piece would no longer work and probably crash...
+       but in this case it's quite improbable that those libraries should change...)
+	$ + 3;
+	=> question;
+	leave;
+
+    "default config"
+      (restore configuration defaults)
+	a = default configuration data;
+	b = configuration data;
+	c = 255;
+      "restore defaults"
+	[b] = [a];
+	a +;
+	b +;
+	c ^ restore defaults;
+      (refresh the question box - discard 2 units from the stack, then reenter "question")
+	$ + 3;
+	=> question;
+	leave;
+
+    "view credits"
+	[window title] = t credits;
+	=> update title bar;
+      (void console)
+	[my console output buffer] = null;
+	[coutcp] = 0;
+      (output tip)
+	[szcout] = credits;
+	=> bcout;
+	leave;
+
+    "close"
+      (tell iGUI to return)
+	[quit now] = yes;
+	leave;
+
+    "service my work area manager"
+      (clear with the Toffee title bar's very bright blue... it's nice IMO)
+	[destination layer] = backdrop layer;
+	[l2l region] = vector work area;
+	[l2l region color] = D5DAEDh;
+	=> clear l2l region;
+      (what to paint in the iGUI client window: only the console, in this program)
+	=> show console;
+	leave;
+
+    "service my control loop"
+      (get an ekey session to acknowledge F7/F8/F9 keystrokes: 44440000 is an arbitrary ID)
+	[ekey session id] = 44440000;
+	=> negotiate ekey session;
+      ? failed -> skip session 44440000;
+	[key f6 server] = pragma recompile;
+	[key f7 server] = pragma view errors log;
+	[key f8 server] = pragma view symbols map;
+	[key f9 server] = pragma f9 run application;
+	=> serve enhanced keystrokes;
+	=> quit ekey session;
+      "skip session 44440000"
+      (what else to control in the iGUI client window: the console)
+	=> control console;
+	leave;
+
+	(
+	.
+	.
+	.
+	======================================================================
+	utilities
+	======================================================================
+	.
+	.
+	.
+	)
+
+    "bcout"
+      ("cout" wrapper: outputs ASCII 1-byte-per-character string)
+	[source string] = [szcout];
+	[target string] = temp4b;
+	=> atofb;
+	[szcout] = temp4b;
+	-> cout;
+
+    "atofb"
+      (converts string pointed by [source string], given in ASCII format,
+       to fourbyte format, and uses [target string] as a pointer to where
+       resulting string is to be stored: halts when the first null byte
+       is found in [source string])
+ ---->; a = [source string];
+	b = [target string];
+	c = zero;
+      "atofb loop"
+	e = [a];
+	b +;
+	e > c;
+	c + 8;
+	e & ffh;
+       [b minus 1] = e;
+      ? e = null -> atofb done;
+      ? c < 32 -> atofb loop;
+	c = 0;
+	a +;
+	-> atofb loop;
+      "atofb done"
+ <----; leave;
+
+     "strlwr"
+     (converts 4b [target string] to lowercase)
+	a -->;
+	b -->;
+	a = [target string];
+      "strlwr again"
+	b = [a]; (load)
+	a +; (advance ptr)
+      ? b > 90 -> strlwr skip; (above "Z")
+      ? b < 65 -> strlwr skip; (below "A")
+	b + 32; ("A" -> "a")
+	[a minus 1] = b; (store)
+      "strlwr skip"
+      ? b != null -> strlwr again;
+	<-- b;
+	<-- a;
+	leave;
+
+    "strcpy"
+    (copies 4b [source string] to 4b [target string])
+ ---->; a = [target string];
+    "strcpy strcat reentry"
+	b = [source string];
+      "strcpy again"
+	[a] = [b];
+	a +;
+	b +;
+      ? [b minus 1] != null -> strcpy again;
+ <----; leave;
+
+    "strcat"
+    (concatenates 4b [source string] to 4b [target string])
+ ---->; a = [target string];
+      "strcat again"
+      ? [a] = null -> strcpy strcat reentry;
+	a +;
+	-> strcat again;
+
+     "strstr"
+    (searchs 4b [target string] within 4b [source string],
+     succeeds if match found, and returns match ptr. as [target string],
+     fails otherwise, leaving [target string] unchanged,
+     also fails unconditionally if one of the strings is void)
+ ---->; a = [source string];
+	b = [target string];
+      ? [a] = null -> strstr match not found;
+      ? [b] = null -> strstr match not found;
+	c = [b];
+	d = [a];
+      "strstr again"
+      ? d = null -> strstr match not found;
+      ? c != d -> strstr fast skip;
+	d = a;
+	e = b;
+      "strstr compare"
+      ? [e plus 1] = null -> strstr match found;
+      ? [d plus 1] = null -> strstr match not found;
+      ? [d plus 1] != [e plus 1] -> strstr fast skip;
+	d +;
+	e +;
+	-> strstr compare;
+      "strstr fast skip"
+	d = [a plus 1];
+	a +;
+	-> strstr again;
+      "strstr match found"
+	[target string] = a;
+ <----; end;
+      "strstr match not found"
+ <----; fail;

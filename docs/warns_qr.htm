@@ -1,0 +1,266 @@
+<html>
+
+<!----------------------------------- STANDARD ENVIRONMENT ------------------------------------->
+
+<head>  <title>L.in.oleum Programmers Manual and Technical Reference Guide</title>  </head>
+<body   leftmargin=0 topmargin=0 rightmargin=0 bottommargin=0 marginwidth=0 marginheight=0>
+<link   rel = "stylesheet" href = "wg/style.css" type = "text/css">
+
+<!------------------------ PAGE IDENTIFICATION: LINOSITE SUBPAGE ------------------------------->
+
+<table width = "100%" height = "102" bgcolor = "#2E2E39"
+style="background-image:url(../examples/linoinstaller/tapestry.png);background-repeat:no-repeat">
+<tr><td>&nbsp;<!--filler-->&nbsp;</td></tr>
+</table>
+
+<!--------- HERE'S A THIN SEPARATOR, HIGHLY VISIBLE, BETWEEN THE HEADER AND THE NAV.BAR -------->
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+
+<!-------------- THIS IS THE NAVIGATION BAR, PLACED IN THE UPPER RIGHT CORNER ------------------><table width = "100%"><tr><td class = "sidebar" width = "108" valign = "top">
+
+<div>BASIC INFO</div><br><center>
+        <a href = "index.htm">Terms of use</a><br>
+        <a href = "programs.htm">Programming</a><br>
+        <a href = "compiler.htm">Compiling</a><br>
+        <a href = "whatsnew.htm">What's New?</a><br>
+</center><br><div>PERIODS</div><br><center>
+        <a href = "librarie.htm">libraries</a><br>
+        <a href = "stockfil.htm">stockfile</a><br>
+        <a href = "director.htm">directors</a><br>
+        <a href = "constant.htm">constants</a><br>
+        <a href = "variable.htm">variables</a><br>
+        <a href = "workspac.htm">workspace</a><br>
+        <a href = "programm.htm">programme</a><br>
+</center><br><div>TECHNIQUES</div><br><center>
+        <a href = "process.htm">Process</a><br>
+        <a href = "subrouti.htm">Subroutines</a><br>
+        <a href = "dynaheap.htm">Dynamic heap</a><br>
+        <a href = "machlang.htm">ML fragments</a><br>
+</center><br><div>REFERENCES</div><br><center>
+        <a href = "glossary.htm">Glossary</a><br>
+        <a href = "punct_qr.htm">Punctuators</a><br>
+        <a href = "ltags_qr.htm">Tags</a><br>
+        <a href = "instr_qr.htm">Instructions</a><br>
+        <a href = "ikrnl_qr.htm">IsoKernel</a><br>
+        <a href = "error_qr.htm">Errors</a><br>
+        Warnings<br>
+        <a href = "p-snotes.htm">P-S notes</a>
+</center>
+
+<!---------------------------------- PAGE CONTENTS ---------------------------------------------></td><td><table width = "100%"><tr><td>
+
+<br>
+<center>
+        TROUBLESHOOTING - WARNING MESSAGES<br>
+        <i>(in order of importance)</i><br><br>
+        <hr size = 1 width = "100%" color = "white">
+</center>
+
+">Open program! (no end tags)"<br>
+">A single end tag has been forcely inserted after last code instruction."<blockquote>
+        Since the main program is to be considered like a subroutine of the
+        run-time module, it must have an "end" tag somewhere, or at least
+        a "show registers" tag if you need to debug something, but if you
+        didn't use at least one of those tags before the end of the main
+        source code, and the compiler left the program as it is, it would
+        lock up the system when the CPU meets the end of the code.
+        Because the CPU would not stop execution, and would probably
+        meet random code corresponding to some "garbage" memory which
+        is following the last line of application's code.
+        To avoid such a distraction, the compiler forces an "end" tag into
+        the code, right after its last valid instruction. So that, if the
+        program is executed anyways, the CPU would have a conventional point
+        where execution should stop.
+        Even more important is ALWAYS closing subroutines with "end" or
+        "fail" tags. If not, the same problem of "open program" would take
+        place during execution, but this time the compiler couldn't know if
+        an "end" tag should be forced in, because it isn't able to tell if
+        there's an "open subroutine". This warning (and the act of forcing
+        an "end" tag in the code) only happens when no "end" tags were
+        used in the whole source code.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Microprocessor unit is intended to be x, while this program should run at unit=32."<blockquote>
+        Where "x" is the required unit.
+        This is the only case of total incompatibility for a L.in.oleum program.
+        There's nothing to do but translating all the source and libraries to fit
+        the new unit (which will probably be 64). I suppose it will happen in
+        about 5-6 years, after which there will be another generous time-slice
+        where 32-bit programs will still be executable on a 64-bit system.
+        It happened the same thing when systems got from 16 to 32, and it
+        took about 10 years for 32-bit programs to become the majority.
+        And should I mention 16-bit programs are still supported thanks to
+        the good old DOS prompt? Imagine the million programs now running
+        under Win32 wouldn't be supported by a new 64-bit operating system:
+        it would be a total flop! The system wouldn't sell but a few copies.
+        To conclude with the topic of compatibility, I think the present
+        L.in.oleum environment will have at least 10 years of lifetime.
+        To say all of it, I wouldn't see the need for more than 64 bits.
+        Once we got unit=64, it may last forever: the ultimate one.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Translation interrupted."<blockquote>
+        When certain fatal errors occur, warns the programmer that the
+        code following the error was not parsed by the compiler, so it
+        wasn't checked for further errors or warnings.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"IGNORED: Coupled semicolons and nothing between."<blockquote>
+        Should be quite easy to find and understand.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"IGNORED: Nonsensical code."<blockquote>
+        Such as when you specified something which does not contain
+        an instruction pattern, but you were in the programme period.<br>
+        For example:
+        <blockquote>
+                "programme"<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(some code here)<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;[aCertainVariable];<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(rest of code here)
+        </blockquote>
+        I mean: [aCertainVariable] could be an operand to an instruction,
+        but since there are no instruction signs before the semi-colon,
+        the compiler just doesn't know what to do with [aCertainVariable].
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Operand is referencing an immediate EFFECTIVE ADDRESS, not the CONTENT."<blockquote>
+        It's the most frequent and probably the most harmless.
+        Because you may have forgotten a couple of brackets, while they
+        were possibly needed, the compiler remembers you what happens in
+        this case. Any LOADS by POINTER, such as will show this warning,
+        unless the symbol is declared as a vector, a workspace area label,
+        or a text string.
+        It's your responsibility to decide wether the warning should was
+        intended to be there or not, but in theory your program should
+        compile in full without showing any warnings.
+        To avoid this warning to be highlighted by the compiler,
+        and ONLY if you're sure the warning shouldn't be there, you
+        can declare a variable (always from the "variables" period)
+        as a "vector". You just make the name of the variable be
+        preceeded by the word "vector" typed in lowercase.
+        For example, used with the duplications count:
+        <blockquote>
+                vector Attributes Table = 10010011b***50;
+        </blockquote>
+        and another example of vector declaration could be:
+        <blockquote>
+                vector Rectangle For ExitButton = 5; 5; 199; 49;
+        </blockquote>
+        Finally, any initialized text strings AND any workspace area labels
+        are implicitly considered to be vectors, so you don't need to declare
+        them as vectors (but you can, if you like).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Constant assumed to mean immediate constant?!"<blockquote>
+        You are trying to use a constant value as an absolute pointer,
+        without any registers or variables in the expression. Such as:
+        <blockquote>[Value of location 100] = [100];</blockquote>
+        I don't know if you may need it, but if it wasn't supposed to
+        happen, check if you're using the name of a constant where
+        you intended to use the name of a variable.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Application name too long (max 255 characters). Some characters have been ignored."<blockquote>
+        The characters reserved to the internal name of the application
+        (the one that occasionally shows in message boxes under Windows)
+        are, complessively, 256. One is the null terminator of the string,
+        so they're effectively 255. Please shorten the name, no alternatives.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"ZERO duplications?! This variable cannot be streamed."<blockquote>
+        A value of zero for the triple asterisk (***) operator can be
+        legally specified, but it causes the symbol not to be allocated
+        in the workspace. In practice, it becomes an alias for the next
+        symbol, like in the following example:
+        <blockquote>
+                Vector1 = 12345d***0;<br>
+                Vector2 = 67890d***10;
+        </blockquote>
+        In reality, being that Vector1 has zero duplications, its name
+        refers to the Vector2. It may be rarely used for leaving the vector's
+        declaration as a "placeholder", or if you want to create aliases.
+        But only in such cases.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Probable nonsense."<blockquote>
+        Happens when all of the following conditions are true:
+        <blockquote>
+                1. you're using a floating-point bilateral instruction,
+                and you should know those instructions are the following:<br>
+                &nbsp;&nbsp;&nbsp;=,&nbsp;&nbsp;,=&nbsp;&nbsp;++&nbsp;&nbsp;--&nbsp;&nbsp;**&nbsp;&nbsp;//<br>
+                2. the first operator is an indirect pointer directive,
+                that is a value held between square brackets, where
+                a register is used as relative pointer e.g. [A plus Var]<br>
+                3. the second operator is the SAME register used in
+                the indirect pointer directive.
+        </blockquote>
+        An example of a "probable nonsense" is the following:
+        <blockquote>
+                [C plus aCertainVector] ++ C;
+        </blockquote>
+        as you can see, if C holds a floating-point number, which is
+        needed in order for the f-p addition (++) to work properly,
+        then the same register can't ALSO hold an integer-type value
+        to be used as a relative pointer for "aCertainVector".
+        Such an instruction is theoretically LEGAL, but it's probably
+        a nonsense, exactly what the compiler thinks of it.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Extra characters after declaration of text string."<blockquote>
+        Such as if you wrote:<br>
+        &nbsp;&nbsp;&nbsp;StringName = { Hello_there! } thats it;<br>
+        When the closing string bracket is met,
+        nothing more is expected but a semi-colon.
+        Probably, you forgot the semi-colon.
+        It means nothing to the program, but the characters
+        following the closing string bracket are totally ignored.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Duplications count (***) has no meaning for a DIRECTOR."<blockquote>
+        Absolutely useless.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Duplications count (***) has no meaning for a CONSTANT."<blockquote>
+        Absolutely useless.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Text strings are not allowed in CONSTANTS period."<blockquote>
+        Would show along with a syntax error message.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"The value you specify in workspace is ALREADY the duplications count."<blockquote>
+        Well, workspace area labels are ALWAYS vectors.
+        You can't duplicate vectors, if not declaring more than one of them.
+        When you type SOMETHING = SOME VALUE inside the workspace period,
+        you're already allocating a vector of SOME VALUE units in size.
+        And you don't need the duplications count sign (***).
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Code label physical address outside flow-control instruction!"<blockquote>
+        Names of code labels, which refer to the physical addresses of
+        the corresponding labels, cannot be used if not in a jump, call, or
+        jump-on-condition instruction. At least, theoretically. In facts, you
+        still can use them to build/initialize the so-called "routing tables",
+        and in this case you can ignore the warning. To avoid this warning
+        to be highlighted by the compiler, and ONLY if you're sure the
+        warning shouldn't be there, you can declare the subroutine or
+        the label which physical address is to be used outside direct
+        flow-control instructions, as a "service". You just make the
+        name of the label or of the subroutine be preceeded by the
+        word "service" typed in lowercase.
+</blockquote><hr size = 1 width = "100%" color = "white">
+
+"Floating-point value used as pointer will have unpredictable effects!"<blockquote>
+        There's an instruction saying something like [MyVar plus 0.5f]
+        or the same thing but using a floating-point constant name.
+</blockquote>
+
+<!--------------------------------------- END PAGE CONTENTS ---------------------------------------></td></tr></table></td></tr></table>
+
+<table width = "100%" height = 5 background = "wg/smyrybar.gif"><tr><td></td></tr></table>
+<table width = "100%"><tr><td><i>Copyright (c)2001-2004 Alessandro Ghignola (HSP Software) - LICENSED UNDER W.P.L.</i></td></tr></table>
+
+</body>
+</html>

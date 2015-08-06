@@ -1,0 +1,320 @@
+#!/bin/sh
+# Copyright (C) 2006 G.P. Halkes
+# Licensed under the Open Software License version 2.0
+
+# Set zsh to emulate sh (otherwise all kinds of eval's wont work)
+[ -n "${ZSH_VERSION}" ] && emulate sh
+
+#==============================
+# Functions
+#==============================
+error() {
+	echo "$@"
+	exit 1
+}
+
+not() {
+	if "$@" ; then
+		false
+	else
+		true
+	fi
+}
+
+check() {
+	if not "$@" ; then
+		error "Error executing $@. Aborting."
+	fi
+}
+
+check_message() {
+	printf "$@"
+	echo "----------------------------------">> config.log
+	echo "$@" >> config.log
+}
+
+check_message_result() {
+	echo "$@"
+	echo "$@" >> config.log
+}
+
+clean() {
+	rm -rf "$@" >/dev/null 2>&1
+}
+
+test_make() {
+	echo "Running '${MAKE} -f .Makefile $@'" >> config.log
+	"${MAKE}" -f .Makefile "$@"
+}
+
+test_compile() {
+	clean .config.o
+	check_message "Checking for $1... "
+	shift
+
+	if test_make "$@" .config.o >> config.log 2>&1 ; then
+		check_message_result "yes"
+		true
+	else
+		check_message_result "no"
+		false
+	fi
+}
+
+test_link() {
+	clean .config
+	check_message "Checking for $1... "
+	shift
+
+	if test_make "$@" .config >> config.log 2>&1 ; then
+		check_message_result "yes"
+		true
+	else
+		check_message_result "no"
+		false
+	fi
+}
+
+test_install() {
+	clean .foo
+	check_message "Checking for working install '$@'... "
+
+	if  test_make "INSTALL=$@" "install" >> config.log 2>&1 ; then
+		check_message_result "yes"
+		true
+	else
+		check_message_result "no"
+		false
+	fi
+}
+
+add_replace_settings() {
+	for SETTING
+	do
+		NAME=`echo "${SETTING}" | sed 's/=.*//g'`
+		if grep -q "^${NAME}[[:space:]]*=" Makefile.in ; then
+			ESCAPED_SETTING=`echo "${SETTING}" | sed 's/\//\\\\\//g'`
+			echo "s/^${NAME}.*/${ESCAPED_SETTING}/g"
+		else
+			echo "/^\\.POSIX:/a\\
+${SETTING}"
+		fi
+	done
+}
+
+replace_default() {
+	if [ -n "$2" ] ; then
+		ESCAPED=`echo "$2" | sed 's/\//\\\\\//g'`
+		echo "s/^$1=.*/$1=${ESCAPED}/g"
+	fi
+}
+
+insert() {
+	[ -n "$2" ] && echo "/^\\.POSIX:/a\\
+$1=$2"
+}
+
+create_makefile() {
+	if [ -n "${TEST_INSTALL}" ] ; then
+		[ -n "${INSTALL}" ] && TEST_INSTALL="${INSTALL}"
+		unset INSTALL
+			
+		for _INSTALL in ${TEST_INSTALL}
+		do
+			test_install "${_INSTALL}" && INSTALL="${_INSTALL}" && break
+		done
+		if [ -z "${INSTALL}" ] ; then
+			check_message_result "!! No working install program found. The install target will not work."
+		fi
+	fi
+
+	echo "----------------------------------">> config.log
+	check_message_result "Creating Makefile"
+	{
+		replace_default prefix "${PREFIX}"
+		replace_default mandir "${MANDIR}"
+		replace_default CFLAGS "${CFLAGS}"
+
+
+		[ -n "${TEST_INSTALL}" ] && replace_default INSTALL "${INSTALL}"
+
+		echo '/^\.POSIX:/a\
+# Inserted settings'
+
+		insert CC "${CC}"
+		insert LDFLAGS "${LDFLAGS}"
+		insert LDLIBS "${LDLIBS}"
+
+		sed_lines "$@"
+	} > .sedscript
+	cat Makefile.in | sed -f .sedscript > Makefile
+	clean .sedscript .config.c .config.o .config .Makefile .foo
+	exit 0
+}
+
+#==============================
+# Setup
+#==============================
+unset LINKRULE COMPILERULE USERRULES TEST_INSTALL
+
+. ./config.pkg.sh
+
+for _switch in ${SWITCHES}
+do
+	_name=`echo "${_switch}" | sed -e 's/^[+-]//' -e 's/-/_/g'`
+	_pm=`echo "${_switch}" | sed 's/[^+-].*//'`
+	if [ "${_pm}" = "+" ] ; then
+		eval with_${_name}="yes"
+	else
+		eval with_${_name}="no"
+	fi
+done
+_SWITCHES=`echo " ${SWITCHES}" | sed 's/[[:space:]][+-]/ /g'`
+
+for PARAM
+do
+	case "${PARAM}" in
+		-h|--help)
+			cat <<EOF
+Usage: configure [--prefix=<dir>] [<var>=<value>]
+
+  --prefix=<dir>     Prefix for installation [/usr/local]
+  --mandir=<dir>     Set manual page directory [prefix/share/man]
+
+Environment variables that tune build:
+  MAKE        Make program to use [make]
+  CC          C-compiler to use (default determined by make)
+  CFLAGS      C-compiler flags to use [-O2]
+  LDFLAGS     Linker flags to use (default determined by make)
+  LDLIBS      Extra libraries to link
+  PREFIX      See --prefix=<dir>
+EOF
+			[ -n "${TEST_INSTALL}" ] && echo "  INSTALL     The install program to use"
+
+			[ -n "${USER_HELP}" ] && { echo ; echo "Package specific settings" ; echo "${USER_HELP}" ; }
+
+			cat <<EOF
+			
+Note: Environment variables may also be specified as parameters.
+EOF
+		exit 0
+		;;
+		--prefix=*)
+			PREFIX=`echo "${PARAM}" | sed 's/--prefix=//g'`
+		;;
+		--mandir=*)
+			MANDIR=`echo "${PARAM}" | sed 's/--mandir=//g'`
+		;;
+		--*=*)
+			unset _match
+			for _option in ${OPTIONS}
+			do
+				case "${PARAM}" in
+					--${_option}=*)
+						_name=`echo "${_option}" | sed 's/-/_/g'`
+						_value=`echo "${PARAM}" | sed 's/--[^=]*=//'`
+						eval option_${_name}="\"${_value}\""
+						_match="1"
+						break
+					;;
+				esac
+			done
+			[ -z "${_match}" ] && error "Error on commandline: ${PARAM}"
+		;;
+		--*)
+			unset _match
+			for _switch in ${_SWITCHES}
+			do
+				case "${PARAM}" in
+					--with-${_switch})
+						_name=`echo "${_switch}" | sed 's/-/_/g'`
+						eval with_${_name}="yes"
+						_match="1"
+						break
+					;;
+					--without-${_switch})
+						_name=`echo "${_switch}" | sed 's/-/_/g'`
+						eval with_${_name}="no"
+						_match="1"
+						break
+					;;
+				esac
+			done
+			[ -z "${_match}" ] && error "Error on commandline: ${PARAM}"
+		;;
+		*=*)
+			name=`echo "${PARAM}" | sed 's/=.*//g'`
+			value=`echo "${PARAM}" | sed 's/^[^=]*=//g'`
+			eval "${name}"="\"${value}\""
+		;;
+		*)
+			error "Error on commandline: ${PARAM}"
+		;;
+	esac
+done
+
+echo "Configuration test log created at `date`" > config.log
+echo "-- configure called with $0 $@" >> config.log
+
+
+[ -z "${LINKRULE}" ] && LINKRULE='$(CC) $(CFLAGS) $(LDFLAGS) -o .config .config.o $(LDLIBS) $(TESTLIBS)'
+[ -z "${COMPILERULE}" ] && COMPILERULE='$(CC) $(CFLAGS) $(TESTFLAGS) -c -o .config.o .config.c'
+
+unset SETTINGS 
+[ -z "${LDLIBS}" ] || SETTINGS="LDLIBS=${LDLIBS} ${SETTINGS}"
+[ -z "${LDFLAGS}" ] || SETTINGS="LDFLAGS=${LDFLAGS} ${SETTINGS}"
+[ -z "${CFLAGS}" ] || SETTINGS="CFLAGS=${CFLAGS} ${SETTINGS}"
+[ -z "${CC}" ] || SETTINGS="CC=${CC} ${SETTINGS}"
+
+[ -n "${SETTINGS}" ] && check_message_result "Using settings ${SETTINGS}"
+
+clean .config .config.o .config.c config.log .Makefile .sedscript
+
+{
+	echo ".POSIX:"
+	[ -z "${CC}" ] || echo "CC=${CC}"
+	[ -z "${LDFLAGS}" ] || echo "LDFLAGS=${LDFLAGS}"
+	[ -z "${LDLIBS}" ] || echo "LDLIBS=${LDLIBS}"
+
+	if 	[ -n "${CFLAGS}" ] ; then
+		echo "CFLAGS=${CFLAGS}"
+	else
+		echo "CFLAGS=-O2"
+	fi
+
+	echo "${USERRULES}"
+
+	if [ -n "${TEST_INSTALL}" ] ; then
+		cat <<EOF
+install:
+	\$(INSTALL) -d .foo/bar
+	\$(INSTALL) -m 755 configure .foo/bar
+	test -x .foo/bar/configure
+
+EOF
+	fi
+
+	cat <<EOF
+.config: .config.o
+	${LINKRULE}
+
+.c.o:
+	${COMPILERULE}
+EOF
+} > .Makefile
+
+if [ -z "${MAKE}" ] ; then
+	MAKE=make
+fi
+
+cat > .config.c <<EOF
+int main() {
+	return 0;
+}
+EOF
+
+
+test_link "working make (${MAKE})" || error "${MAKE} failed on sanity check. See config.log."
+
+config
+error "Error in config.pkg.sh. Cannot continue."

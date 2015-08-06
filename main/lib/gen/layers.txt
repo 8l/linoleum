@@ -1,0 +1,211 @@
+(
+
+    Video layers management
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:		564 bytes *
+    | Allocates:	 24 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      By a "layer", the conventions of these libraries intend an area of the
+    workspace, so an area of DRAM memory, that has been reserved to hold the
+    contents of a single frame of the actual display. Layers can be visible,
+    hidden, or off-screen. Visible layers are normally declared as workspace
+    areas which size is the product of the maximum width and height of the
+    real display where the application is showing its output. Hidden layers
+    are typically declared exactly like visible layers, only that their goal
+    is providing a "spare page" where to keep particular graphics parts and,
+    more often, backgrounds for some corresponding visible layer. The iGUI,
+    for instance, uses "backdrop layer" as an invisible layer, and then partly
+    copies it to the layer called "primary display", when elements that are
+    "superimposed" to the backdrop layer have to be "refreshed". The pointer
+    arrow is one of those elements. Finally, off-screen layers are special
+    layers that may not have the same size as the other kinds, because they
+    are never supposed to be copied, and show as they are, on the video RAM.
+      Off-screen layers may be setup for printing, for example, and another
+    instance of an off-screen layer is a "texture", a simple "raw image map"
+    having been extracted from a graphics file, and kept in the off-screen
+    layer for lately being copied onto another kind of layer. I think many
+    would call that a "sprite", being that a sprite would be in facts setup
+    that way. Hope it makes it more comprehensible, but it's not a sprite,
+    there's no such thing as a sprite, afaik, since I was working on Amiga:
+    sprites take advantage of some blitting help from the firmware, and are
+    so often much faster, but rather limited in their possibilities.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+	Clear L2L
+	    [Destination Layer] - input
+		Pointer to the layer to clear.
+	    [L2L Region Color] - input
+		Color to fill the layer with.
+
+	Clear L2L Region
+	    [Destination Layer] - input
+		Pointer to the layer containing the region to clear.
+	    [L2L Region] - input
+		Pointer to the vector holding region coordinates
+		streamed in the sequence: left; top; right; bottom.
+	    [L2L Region Color] - input
+		Color to fill the region with.
+
+	Copy L2L
+	    [Source Layer] - input
+		Pointer to the layer to copy from.
+	    [Destination Layer] - input
+		Pointer to the layer to copy to.
+
+	Copy L2L Region
+	    [Source Layer] - input
+		Pointer to the layer to copy from.
+	    [Destination Layer] - input
+		Pointer to the layer to copy to.
+	    [L2L Region] - input
+		Pointer to the vector holding region coordinates
+		streamed in the sequence: left; top; right; bottom.
+
+	Move L2L Region
+	    [Source Layer] - input
+		Pointer to the layer to move from.
+	    [Destination Layer] - input
+		Pointer to the layer to move to.
+	    [L2L Source Region] - input
+		Pointer to the vector holding region coordinates
+		streamed in the sequence: left; top; right; bottom.
+	    [L2L Destination Region] - input
+		Pointer to the vector holding region coordinates
+		streamed in the sequence: left; top; right; bottom.
+	     note: "move" in this case means that there's the possibility
+	     of specifying different regions in the same layer, or regions
+	     whose coordinates do not completely overlay in respect to the
+	     source and destination layers; if used on two regions of the
+	     same layer, however, the regions have -not- to overlap, or it
+	     won't copy them properly.
+
+)
+
+"libraries"
+
+	Region;
+
+"workspace"
+
+	L2L Region	       = 1;
+	L2L Region Color       = 1;
+	Source Layer	       = 1;
+	Destination Layer      = 1;
+	L2L Source Region      = 1;
+	L2L Destination Region = 1;
+
+"programme"
+
+"Clear L2L"
+	A = [Display Width];
+	B = [Destination Layer];
+	A * [Display Height];
+	C = [L2L Region Color];
+    "L2L Fast Clear"
+	[B] = C; B+;
+	A ^ L2L Fast Clear;
+	end;
+
+"Clear L2L Region"
+	? [L2L Region] = 0 -> CLL2L No Region;
+	[Region To Normalize] = [L2L Region];
+	=> Normalize Region;
+	E = [L2L Region];
+	A = [E plus 1]; A * [Display Width];
+	A + [E plus 0]; A + [Destination Layer];
+	B = [E plus 2]; B - [E plus 0]; B+;
+	C = [E plus 3]; C - [E plus 1]; C+;
+	D = [L2L Region Color];
+	    "CLL2L Scan line"
+		A -->;
+		B -->;
+		    "CLL2L Pixel"
+			[A] = D;
+			A+;
+		    B ^ CLL2L Pixel;
+		<-- B;
+		<-- A;
+		A + [Display Width];
+	    C ^ CLL2L Scan line;
+    "CLL2L No Region"
+	end;
+
+"Copy L2L"
+	A = [Display Width];
+	B = [Source Layer];
+	A * [Display Height];
+	C = [Destination Layer];
+    "L2L Fast Copy"
+	[C] = [B]; C+; B+;
+	A ^ L2L Fast Copy;
+	end;
+
+"Copy L2L Region"
+	? [L2L Region] = 0 -> CL2LR No Region;
+	[Region To Normalize] = [L2L Region];
+	=> Normalize Region;
+	E = [L2L Region];
+	A = [E plus 1];
+	A * [Display Width];
+	A + [E plus 0];
+	B = A;
+	A + [Source Layer];
+	B + [Destination Layer];
+	C = [E plus 2]; C - [E plus 0]; C+;
+	D = [E plus 3]; D - [E plus 1]; D+;
+   "CL2LR Scanline"
+	A -->;
+	B -->;
+	C -->;
+	    "CL2LR Pixel"
+		[B] = [A]; B+; A+;
+		C ^ CL2LR Pixel;
+	<-- C;
+	<-- B;
+	<-- A;
+	A + [Display Width];
+	B + [Display Width];
+	D ^ CL2LR Scanline;
+    "CL2LR No Region"
+	end;
+
+"Move L2L Region"
+	? [L2L Source Region] = 0 -> CL2LR No Region;
+	[Region To Normalize] = [L2L Source Region];
+	=> Normalize Region;
+	? [L2L Destination Region] = 0 -> CL2LR No Region;
+	[Region To Normalize] = [L2L Destination Region];
+	=> Normalize Region;
+	E = [L2L Source Region];
+	A = [E plus 1]; A * [Display Width]; A + [E plus 0]; A + [Source Layer];
+	E = [L2L Destination Region];
+	B = [E plus 1]; B * [Display Width]; B + [E plus 0]; B + [Destination Layer];
+	C = [E plus 2]; C - [E plus 0]; C+;
+	D = [E plus 3]; D - [E plus 1]; D+;
+	-> CL2LR Scanline; (common code)

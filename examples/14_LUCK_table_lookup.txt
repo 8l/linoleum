@@ -1,0 +1,426 @@
+
+      ( *** LINOLEUM Example 14: LUCK table lookup *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "14_LUCK_table_lookup.TXT", WITH THE
+	   RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Moves a text string on the display following cursor arrows.
+	TO CLOSE THIS PROGRAM, PRESS THE ESCAPE KEY.
+	TO MOVE THE TEXT FASTER, KEEP "CONTROL" DOWN.)
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"libraries"
+	myfont; (take it again)
+
+"directors"
+
+	program name = { LUCK_Table_Lookup };
+	unit = 32;
+
+"constants"
+
+	WHITE = FFFFFFh;
+	PURE BLUE = 0000FFh;
+	DARK GREEN = 008000h;
+	DARK RED = 800000h;
+
+"variables"
+
+	BG color = WHITE;
+
+	Write at X = 0;
+	Write at Y = 0;
+	Text color = 0;
+	Write text = 0;
+	Write with = 0;
+
+	Current character X = 0;
+	Current character Y = 0;
+
+	Offset to current character in string = 0;
+
+	Dot X = 0; Dot Y = 0; Stop X = 0; Stop Y = 0;
+	Current shape unit = 0; Dot Mask = 0;
+
+	Sample text = { Move_me_with_cursor_arrows! };
+	Sample text X = 15f;
+	Sample text Y = 15f;
+
+	Default delta = 0.5f;
+	Higher delta = 1f;
+	Selected delta = 0.5f;
+
+"workspace"
+
+	Video = 256 mtp 192;
+
+"programme"
+
+	[Display Origin] = Video;
+
+	=> Clear the display with BG color;
+
+    "rewrite text"
+
+	[Write at X] =, [Sample text X];
+	[Write at Y] =, [Sample text Y];
+	[Text color] = [BG color];
+	[Write text] = Sample text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	[Selected delta] = [Default delta];
+	? [KEY CONTROL] = OFF
+		-> set default delta;			(not pressing control)
+		[Selected delta] = [Higher delta];	(pressing control)
+    "set default delta"
+	? [KEY RIGHT] = OFF -> dont move right;
+	[Sample text X]++[Selected delta];
+    "dont move right"
+	? [KEY LEFT] = OFF -> dont move left;
+	[Sample text X]--[Selected delta];
+    "dont move left"
+	? [KEY DOWN] = OFF -> dont move down;
+	[Sample text Y]++[Selected delta];
+    "dont move down"
+	? [KEY UP] = OFF -> dont move up;
+	[Sample text Y]--[Selected delta];
+    "dont move up"
+
+	[Write at X] =, [Sample text X];
+	[Write at Y] =, [Sample text Y];
+	[Text color] = DARK RED;
+	[Write text] = Sample text;
+	[Write with] = vector My font;
+	=> Write TXT;
+
+	A = 250000; "small delay" A ^ small delay;
+	[Display Command] = RETRACE; isocall;
+
+	[Console Command] = GET CONSOLE INPUT; isocall; ? failed -> rewrite text;
+	? [Console Input] = 27 -> escape; -> rewrite text;
+
+    "escape"
+	end;			(of MAIN PROGRAM)
+
+"Write TXT"
+  ( Function to write a text string at given coordinates.
+    [Write at X] = X coordinate of upper left corner of the text;
+    [Write at Y] = Y coordinate of upper left corner of the text;
+    [Text color] = color pattern for text string to be written;
+    [Write text] = pointer to a null-terminated text string;
+    [Write with] = pointer to a bit-mapped font. )
+	D = [Write text];
+	E = [Write with];
+	? D = 0 -> Failure writing text;
+	? [E] != FONT HEADER -> Failure writing text;
+	[Current character X] = [Write at X];
+	[Current character Y] = [Write at Y];
+	[Offset to current character in string] = 0;
+    "Loop for characters in string"
+	A = [Offset to current character in string];
+	A + [Write text];
+	A = [A];
+	? A = 0 -> End of text string;
+	? A < 32 -> Next character;
+	? A > 127 -> Next character;
+	B = A; B - 32; B / [E plus OFFSET FONT ALIGNMENT];
+	C = A; C - 32; C % [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] = B;
+	[Current shape unit] * [E plus OFFSET FONT ALIGNMENT];
+	[Current shape unit] * [E plus OFFSET FONT BODY];
+	[Current shape unit] + C;
+	[Current shape unit] + [Write with];
+	[Current shape unit] + OFFSET FONT SHAPE;
+	[Dot Y] = [Current character Y];
+	[Stop Y] = [Current character Y];
+	[Stop Y] + [E plus OFFSET FONT BODY];
+    "Loop for scan lines in pointer shape"
+	[Dot X] = [Current character X];
+	[Stop X] = [Current character X];
+	[Stop X] + [E plus OFFSET FONT WIDTH];
+	[Dot Mask] = 80000000h;
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+	[Dot Mask] <@ [E plus OFFSET FONT WIDTH];
+    "Loop for pixels in pointer shape"
+	D = [Current shape unit];
+	? [D] - [Dot Mask] -> No dot in shape at this point;
+	A = [Dot X];
+	B = [Dot Y];
+	C = [Text color];
+	=> Plot;
+    "No dot in shape at this point"
+	[Dot Mask] @> 2;
+	[Dot X]+;
+	? [Dot X] < [Stop X] -> Loop for pixels in pointer shape;
+	[Current shape unit] + [E plus OFFSET FONT ALIGNMENT];
+	[Dot Y]+;
+	? [Dot Y] < [Stop Y] -> Loop for scan lines in pointer shape;
+	[Current character X] + [E plus OFFSET FONT WIDTH];
+    "Next character"
+	[Offset to current character in string]+;
+	-> Loop for characters in string;
+    "End of text string"
+	end;
+    "Failure writing text"
+	fail;
+
+
+"Plot"
+    ( Draws a single dot.
+      Two display types supported: 16 and 32 bit.
+      Coordinates are checked. All regs destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width]; B + A;
+	B + [Display Origin];
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Clear the display with BG color"
+	A = [Display Origin];
+	B = [Display Width];
+	B * [Display Height];
+	C = [BG color];
+    "Loop to clear all of it"
+	[A] = C; A+;
+	B ^ Loop to clear all of it;
+	end;
+
+( The LUCK table is a special vector inside the run-time module communication
+area, like the vector where command line parameters are held.
+It doesn't need, this time, an isocall to know the LUCK table status, because
+it's updated when one or more keys are pushed down or released (effectively,
+it's real-time keyboard tracking). This is very useful for setting up
+combinations of keys, used to perform particular functions.
+For example you could test for:
+	CONTROL + SHIFT + Q...
+	SHIFT + ESCAPE...
+	Q + P + J...
+pratically everything.
+The LUCK table is formed by 98 memory units, where each unit/location is set
+to zero when the corresponding key is NOT pressed at the moment, and set to
+one when it's pressed. Each memory unit is labeled from corresponding key.
+There are obviously some differences between the physical keys specified in
+the LUCK table, and the ASCII codes. If you specify KEY A as the variable to
+check, you'll be knowing when that key is pressed, but you can't tell if the
+user intended an uppercase A or a lowercase A, unless you ALSO check for the
+SHIFT key to be pressed at that moment. Talking of control keys, which are
+normally SHIFT, ConTRoL and ALTernate, the LUCK table will not distinguish
+between left and right versions of these keys. This is mainly because those
+keys have pratically the same functions, no matter where they are;
+secondarily, because not all keyboards may have A COUPLE of those keys.
+Also there are numbers 0 to 9 in the main section of the keyboard, but they
+have DIFFERENT codes from the same keys in the numeric keypad. Before using
+keypad codes, make sure there are functions in your program that can be
+performed in some other ways because some computers may not have the numeric
+keypad at all - think to some portable PCs for instance where, even when it's
+present, the numeric keypad is quite uncomfortable to use. )
+
+( Here's the LUCK table and its constants.
+You don't need to declare those constants because they're declared by the
+run-time module, and are ready for use. The following list is informative:
+
+    KEY A		0		alphabetic keys
+    KEY B		1
+    KEY C		2
+    KEY D		3
+    KEY E		4
+    KEY F		5
+    KEY G		6
+    KEY H		7
+    KEY I		8
+    KEY J		9
+    KEY K		10
+    KEY L		11
+    KEY M		12
+    KEY N		13
+    KEY O		14
+    KEY P		15
+    KEY Q		16
+    KEY R		17
+    KEY S		18
+    KEY T		19
+    KEY U		20
+    KEY V		21
+    KEY W		22
+    KEY X		23
+    KEY Y		24
+    KEY Z		25
+
+    KEY 0		26		numbers in main section of keyb.
+    KEY 1		27
+    KEY 2		28
+    KEY 3		29
+    KEY 4		30
+    KEY 5		31
+    KEY 6		32
+    KEY 7		33
+    KEY 8		34
+    KEY 9		35
+
+    KEY F1		36		function keys 1 to (upto) 24
+    KEY F2		37
+    KEY F3		38
+    KEY F4		39
+    KEY F5		40
+    KEY F6		41
+    KEY F7		42
+    KEY F8		43
+    KEY F9		44
+    KEY F10		45
+    KEY F11		46
+    KEY F12		47
+    KEY F13		48
+    KEY F14		49
+    KEY F15		50
+    KEY F16		51
+    KEY F17		52
+    KEY F18		53
+    KEY F19		54
+    KEY F20		55
+    KEY F21		56
+    KEY F22		57
+    KEY F23		58
+    KEY F24		59
+
+    KEY BACKSPACE	60		ASCII control codes, code 8
+    KEY TAB		61		code 9
+    KEY RETURN		62		code 13
+    KEY ESCAPE		63		code 27
+    KEY SPACE BAR	64		code 32
+
+    KEY INSERT		65		middle keypad, top keys
+    KEY DELETE		66
+    KEY HOME		67
+    KEY END		68
+    KEY PGUP		69
+    KEY PGDN		70
+
+    KEY UP		71		middle keypad, cr. arrows
+    KEY DOWN		72
+    KEY LEFT		73
+    KEY RIGHT		74
+
+    KEY 0N		75		numeric keypad
+    KEY 1N		76
+    KEY 2N		77
+    KEY 3N		78
+    KEY 4N		79
+    KEY 5N		80
+    KEY 6N		81
+    KEY 7N		82
+    KEY 8N		83
+    KEY 9N		84
+    KEY SLASH		85
+    KEY ASTERISK	86
+    KEY HYPEN		87		(former KEY MINUS until v1.13.1)
+    KEY CROSS		88		(former KEY PLUS until v1.13.1)
+    KEY DOT		89
+
+    KEY SHIFT		90		control keys
+    KEY CONTROL 	91
+    KEY ALTERNATE	92
+    KEY PAUSE		93
+
+    KEY NUM LOCK	94		LED keys
+    KEY CAPS LOCK	95
+    KEY SCROLL LOCK	96
+
+    KEY UNCLASSIFIED	97		end of L.U.C.K table
+
+So, as you can see, there's an additional code (KEY UNCLASSIFIED) which maps
+any of the keys not included in the standard LUCK table. However, your program
+can't tell which is the key provocating the KEY UNCLASSIFIED location to get
+non-zero. Most probably, unclassified keys will be those which change
+accordingly to the country for which the keyboard is designed. They're NOT
+mapped by the LUCK table. You see, the LUCK table must only consider the most
+important keys for better compatibility with future keyboards. Unclassified
+keystrokes, however, may still generate ASCII codes in the [Console Input]
+location, and you can check for those instead, since the [Console Input] unit
+is affected by the actual keymap for your system and country. On the other
+side, there may be keys in the table which already don't belong to your actual
+keyboard. An example should be for function keys 13 to 24, only present with
+keyboards having two rows of function keys.
+
+I am, finally, STRONGLY suggesting you to use the following conventional
+combinations to perform operations in text editors and other programs which
+may need to use one or more of the listed operations. This is VERY important,
+because they became nearly "instincts" for users worldwide, and supporting them
+in the right way could decide SUCCESS or DEATH for an otherwise useful tool;
+some are trivial, others are not, but in any cases KEEP THEM COUNT: ***NEVER***
+FEEL FREE TO INVENT other combinations for these operations. NEVER, NOT EVEN IF
+YOUR LANGUAGE IS NOT ENGLISH and the letters wouldn't match: these combinations
+are usually not even read by users. They are intended to work in all cases.
+
+    Text editors/viewers:
+
+	Skip to next word in text	CONTROL + RIGHT (cursor arrow)
+	Skip to previous word in text	CONTROL + LEFT (cursor arrow)
+	Jump to top of file		CONTROL + PAGE UP
+	Jump to bottom of file		CONTROL + PAGE DOWN
+	Jump to beginning of text line	HOME
+	Jump to end of text line	END
+	Search text			ALT + S
+	Search next matching text	CONTROL + L (not F2/F3 or something)
+
+    Even for NON-TEXT applications (e.g. painting tools etc...):
+
+	Move up one line		UP arrow
+	Move down one line		DOWN arrow
+	Move right one character	RIGHT arrow
+	Move left one character 	LEFT arrow
+	Move one page up		PAGE UP
+	Move one page down		PAGE DOWN
+
+	Cut selected area		SHIFT + DELETE (very very very important)
+	Copy selected area		CONTROL + INSERT (as above)
+	Paste copy to cursor position	SHIFT + INSERT (as above)
+
+	Save object			CONTROL + S
+	Open existing object		CONTROL + O
+	Reload (revert to saved)	CONTROL + R
+	Create new object		CONTROL + X
+	Quit application		ESCAPE (and ask for confirmation)
+
+    Menu controls (if any):
+
+	Select menu			ALTERNATE
+	File/Save			ALT+F then S
+	File/Open			ALT+F then O
+	File/Quit			ALT+F then Q
+
+Believe me: they're important. I come from the DOS and I'm editing these
+examples with a Windows text editor (namely Programmer's File Editor, so
+thank you Alan Phillips). Each time I need a search I unconditionally press
+CTRL + L, an old and well-known convention for the search command, obtaining
+nothing because Windows applications used to search with F2. It's a pain. )

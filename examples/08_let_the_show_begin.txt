@@ -1,0 +1,251 @@
+
+      ( *** LINOLEUM Example 8: Let the show begin! *** )
+
+      ( TO COMPILE THIS PROGRAM - WINDOWS PACKAGE:
+	--------------------------------------------------------------------
+	1. MAKE SURE YOU HAVE INSTALLED THE LINOLEUM COMPILER,	BY LAUNCHING
+	   THE REGISTRY FILE CALLED "Install.reg".
+	2. CLICK THIS TEXT FILE'S ICON, "08_let_the_show_begin.TXT", WITH
+	   THE RIGHT MOUSE BUTTON, SO THAT A POPUP MENU WILL SHOW.
+	3. FROM  THE  POPUP  MENU,  SELECT  "COMPILE  AS  LINOLEUM  SOURCE":
+	   THE COMPILER WILL START WORKING IN A DOS WINDOW.
+	4. WHEN THE COMPILATION PROCESS IS FINISHED, CLOSE THE DOS WINDOW IF
+	   NEEDED. YOU'LL NOTICE SOME NEW FILES ARE IN THE EXAMPLE's FOLDER.
+	   TIPICALLY, THE NEW FILES ARE "PROGRAM" AND "SMBLSMAP".
+	5. CLICK  ON  THE  "PROGRAM"  ICON  TO	RUN  THE  COMPILED  PROGRAM:
+	   "PROGRAM" IS,  IN FACTS, THE RESULTING EXECUTABLE FILE.  TO	QUIT
+	   ONE OF  THOSE EXAMPLES,  SOMETIMES YOU HAVE TO PRESS A KEY,	SOME
+	   OTHER TIMES YOU HAVE  PRESS THE "ESC" KEY,  AND IN  CERTAIN OTHER
+	   CASES, TO CLICK ONE OF THE MOUSE'S BUTTONS.
+	6. YOU CAN RENAME  "PROGRAM" TO ANY OTHER NAME, IF YOU LIKE, AND YOU
+	   CAN CHANGE THE PROGRAM'S  ICON USING THE "ICON EDITOR", PROVIDING
+	   YOU WILL FIRST COPY "ICON EDITOR.EXE" INSIDE THIS FOLDER, BECAUSE
+	   NO LINOLEUM APPLICATIONS CAN ACCESS FILES OUTSIDE THEIR FOLDER.
+	--------------------------------------------------------------------
+	ONCE  COMPILED,  YOU DON'T NEED  TO  RECOMPILE	THE EXAMPLE IN ORDER
+	TO RUN IT AGAIN,  UNLESS YOU WANT TO MAKE SOME CHANGES TO ITS SOURCE
+	CODE. LINOLEUM EXECUTABLES ARE STAND-ALONE, IE. THEY CAN BE EXECUTED
+	WITHOUT THE LINOLEUM COMPILER PACKAGE. THEY ARE, IN FACTS, LOW-LEVEL
+	ASSEMBLY PROGRAMS. EVERYTHING THEY NEED IS INCLUDED IN "PROGRAM.EXE" )
+
+      ( DESCRIPTION OF THIS PROGRAM:
+	Shows a very nice version of the previous animation, example 7,
+	by slowly fading the display rather than clearing it between
+	each frame. This causes the spiral's borders to leave nice
+	"trails" in shades of blue... )
+
+( SOURCE CODE BEGINS HERE -------------------------------------------------- )
+
+"directors"
+
+	program name = { Fader_Teather };
+	unit = 32;
+
+"constants"
+
+	(constant used in trigonometrics)
+
+	PI	= 3.14159265358979323846f;
+	TwoPI	= PI plus PI;
+
+	LIGHT BLUE = 80A0FFh;
+
+"variables"
+
+	Spiral Center X = 0;
+	Spiral Center Y = 0;
+	Spiral Growth K = 1f;
+	Spiral Entry Angle = 0f;
+	Spiral Exit Angle = 1f;
+	Spiral Entry Radius = 10f;
+	Spiral Color = FFFFFFh;
+	Spiral Growth K Step = 0f;
+	Current Spiral Radius = 0f;
+	Current Spiral Angle = 0f;
+	Current Spiral Step = 0f;
+
+	Animation Angle Delta = 0.025f;
+
+"workspace"
+
+	Primary Display = 49152;
+
+"programme"
+
+	[Display Origin] = Primary Display;
+
+	[Spiral Center X] ,= [Display Width]; [Spiral Center X] // 2f;
+	[Spiral Center Y] ,= [Display Height]; [Spiral Center Y] // 2f;
+	[Spiral Growth K] = 0.85f;
+	[Spiral Entry Angle] = 0f;
+	[Spiral Exit Angle] = 30f;
+	[Spiral Entry Radius] = 5f;
+	[Spiral Color] = LIGHT BLUE;
+
+    "Move it"
+	=> Fade the display;
+	=> Spiral;
+
+	[Display Command] = RETRACE;
+	isocall;
+
+	[Spiral Entry Angle] ++ [Animation Angle Delta];
+	[Spiral Exit Angle] ++ [Animation Angle Delta];
+
+	[Console Command] = GET CONSOLE INPUT;
+	isocall; ? failed -> Move it;
+
+	end;			(of MAIN PROGRAM)
+
+"Plot"
+    ( Draws a single dot. Coordinates are checked. Reg B destroyed. )
+    ( A = X coordinate; B = Y coordinate; C = DOT color. )
+	? A '>= [Display Width] -> Plot Out of the screen;
+	? B '>= [Display Height] -> Plot Out of the screen;
+	B * [Display Width];
+	B + [Display Origin];
+	B + A;
+	[B] = C;
+	end;
+    "Plot Out of the screen"
+	fail;
+
+"Spiral"
+    ( Draws a spiral, using the Plot subroutine. A, B, C destroyed. )
+    ( Spiral Center X = center X coordinate, of integer type;
+      Spiral Center Y = center Y coordinate, of integer type;
+      Spiral Growth K = spiral's growth ratio, determines how much the
+	distance from the center grows for each time
+	the tracing point turns a full circle around
+	spiral's center;
+      Spiral Entry Angle = the angle at which the tracing point begins
+	spinning, which determines the rotation of the whole figure;
+      Spiral Exit Angle = the angle at which the tracing point stops
+	spinning, determining where the spiral is no longer traced,
+	that is, the end of the figure.
+      Spiral Entry Radius = the initial radius of the tracing point's
+	curse around the center.
+      Spiral Color = the color of the dots forming the figure. )
+	[Spiral Growth K Step] = [Spiral Growth K];
+	[Spiral Growth K Step] // TwoPI;
+	[Current Spiral Angle] = [Spiral Entry Angle];
+	[Current Spiral Radius] = [Spiral Entry Radius];
+	C = [Spiral Color];
+    "Spiral tracement loop"
+	A = [Current Spiral Angle]; ~~A;
+	B = [Current Spiral Angle]; ~B;
+	A ** [Current Spiral Radius]; A ++ [Spiral Center X];
+	B ** [Current Spiral Radius]; B ++ [Spiral Center Y];
+	A =, A;
+	B =, B;
+	=> Plot;
+	[Current Spiral Step] = 0.999f;
+	[Current Spiral Step] // [Current Spiral Radius];
+	[Current Spiral Angle] ++ [Current Spiral Step];
+	[Current Spiral Radius] ++ [Spiral Growth K Step];
+	?? [Current Spiral Angle] < [Spiral Exit Angle]
+		-> Spiral tracement loop;
+	end;
+
+"Fade the display"
+	A = [Display Width];
+	A * [Display Height];
+	B = [Display Origin];
+    "Loop to fade all of it"
+	C = [B];
+	? C - FF0000h -> Dont fade red;
+	C - 010000h;
+    "Dont fade red"
+	? C - 00FF00h -> Dont fade green;
+	C - 000100h;
+    "Dont fade green"
+	? C - 0000FFh -> Dont fade blue;
+	C - 000001h;
+    "Dont fade blue"
+	[B] = C;
+	B+;
+	A ^ Loop to fade all of it;
+	end;
+
+( Let's examine "Fade the display" in detail: we know how the loop goes on,
+it goes on in the same way as for "Clear the display", but it doesn't SIMPLY
+put a bare zero in every pixel. It really does complex processing of the
+pixel, in order to fade it out to black, reducing all of its pixels' primary
+color intensities by 1 at every frame. As you might remember (example 2) each
+primary ranges from zero to 255, where zero is the minimum intensity and
+255, or FFh, is the maximum intensity. Considering this, each primary color
+takes 1 BYTE, 8 bits, in the pixel's unit or memory (a unit is 32 bits here).
+And as you might, again, remember, the primaries are disposed as RRGGBBh.
+Now...
+
+	C = [B];
+
+gets the current value of pixel pointed by B, and stores that into C.
+
+	? C - FF0000h -> Dont fade red;
+
+is a binary bit-wise check: admittedly, it's a pretty advanced technique
+that allows for best performance, anyway you have to ask yourself what it
+means, for the RED value, to be different from zero. RED takes 8 bits,
+exactly those 8 bits that are fully set to 1 in the value FF0000h. For it
+to be zero, ALL of those 8 bits must be set to zero. But the comparison,
+as explained in the instructions' quick reference of the manual, check for
+the opposite condition. That apparently strange condition means:
+
+	IS AT LEAST ONE of C's bits, that corresponds to ANY of the bits
+	in the value FF0000h, set to 1? If not, go to "Dont fade red".
+
+The "if not" part of the above question, translates to the MINUS sign.
+A MINUS placed in a comparison directive means the condition is met if
+a bit-wise test gives a result of ZERO (NO bits set intersecting the
+values of the operands). Out of curiosity, of couse a PLUS means that the
+condition is met if ANY of the bits of the red component are set to 1.
+
+So, why do I do that?
+Because if I simply did the following...
+
+	C - 010000h;
+
+...when the value of the RED componend is ZERO, that subtraction would
+cause a CARRY in the higher bits of the unit. Do you remember the manual
+speaking of binary arithmetics where it said that -1 is FFFFFFFFh, and
+that decrementing a 32-bit binary value that is equal to zero gives that?
+If you did the same for all the components, they would still fade, but for
+only one time in the proper way. When they reached black, they would go
+back to max intensity, white, and since not all components may be FFh at
+the beginning of the animation, they could get to FFh at different times,
+causing a plain mess.
+
+The rest of the components, green and blue, are checked and eventually
+decremented in the same way, only the values are different to account for
+the position of the corresponding byte that holds each component.
+In the end:
+
+	[B] = C;
+
+Stores back the processed color value to the source pixel.
+But why did I choose to load a register and store it back later,
+rather than directly using the pixel's memory location, [B], to also
+make the various "check and decrement" operations? Well, in theory, there
+is no difference if you use the memory location to perform those things,
+IF IT WASN'T that the computer's RAM, although pretty fast, is not even
+nearly as fast as the CPU registers. Every time you access a RAM location,
+signals travel from the CPU across the motherboard to the memory controller.
+Registers instead, are small amounts of memory kept INSIDE the CPU itself,
+and strictly integrated with the CPU's internal circuitry at nanoscopic
+scales. Electric signals physically take LESS to travel within the CPU, and
+integration of registers with the CPU's Arithmetics and Logics Unit (ALU)
+make registers damn fast in respect to RAM locations. Why, otherwise, your
+CPU could be a 1000 MHz Ahtlon processor BUT you memory modules be a set of
+133 MHz DRAM cards? heh...
+
+To conclude, loading the value of [B] in a register means avoid access to
+that location later. It costs two more instructions, C=[B] and [B]=C, but
+if you consider all the stuff that lays between them, taking advantage of
+the extreme speed of the C register, which by the way is as fast as any of
+the others, you can guess it worths the effort.
+
+You think L.IN.OLEUM is getting difficult?
+Tsk... you're wrong. The difficulty isn't in the laguage. In that specific
+subroutine, it's in the level of optimization and compactness I managed to
+fit in the code. ;)

@@ -1,0 +1,5416 @@
+(
+
+    Fully software-driven 3D graphics engine with texturing, shading, z-buffer
+    Written as part of the default L.in.oleum libaries, by Alessandro Ghignola
+    --------------------------------------------------------------------------
+    | Weighs:	      50000 bytes *
+    | Allocates:	  0 bytes **
+    --------------------------------------------------------------------------
+    | *  code size + initialized data size + stockfile parts size
+    | ** uninitialized data size [RAM needed, symbols in workspace period]
+    --------------------------------------------------------------------------
+      This library is free software;  you can redistribute it and/or modify it
+    under the terms of the  GNU Lesser General Public License  as published by
+    the  Free Software Foundation;  either version 2.1	of the License, or, at
+    your option, any later version.
+      This  library  is  distributed  in the hope  that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+    or FITNESS FOR A PARTICULAR PURPOSE.
+      See the GNU Lesser General Public License for more details.
+      You should have received a copy of the GNU Lesser General Public License
+    along with this library;  if not,  write to the  Free Software Foundation,
+    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    --------------------------------------------------------------------------
+      Given this package's libraries conventions, functions are not assumed to
+    care for preserving registers' contents, but they might preserve any entry
+    parameters passed throught related variables.  This library is provided as
+    part of the L.in.oleum compiler package's default libraries.
+
+    --------------------------------------------------------------------------
+    DESCRIPTION
+    --------------------------------------------------------------------------
+      Pitagora is a 3D graphics engine aimed to real-time rendering of objects
+    that have to be built up of single triangles. As it is, it provides those
+    very few functions forming the "core" of such an engine, among which most
+    of this library is represented by the "Cast Triangle" routine, rendering a
+    single triangle.
+
+    --------------------------------------------------------------------------
+    USAGE
+    --------------------------------------------------------------------------
+      It is recommended to read the "readme" file coming with the old, though
+    functional, Pitagora Scenery Editor: that file explains, by detailing how
+    to build a scenery, the basics of Pitagora too. PSE is -also- a low-level
+    scenery editor: it only knows single triangles, and can't do very much for
+    more complex shapes. Oh, and for what concerns rendering speed: PSE uses
+    to trace all the polygons twice because of its "surface indexing" in order
+    for it to detect which triangle or which point of the "reference planes"
+    is clicked with the mouse. To disable that feature and show up some of the
+    effective speed in rendering, press the "i" key while editing things with
+    PSE: key "i" enables/disables surface indexing.
+      At developer level, also trying to understand how the source to the PSE
+    performs its rendering, would probably be enough to replicate it. It isn't
+    as difficult as it may seem.
+      PSE, in effects, uses functions whose parameters are detailed below:
+
+	Create Standard Viewport
+	    [Viewport left] - input
+		X coordinate of viewport's left edge [positive right]
+	    [Viewport top] - input
+		Y coordinate of viewport's top edge [positive down]
+	    [Viewport right] - input
+		X coordinate of viewport's right edge [positive right]
+	    [Viewport bottom] - input
+		Y coordinate of viewport's bottom edge [positive down]
+	    Note: this subroutine will update the following variables:
+		Viewport center X
+		Viewport center Y
+		Viewport center X integer
+		Viewport center Y integer
+		Viewport left relative
+		Viewport top relative
+		Viewport right relative
+		Viewport bottom relative
+	    in order to create a valid viewport having its center in
+	    exactly the middle of the rectangular region given by the
+	    [Viewport left/top/right/bottom] parameters on entry.
+	    This subroutine is provided for commodity.
+
+	Clear Frame
+	    [Viewport frame buffer] - input
+		Pointer to a video layer to be used as the frame buffer.
+	    [Viewport color] - input
+		Color to fill the frame buffer with.
+	    Note: "Clear Frame" will only clear graphics output,
+	    while the depth buffer is totally ignored. Therefore,
+	    this function should only be used if no depth buffering
+	    is requested for the scenery.
+
+	Clear Depth
+	    [Viewport depth buffer] - input
+		Pointer to a video layer to be used as the depth buffer.
+	    Note: "Clear Depth" will only clear the depth buffer,
+	    while the frame buffer is left as is. This function should
+	    be used when the whole surface of the frame buffer is covered
+	    by polygons, so that no areas of the frame's background are
+	    left void by the rendering process, depth buffering being
+	    required anyway.
+
+	Clear Frame and Depth
+	    [Viewport frame buffer] - input
+		Pointer to a video layer to be used as the frame buffer.
+	    [Viewport color] - input
+		Color to fill the frame buffer with.
+	    [Viewport depth buffer] - input
+		Pointer to a video layer to be used as the depth buffer.
+	    Note: faster than calling both the two previous functions,
+	    used when both uniform background AND depth buffering are
+	    required.
+
+	Change Camera Lens
+	    [Distance from projection plane] - input
+		Camera focal length. It depends on the size of the display.
+		Setting this to relatively small values [1/3 of the display
+		width, for instance] will result in wide angle cameras,
+		and vice-versa, setting it to relatively high values such
+		as twice the display width, will give small angle cameras.
+		Wide angle has a disadvantage: when using approximated
+		rendering throught the USE SPANNER attribute flag, it will
+		enhance approximation errors on arbitrary-angled polygons.
+
+	Rotate Camera
+	    [Alpha angle] - input
+		Yaw: angle of rotation along the X axis, in radians.
+	    [Beta angle] - input
+		Pitch: angle of rotation along the Y axis, in radians.
+	    [Gamma angle] - input
+		Roll: angle of rotation along the Z axis, in radians.
+
+	Forward Camera
+	    [FC Delta] - input
+		Amount of space units to move the camera.
+		Negative deltas will move the camera backwards.
+		The camera is moved along the direction given by
+		[Alpha angle] and [Beta angle], [Gamma angle] being
+		uninfluent.
+
+	Get Screen Coordinates
+	    [GSC X]; [GSC Y]; [GSC Z] - inputs
+		Coordinates of the point for which 2D coordinates are
+		needed. Coodinates are given in the same scale and
+		conventions used as for polygons' vertexs coordinates.
+	    [GSC X On Screen]; [GSC Y On Screen] - outputs
+		2D coordinates of requested point.
+		The function will fail when given point is not visible.
+
+	Check Surface Visibility
+	    [CSV Vertexs] - input
+		Pointer to a vector made of 9 units.
+		The vector defines the vertexs of a triangle aligned with
+		the target surface. All of the coordinates are given in
+		floating-point format. Vertexs must be included in the
+		vector IN CLOCKWISE ORDER [imagining to see the surface
+		from its visible side].
+	    Note: The function fails when the surface is not visible,
+	    and returns successfully otherwise.
+
+	Calculate Normal Vector
+	    [CNV Vertexs] - input
+		Pointer to a vector made of 9 units.
+		The vector defines the vertexs of a triangle aligned with
+		the target surface. All of the coordinates are given in
+		floating-point format. Vertexs must be included in the
+		vector IN CLOCKWISE ORDER [imagining to see the surface
+		from its visible side].
+	    [CNV X]; [CNV Y]; [CNV Z] - outputs
+		Compounds of the surface's normal vector.
+		They are ALWAYS normalized to fit range -1 to +1,
+		so that the vector's modulus, =length, is always 1.
+	    [CNV Modulus] - output
+		Length of the surface's normal vector before normalization.
+
+	Cast Triangle
+	    [CT Vertexs] - input
+		Pointer to vertexs table: pointer to a vector made of 9
+		units. The vector defines the vertexs of the triangle, and
+		all of the coordinates are given in floating-point format.
+		Vertexs must be included in the vector IN CLOCKWISE ORDER
+		[imagining to see the surface from its visible side].
+	    [CT Parents] - input
+		Pointer to reference vertexs table: when you have to merge
+		two or mode triangles in a more complex plane shape, and
+		that shape must share the same texture and parameters as
+		for a certain "reference triangle", you specify here the
+		pointer to the vertexs table of the reference triangle.
+		Reference triangles, or triangles being left "alone" with
+		their shape only, must have this value set to zero.
+	    [CT Feature] - input
+		Surface attributes bit-mask: it's formed by...
+		APPLY TEXTURE	  attach a bit-mapped texture to the surface
+		DEPTH BUFFERING   use depth buffering for the surface
+		ALPHA BLEND	  use translucency
+		APPLY SHADING	  apply shading [it's of Gouraud type]
+		USE SPANNER	  use approximated rendering - much faster!
+		METAL SHADING	  when shading is on, raise its brilliance
+		DOUBLE FACE	  triangle is visible from both its sides
+		If a certain attribute must be used for all of the triangles
+		then you can set [Global Feature Mask] to that attribute,
+		or to a sum of the attributes you want to apply to all of
+		the surfaces. By default [Global Feature Mask] contains the
+		USE SPANNER attribute, so that everything will be traced in
+		approximated rendering. You can certainly use full-quality
+		rendering to avoid approximations in tracement [they appear
+		as little depth-buffering glitches and textures distortions]
+		but then you'd need a VERY fast CPU for animating sceneries
+		in real-time; therefore, full quality is not recommended.
+	    [CT Texture] - input
+		If the triangle has no bit-mapped texture attached,
+		this parameter specifies the plain color to fill the
+		surface with. Otherwise, it specifies the pointer to
+		texture's graphics data. The texture is like a video
+		layer [normally smaller than a video layer, however]
+		and works the same way: pure, raw data from a picture,
+		with no headers and no additional informations.
+	    [CT SP Cols]; [CT SP Rows] - inputs
+		Two VERY IMPORTANT and INTEGER values.
+		Determine how many columns and rows the surface plane
+		is divided in. When you're applying textures, these two
+		parameters must match the size of the image used as texture.
+		Otherwise, they will just specify the resolution on which
+		shading and depth buffering will be performed.
+	    [CT Shaders] - input
+		Pointer to light sources table: this table is formed by
+		a first unit giving the number of light sources, and it's
+		given as integer. Then light sources' data will follow,
+		so that there are three units giving the coordinates of
+		the light source, another three units being the red, green
+		and blue emission [ranging 0 to 1], one more unit specifying
+		the absolute power of the light source, and finally two units
+		holding the coefficients to reflected and diffuse light.
+		For each source, those nine units must be specified one
+		after the other, as in a long vector. See how examples work.
+		The coefficients for diffusion and reflection should be
+		calculated so that their sum gives 1, so:
+			reflection coefficient = 1 - diffusion coefficient
+			diffusion coefficient = 1 - reflection coefficient
+	    [CT Scaling] - input
+		Surface scaling for mip-mapping adjustment:
+		a single value, in floating-point, and normally around 1.
+		Determines the way surface's resolution - for texturing,
+		shading and depth buffering - is reduced as the triangle
+		gets far from the viewpoint. It's calculated intuitively,
+		by considering an object having average size as reference,
+		and evaluating how bigger, or smaller, the current object,
+		which the triangle is part of, is in respect to that
+		reference object. The size of the reference object should
+		be considered to be 1, so that if you're going to trace an
+		object which is twice the size of the reference object, you
+		should set [CT Scaling], for its triangles, to 2.
+		Resolution is reduced basing upon two of the 3D engine
+		parameters: [Mipmapping Factor] and [Mipmapping Latency].
+
+    --------------------------------------------------------------------------
+    TERMINOLOGY AND HINTS
+    --------------------------------------------------------------------------
+
+      Vector - here, and other than what L.in.oleum's manual says about it,
+	       a set of three values being x, y, z and identifying a point in
+	       space or, more properly, the relative coordinates of that point
+	       based on a reference point; 3D vectors have "components", being
+	       the 3 coordinates, a "modulus", being the geometric average of
+	       those 3 values, also known as sqrt[x*x+y*y+z*z], and a "verse",
+	       the direction towards which the said coordinates are pointing
+
+      UVspace - in this engine's case there's often a couple vectors to a
+		surface, that are called the "uvspace" vectors, computed as:
+		  Ux = X2 - X1
+		  Uy = Y2 - Y1
+		  Uz = Y2 - Z1
+		  Vx = X3 - X1
+		  Vy = Y3 - Y1
+		  Vz = Z3 - Z1
+		hence, vector U goes from the first vertex to the second, and
+		normally gives the "horizontal" axis of an eventual texture,
+		while vector V gives from the first vertex to the third, and
+		hence would give the "vertical" axis of that same texture;
+		these "uvspace" vectors, mathematically seen as segments made
+		of an infinite, or "continuous" amount of points, can be split
+		in an arbitrary amount of "discrete" parts being the texture's
+		pixels in case a texture map is attached to that surface, but
+		then that same set of parts, being the "surface partitions",
+		are used by Pitagora to also find out indexs for the z-buffer,
+		and therefore also influence the precision of the z-buffering
+		for that surface, and indexs for the shading lookup tables: in
+		a nutshell, the more partitions a surface is divided into, the
+		more precise its rendering will be, but precalculation of the
+		said tables will also take longer and influence execution time
+		unless the surface is far away and proper "mipmapping" is used
+		maximum uvspace partitions on each axis are given by constant:
+		  MAXIMUM SURFACE PARTITIONS = 512;
+		...which is 512 by default, but could be changed if you copied
+		this library to your program's folder, so for your program's
+		specific use, and then changed the value of that constant; the
+		value also indicates the maximum size of a texture's picture
+		along one of its axis, in pixels
+
+      Normal - the normal vector of a surface is a vector that's perpendicular
+	       [right english term?] to that surface and which verse depends
+	       on the surface's vertexs order following the so-called "rule of
+	       the right hand" - in Pitagora's case, a normal vector goes
+	       "positively up", and makes a surface visible from a certain
+	       side, if vertexs, seen from that side, are given in clockwise
+	       order; the other side won't be visible unless you specify a
+	       flag in the "features bitmask" upon rendering that surface: the
+	       flag to set is "DOUBLE FACE"; normal vectors are also used to
+	       compute the inclination of light sources' rays in respect to
+	       every point of a texture, by comparing the vector going from
+	       the light source's center to that point of the surface, and
+	       then comparing the difference, as an angle, between the normal
+	       of the surface the points belong to, and the said vector for
+	       that specific point; in reality, Pitagora pre-calculates those
+	       angles along each axis of the uvspace, and then merges the
+	       intensity of light along each of their points, giving an
+	       approximation of the shading for every point of the surface,
+	       because it'd be slow to compute the angles for every point;
+	       computing for every point gives wonderful shading, but sorry,
+	       I couldn't find a way to make that calculation, involving
+	       slow square roots, fast enough for efficient real-time
+	       rendering where the light sources can be animated [moved,
+	       intensified, turned off, etc] while the rendering goes on
+
+      Camera - the ideal device that gathers images from the "virtual space"
+
+      Viewport - the area of the 2D display where 3D graphics is traced
+
+      Frame buffer - the display layer where to trace stuff while rendering
+
+      Depth buffer - a display layer, having the same dimensions as the frame
+		     buffer's layer, where the depths of corresponding pixels
+		     are kept, so that no pixel is traced behind nearest ones:
+		     will be holding values from zero to 2^32 - 1, meaning for
+		     the integer parts of the corresponding points' depths; as
+		     a consequence of integer conversion, please note that if
+		     you choose objects that are too small to define a rather
+		     large range of depths, the depth buffer will eventually
+		     cause glitches due to integer approximation; another
+		     thing that influences depth buffer's precision is the
+		     amount of "uv space" partitions along the two reference
+		     vectors of a triangle
+
+      Alpha angle - the angle representing the tilt of the camera in respect
+		    to the X axis, moving the camera to look "down" or "up"
+
+      Beta angle - the angle representing the rotation of the camera around
+		   the Y axis, moving the camera to look "left" or "right"
+
+      Gamma angle - the angle representing the rotation of the camera around
+		    ITS OWN axis, the ideal line connecting the center of the
+		    camera to the center of the display, moving the camera so
+		    that it simply "rolls" around that line; as a consequence,
+		    to define a "direction" of movement for the subroutine
+		    "Forward Camera", you only need specifying the alpha and
+		    beta angles, gamma being totally irrelevant there
+
+      X axis - the axis that goes from left to right, positive values to right
+
+      Y axis - the axis that goes from top to bottom, positively bottom [!!]
+
+      Z axis - the axis that goes, when seen with all angles set to zero, from
+	       the farthest point in the middle of the display to the farthest
+	       point "behind" the camera
+
+      VLU - Virtual Length Unit: a common way to define a single integer unit
+	    of the 3D space where the shapes exist, although coordinates are
+	    then given as floating-point values, and eventually you could be
+	    confronting fractional parts of a VLU; for example:
+	      [FC delta] = 1.5f;
+	      => Forward Camera;
+	    would mean moving the camera forward in the direction it's facing
+	    of exactly 1 VLU and a half; for your commodity, while designing
+	    a scenery you may consider a VLU to be an arbitrary unit of length
+	    such as 1 VLU = 1 centimeter, 1 VLU = 1/10th of an inch, etc...
+	    while doing so, note that the space will most likely be precise
+	    enough in rendering using ranges of 2^24 VLUs along each axis,
+	    because that's the minimum precision you may expect from an IEEE
+	    "short real" number format [2^24 = 16.7 million VLUs]
+
+      Mipmapping - the reduction of a surface's uvspace partitions in respect
+		   to the distance of the surface from the view point:
+
+	[mipmapping factor] controls how many VLUs are to be left between each
+	decrease of the surface's uvspace "resolution", VLUs being the units
+	forming the distance
+
+	[mipmapping latency] controls how many VLUs are unconditionally left
+	as uneffective for mipmapping: they are unconditionally subtracted
+	from the distance
+
+	[CT scaling] controls how large, in VLUs, is the surface: ideally, it
+	could be the radius of the smallest sphere, an imaginary sphere and
+	not effectively traced, being capable of containing the surface; while
+	the mipmapping parameters mentioned above are "global" variables, and
+	influence all triangles being traced while they are set to certain
+	values, [CT scaling] is of course specific to a surface, and to be
+	loaded along with the other [CT ...] parameters before calling "Cast
+	Triangle" to render that particular triangle
+
+)
+
+"constants"
+
+	MAXIMUM SURFACE PARTITIONS = 512;
+
+	APPLY TEXTURE	  = 0000000001b;(type bit used in [CT Feature])
+	DEPTH BUFFERING   = 0000000010b;(type bit used in [CT Feature])
+	ALPHA BLEND	  = 0000000100b;(type bit used in [CT Feature])
+	APPLY SHADING	  = 0000001000b;(type bit used in [CT Feature])
+	USE SPANNER	  = 0000010000b;(flag bit used in [CT Feature])
+	METAL SHADING	  = 0000100000b;(flag bit used in [CT Feature])
+	DOUBLE FACE	  = 0001000000b;(flag bit used in [CT Feature])
+FLIP TEXTURE HORIZONTALLY = 0010000000b;(flag bit used in [CT Feature])
+FLIP TEXTURE VERTICALLY   = 0100000000b;(flag bit used in [CT Feature])
+	UNIFORM SHADING   = 1000000000b;(flag bit used in [CT Feature])
+
+	FORWARD SPANS	  = 1;		(internal code)
+	REVERSE SPANS	  = 2;		(internal code)
+
+"variables"
+
+		       ( *** PUBLIC VARIABLES *** )
+
+    (3D engine configuration parameters, FILL BEFORE USING PITAGORA)
+	Mipmapping Factor		= 1000f; (default can be changed)
+	Mipmapping Latency		= 5000f; (default can be changed)
+	Antialiasing Factor		= 1.01f; (clip 1% of the UVspace)
+	Global Feature Mask		= USE SPANNER;
+
+    (Spanning optimization parameters, USED WHEN "USE SPANNER" FLAG IS SET)
+	CT Span size	= 16d;	(Logical span size, integer and power of 2)
+	CT FP Span size = 16f;	(Floating-point version of [CT Span size])
+	CT Span sizelog = 4;	(2's logarythm of [CT Span size])
+
+    (Viewport parameters)
+	Viewport frame buffer		= NULL; (pointer to frame buffer)
+	Viewport depth buffer		= NULL; (pointer to depth buffer)
+	Viewport left			= 0;	(left edge)
+	Viewport top			= 0;	(top edge)
+	Viewport right			= 255;	(right edge)
+	Viewport bottom 		= 191;	(bottom edge)
+	Viewport left relative		= minus 128;	(rel. to center)
+	Viewport top relative		= minus 96;	(rel. to center)
+	Viewport right relative 	= plus 127;	(rel. to center)
+	Viewport bottom relative	= plus 95;	(rel. to center)
+	Viewport center X		= 128f; (in floating-point)
+	Viewport center Y		= 96f;	(in floating-point)
+	Viewport center X integer	= 128;	(integer)
+	Viewport center Y integer	= 96;	(integer)
+	Viewport color			=F4488h;(default, about navy blue)
+
+    (Viewpoint parameters)
+	Distance from projection plane	= 100f; (aka DPP, or camera focal)
+	ZClipping plane 		= 100f; (min. depth for zclipping)
+	Inverse of DPP			= 0.01f;(= 1f / DPP)
+	Anchor depth constant		= 1f;	(= DPP / Zclipping plane)
+	Camera X			= 0f;	(Camera X position)
+	Camera Y			= 0f;	(Camera Y position)
+	Camera Z			= 0f;	(Camera Z position)
+	Alpha angle			= 0f;	(Camera orientation, yaw)
+	Beta angle			= 0f;	(Camera orientation, pitch)
+	Gamma angle			= 0f;	(Camera orientation, roll)
+	Sine of alpha angle		= 0f;	(Calculate when changing)
+	Cosine of alpha angle		= 1f;	(Calculate when changing)
+	Sine of beta angle		= 0f;	(Calculate when changing)
+	Cosine of beta angle		= 1f;	(Calculate when changing)
+	Sine of gamma angle		= 0f;	(Calculate when changing)
+	Cosine of gamma angle		= 1f;	(Calculate when changing)
+
+    (3D triangles casting parameters, FILL BEFORE CALLING "Cast Triangle")
+	CT Vertexs = NULL;	(Pointer to vertexs table)
+	CT Parents = NULL;	(Pointer to reference vertexs table)
+	CT Feature = NULL;	(Surface attributes bit-mask)
+	CT Texture = NULL;	(Either a pointer or a color pattern)
+	CT Shaders = NULL;	(Pointer to light sources table)
+	CT SP Cols = 1; 	(Surface Partitioning, number of columns)
+	CT SP Rows = 1; 	(Surface Partitioning, number of rows)
+	CT SP Algn = 1; 	(Texture line alignment, phys.width in pixels)
+	CT Scaling = 1.0f;	(Surface scaling for mip-mapping adjustment)
+	CT LayerID = 00000000h; (A binary mask identifying the surface layer)
+
+    (Variables pertaining "Forward Camera")
+	FC Delta			= 0f;
+
+    (Variables pertaining "Get Screen Coordinates")
+	GSC X				= 0f;
+	GSC Y				= 0f;
+	GSC Z				= 0f;
+	GSC X On Screen 		= UNDEFINED;
+	GSC Y On Screen 		= UNDEFINED;
+
+    (Variables pertaining "Check Surface Visibility")
+	CSV Vertexs			= NULL;
+    (*) CSV X1				= 0f;
+	CSV Y1				= 0f;
+	CSV Z1				= 0f;
+	CSV X2				= 0f;
+	CSV Y2				= 0f;
+	CSV Z2				= 0f;
+	CSV XR				= 0f;
+	CSV YR				= 0f;
+	CSV ZR				= 0f;
+
+    (Variables pertaining "Calculate Normal Vector")
+	CNV Vertexs			= NULL;
+	CNV Modulus			= 0f;
+	CNV X				= 0f;
+	CNV Y				= 0f;
+	CNV Z				= 0f;
+    (*) CNV X1				= 0f;
+	CNV Y1				= 0f;
+	CNV Z1				= 0f;
+	CNV X2				= 0f;
+	CNV Y2				= 0f;
+	CNV Z2				= 0f;
+	CNV XR				= 0f;
+	CNV YR				= 0f;
+	CNV ZR				= 0f;
+
+		      ( *** INTERNAL VARIABLES *** )
+
+    (3D triangles casting variables)
+	CT Filler subroutine pointer	= UNDEFINED;
+	CT Ready to fill		= NO;
+	CT Fast Floor			= NO;
+	CT Current Side 		= 1f;
+	CT HalfBright			= UNDEFINED;
+	CT TR X 			= 0f;
+	CT TR Y 			= 0f;
+	CT TR Z 			= 0f;
+	CT TR XT			= 0f;
+	CT TR YT			= 0f;
+	CT TR ZT			= 0f;
+	CT TR X1			= 0f;
+	CT TR Y1			= 0f;
+	CT TR Z1			= 0f;
+	CT TR X2			= 0f;
+	CT TR Y2			= 0f;
+	CT TR Z2			= 0f;
+	CT TR X3			= 0f;
+	CT TR Y3			= 0f;
+	CT TR Z3			= 0f;
+	CT TR RX1			= 0f;
+	CT TR RY1			= 0f;
+	CT TR RZ1			= 0f;
+	CT TR RX2			= 0f;
+	CT TR RY2			= 0f;
+	CT TR RZ2			= 0f;
+	CT TR RX3			= 0f;
+	CT TR RY3			= 0f;
+	CT TR RZ3			= 0f;
+	CT RE RX1			= 0f;
+	CT RE RY1			= 0f;
+	CT RE RZ1			= 0f;
+	CT RE RX2			= 0f;
+	CT RE RY2			= 0f;
+	CT RE RZ2			= 0f;
+	CT RE RX3			= 0f;
+	CT RE RY3			= 0f;
+	CT RE RZ3			= 0f;
+	CT TR VF1			= FALSE;
+	CT TR VF2			= FALSE;
+	CT TR VF3			= FALSE;
+	CT TR VVCOUNT			= NULL;
+	CT TR ANCHOR X			= 0f;
+	CT TR ANCHOR Y			= 0f;
+	CT FP Cols			= 1f;
+	CT FP Rows			= 1f;
+	CT Inv Cols			= 1f;
+	CT Inv Rows			= 1f;
+	CT Midpoint X			= 0f;
+	CT Midpoint Y			= 0f;
+	CT Midpoint Z			= 0f;
+	CT Approximated Distance	= 0f;
+	CT Mipmapping Factor now	= 0f;
+	CT Mipmapping Correction	= 0f;
+	CT MM Cols			= UNDEFINED;
+	CT MM Rows			= UNDEFINED;
+	CT TR NX			= 0f;
+	CT TR MX			= 0f;
+	CT TR NY			= 0f;
+	CT TR MY			= 0f;
+	CT TR NZ			= 0f;
+	CT TR MZ			= 0f;
+	CT HX				= 0f;
+	CT HY				= 0f;
+	CT HZ				= 0f;
+	CT VX				= 0f;
+	CT VY				= 0f;
+	CT VZ				= 0f;
+	CT OX				= 0f;
+	CT OY				= 0f;
+	CT OZ				= 0f;
+	CT TR SX1A			= 0f;
+	CT TR SY1A			= 0f;
+	CT TR SX2A			= 0f;
+	CT TR SY2A			= 0f;
+	CT TR SX3A			= 0f;
+	CT TR SY3A			= 0f;
+	CT TR SX1A integer		= UNDEFINED;
+	CT TR SY1A integer		= UNDEFINED;
+	CT TR SX2A integer		= UNDEFINED;
+	CT TR SY2A integer		= UNDEFINED;
+	CT TR SX3A integer		= UNDEFINED;
+	CT TR SY3A integer		= UNDEFINED;
+	CT TR SX1B			= 0f;
+	CT TR SY1B			= 0f;
+	CT TR SX2B			= 0f;
+	CT TR SY2B			= 0f;
+	CT TR SX3B			= 0f;
+	CT TR SY3B			= 0f;
+	CT TR SX1B integer		= UNDEFINED;
+	CT TR SY1B integer		= UNDEFINED;
+	CT TR SX2B integer		= UNDEFINED;
+	CT TR SY2B integer		= UNDEFINED;
+	CT TR SX3B integer		= UNDEFINED;
+	CT TR SY3B integer		= UNDEFINED;
+
+    (UV-space vertical alignment tables)
+	CT VTAB 			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+	CT HTAB 			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+
+    (3D triangles rendering variables)
+	CT TF X1			= 0f;
+	CT TF Y1			= 0f;
+	CT TF X2			= 0f;
+	CT TF Y2			= 0f;
+	CT TF X3			= 0f;
+	CT TF Y3			= 0f;
+	CT TF X1 integer		= UNDEFINED;
+	CT TF Y1 integer		= UNDEFINED;
+	CT TF X2 integer		= UNDEFINED;
+	CT TF Y2 integer		= UNDEFINED;
+	CT TF X3 integer		= UNDEFINED;
+	CT TF Y3 integer		= UNDEFINED;
+	CT TF T0X			= UNDEFINED;
+	CT TF T0Y			= UNDEFINED;
+	CT TF B1X			= UNDEFINED;
+	CT TF B1Y			= UNDEFINED;
+	CT TF B2X			= UNDEFINED;
+	CT TF B2Y			= UNDEFINED;
+	CT TF T0B2 Drift		= 0f;
+	CT TF T0B1 Drift		= 0f;
+	CT TF B1B2 Drift		= 0f;
+	CT TF Out			= 0f;
+	CT TF SX			= 0f;
+	CT TF EX			= 0f;
+	CT LScancode			= UNDEFINED;
+	CT Linestart			= UNDEFINED;
+	CT Linefinish			= UNDEFINED;
+
+    (Shading-related variables)
+	CT Gou Cols			= 60000f;
+	CT Gou Rows			= 60000f;
+	CT SH Target X			= 0f;
+	CT SH Target Y			= 0f;
+	CT SH Target Z			= 0f;
+	CT SH VX			= 0f;
+	CT SH VY			= 0f;
+	CT SH VZ			= 0f;
+	CT SH VX Square 		= 0f;
+	CT SH VY Square 		= 0f;
+	CT SH VZ Square 		= 0f;
+	CT Theta Result 		= 0f;
+	CT Diffuse R			= 0f;
+	CT Diffuse G			= 0f;
+	CT Diffuse B			= 0f;
+	CT Light R			= 0f;
+	CT Light G			= 0f;
+	CT Light B			= 0f;
+	CT Gouraud R1			= 0f;
+	CT Gouraud G1			= 0f;
+	CT Gouraud B1			= 0f;
+	CT Gouraud R2			= 0f;
+	CT Gouraud G2			= 0f;
+	CT Gouraud B2			= 0f;
+	CT Gouraud R3			= 0f;
+	CT Gouraud G3			= 0f;
+	CT Gouraud B3			= 0f;
+	CT Gouraud Gamma H Red		= UNDEFINED;
+	CT Gouraud Delta H Red		= UNDEFINED;
+	CT Gouraud Gamma H Green	= UNDEFINED;
+	CT Gouraud Delta H Green	= UNDEFINED;
+	CT Gouraud Gamma H Blue 	= UNDEFINED;
+	CT Gouraud Delta H Blue 	= UNDEFINED;
+	CT Gouraud Gamma V Red		= UNDEFINED;
+	CT Gouraud Delta V Red		= UNDEFINED;
+	CT Gouraud Gamma V Green	= UNDEFINED;
+	CT Gouraud Delta V Green	= UNDEFINED;
+	CT Gouraud Gamma V Blue 	= UNDEFINED;
+	CT Gouraud Delta V Blue 	= UNDEFINED;
+	CT Gouraud Max H Red		= UNDEFINED;
+	CT Gouraud Max H Green		= UNDEFINED;
+	CT Gouraud Max H Blue		= UNDEFINED;
+
+    (Shading lookup tables)
+	SH Table			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+	SV Table			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+
+    (Z-buffering-related variables)
+	CT ZHS				= 0f;
+	CT ZVS				= 0f;
+
+    (Z-buffering lookup tables)
+	ZH Table			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+	ZV Table			= UNDEFINED *** MAXIMUM SURFACE PARTITIONS;
+
+    (Variables used in type-specific fillers)
+	UVspace X			= 0f;
+	UVspace Y			= 0f;
+	Current X			= 0f;
+	Current Y			= 0f;
+	Current Z			= 0f;
+	CT K Depth			= 0f;
+	CT U Index			= UNDEFINED;
+	CT V Index			= UNDEFINED;
+	CT U Index next 		= UNDEFINED;
+	CT V Index next 		= UNDEFINED;
+	CT U Index delta		= UNDEFINED;
+	CT V Index delta		= UNDEFINED;
+	CT FB Pointer			= UNDEFINED;
+	CT Remaining pixels		= UNDEFINED;
+	CT Remaining pixels this span	= UNDEFINED;
+	CT HX per span			= 0f;
+	CT HY per span			= 0f;
+	CT HZ per span			= 0f;
+	CT Direction of spanning	= FORWARD SPANS;
+
+    (Auxiliary variables of general use...)
+	CT TR AUX0			= UNDEFINED;
+	CT TR AUX1			= UNDEFINED;
+	CT TR AUX2			= UNDEFINED;
+	CT TR AUX3			= UNDEFINED;
+	CT TR AUX4			= UNDEFINED;
+	CT TR AUX5			= UNDEFINED;
+	CT TR AUX6			= UNDEFINED;
+	CT TR AUX7			= UNDEFINED;
+	CT TR AUX8			= UNDEFINED;
+	CT TR AUX9			= UNDEFINED;
+
+    (Fillers: they are service routines in a routing table.
+     the attributes bitmask is made by the four least significant
+     bits of [CT Feature]. Thus, there are 16 filling routines.
+     Their attributes are marked as SBZT, where:
+	S = Shaded
+	B = Blended
+	Z = Z-buffered
+	T = Textured)
+
+    CT Filler routing table =
+	service CTFILL plain color;				(0000)
+	service CTFILL textured;				(0001)
+	service CTFILL zbuffered;				(0010)
+	service CTFILL textured and zbuffered;			(0011)
+	service CTFILL blended; 				(0100)
+	service CTFILL textured and blended;			(0101)
+	service CTFILL zbuffered and blended;			(0110)
+	service CTFILL textured zbuffered and blended;		(0111)
+	service CTFILL shaded;					(1000)
+	service CTFILL textured and shaded;			(1001)
+	service CTFILL zbuffered and shaded;			(1010)
+	service CTFILL textured zbuffered and shaded;		(1011)
+	service CTFILL shaded and blended;			(1100)
+	service CTFILL textured shaded and blended;		(1101)
+	service CTFILL zbuffered shaded and blended;		(1110)
+	service CTFILL textured zbuffered shaded and blended;	(1111)
+							(attribs-SBZT)
+
+   (Spanners: like fillers, but used in non-perfect rendering.
+    Spanners use integer maths to calculate UVspace indexes during
+    the tracement loop of a single scanline. Rather than performing
+    the full floating-point maths needed for perfect rendering, which
+    also include a floating-point DIVISION [39 cycles on a Pentium!],
+    spanners perform only one of those divisions each N pixels, where
+    N is [CT Span size] / 2. Also, many cycles required for floating-
+    point to integer conversions are totally cutted, making spanners
+    capable of rendering on rather slow processors; say, however, at
+    least a Pentium-120 would be needed for acceptable resolution.)
+
+   (Note: a couple of fillers don't require the UV indexs, so they don't
+    even require spanning techniques. That's why some of the entries
+    in the table begin with CTFILL anyway. The lowercase "s" sign in the
+    attributes table stands for "spanner" and represents the fifth bit
+    of the [CT Feature] mask, mapped to the "USE SPANNER" flag.)
+
+    CT Spanner routing table =
+	service CTFILL plain color;				(1+0000)
+	service CTSPAN textured;				(1+0001)
+	service CTSPAN zbuffered;				(1+0010)
+	service CTSPAN textured and zbuffered;			(1+0011)
+	service CTFILL blended; 				(1+0100)
+	service CTSPAN textured and blended;			(1+0101)
+	service CTSPAN zbuffered and blended;			(1+0110)
+	service CTSPAN textured zbuffered and blended;		(1+0111)
+	service CTSPAN shaded;					(1+1000)
+	service CTSPAN textured and shaded;			(1+1001)
+	service CTSPAN zbuffered and shaded;			(1+1010)
+	service CTSPAN textured zbuffered and shaded;		(1+1011)
+	service CTSPAN shaded and blended;			(1+1100)
+	service CTSPAN textured shaded and blended;		(1+1101)
+	service CTSPAN zbuffered shaded and blended;		(1+1110)
+	service CTSPAN textured zbuffered shaded and blended;	(1+1111)
+							(attribs-s+SBZT)
+
+   (Reverse spanners: accessed from Cast Triangle's internal code.)
+
+    CT Reverse spanner routing table =
+	service CTFILL plain color;				(1+0000)
+	service CTREVSPAN textured;				(1+0001)
+	service CTREVSPAN zbuffered;				(1+0010)
+	service CTREVSPAN textured and zbuffered;		(1+0011)
+	service CTFILL blended; 				(1+0100)
+	service CTREVSPAN textured and blended; 		(1+0101)
+	service CTREVSPAN zbuffered and blended;		(1+0110)
+	service CTREVSPAN textured zbuffered and blended;	(1+0111)
+	service CTREVSPAN shaded;				(1+1000)
+	service CTREVSPAN textured and shaded;			(1+1001)
+	service CTREVSPAN zbuffered and shaded; 		(1+1010)
+	service CTREVSPAN textured zbuffered and shaded;	(1+1011)
+	service CTREVSPAN shaded and blended;			(1+1100)
+	service CTREVSPAN textured shaded and blended;		(1+1101)
+	service CTREVSPAN zbuffered shaded and blended; 	(1+1110)
+	service CTREVSPAN textured zbuffered shaded and blended;(1+1111)
+							(attribs-s+SBZT)
+
+"programme"
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Create Standard Viewport"
+	[Viewport center X integer] = [Viewport right];
+	[Viewport center X integer] - [Viewport left];
+	[Viewport center X integer] / 2;
+	[Viewport center X integer] + [Viewport left];
+	[Viewport center X] ,= [Viewport center X integer];
+	[Viewport left relative] = [Viewport left];
+	[Viewport left relative] - [Viewport center X integer];
+	[Viewport right relative] = [Viewport right];
+	[Viewport right relative] - [Viewport center X integer];
+	[Viewport center Y integer] = [Viewport bottom];
+	[Viewport center Y integer] - [Viewport top];
+	[Viewport center Y integer] / 2;
+	[Viewport center Y integer] + [Viewport top];
+	[Viewport center Y] ,= [Viewport center Y integer];
+	[Viewport top relative] = [Viewport top];
+	[Viewport top relative] - [Viewport center Y integer];
+	[Viewport bottom relative] = [Viewport bottom];
+	[Viewport bottom relative] - [Viewport center Y integer];
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Clear Frame"
+	A = [Viewport top]; A * [Display Width]; A + [Viewport left];
+	B = [Viewport right]; B - [Viewport left]; B+;
+	C = [Viewport bottom]; C - [Viewport top]; C+;
+	A + [Viewport frame buffer];
+	E = [Viewport color];
+	    "CF Scan line"
+		A -->;
+		B -->;
+		    "CF Pixel"
+			[A] = E;
+			A+;
+		    B ^ CF Pixel;
+		<-- B;
+		<-- A;
+		A + [Display Width];
+	    C ^ CF Scan line;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Clear Depth"
+	A = [Viewport top]; A * [Display Width]; A + [Viewport left];
+	B = [Viewport right]; B - [Viewport left]; B+;
+	C = [Viewport bottom]; C - [Viewport top]; C+;
+	A + [Viewport depth buffer];
+	    "CD Scan line"
+		A -->;
+		B -->;
+		    "CD Pixel"
+			[A] = FFFFFFFFh;
+			A+;
+		    B ^ CD Pixel;
+		<-- B;
+		<-- A;
+		A + [Display Width];
+	    C ^ CD Scan line;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Clear Frame and Depth"
+	A = [Viewport top]; A * [Display Width]; A + [Viewport left];
+	B = [Viewport right]; B - [Viewport left]; B+;
+	C = [Viewport bottom]; C - [Viewport top]; C+;
+	D = A;
+	A + [Viewport frame buffer];
+	D + [Viewport depth buffer];
+	E = [Viewport color];
+	    "CFD Scan line"
+		A -->;
+		D -->;
+		B -->;
+		    "CFD Pixel"
+			[A] = E; A+;
+			[D] = FFFFFFFFh; D+;
+		    B ^ CFD Pixel;
+		<-- B;
+		<-- D;
+		<-- A;
+		A + [Display Width];
+		D + [Display Width];
+	    C ^ CFD Scan line;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Change Camera Lens"
+	A = 1f; A // [Distance from projection plane];
+	[Inverse of DPP] = A;
+	A = [Distance from projection plane];
+	A // [ZClipping plane];
+	[Anchor depth constant] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Rotate Camera"
+	A = [Alpha angle]; ~A; [Sine of alpha angle] = A;
+	B = [Beta angle]; ~B; [Sine of beta angle] = B;
+	C = [Gamma angle]; ~C; [Sine of gamma angle] = C;
+	A = [Alpha angle]; ~~A; [Cosine of alpha angle] = A;
+	B = [Beta angle]; ~~B; [Cosine of beta angle] = B;
+	C = [Gamma angle]; ~~C; [Cosine of gamma angle] = C;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Forward Camera"
+	A = [FC Delta]; A ** [Sine of beta angle]; A++--;
+	C = [FC Delta]; C ** [Cosine of beta angle];
+	B = [FC Delta];
+	A ** [Cosine of alpha angle];
+	B ** [Sine of alpha angle];
+	C ** [Cosine of alpha angle];
+	[Camera X] ++ A;
+	[Camera Y] ++ B;
+	[Camera Z] ++ C;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Get Screen Coordinates"
+	[CT TR X] = [GSC X]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [GSC Y]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [GSC Z]; [CT TR Z] -- [Camera Z];
+
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR RZ1] = [CT TR ZT]; [CT TR RZ1] ** [Cosine of alpha angle];
+	[CT TR RZ1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RX1] = [CT TR XT]; [CT TR RX1] ** [Cosine of gamma angle];
+	[CT TR RX1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RY1] = [CT TR YT]; [CT TR RY1] ** [Cosine of gamma angle];
+	[CT TR RY1] -- [CT TR AUX0];
+
+	?? [CT TR RZ1] < [ZClipping plane]
+		-> GSC Not Visible;
+
+	[CT TR AUX0] = [Distance from projection plane];
+	[CT TR AUX0] // [CT TR RZ1];
+	[CT TR RX1] ** [CT TR AUX0];
+	[CT TR RY1] ** [CT TR AUX0];
+	[GSC X On Screen] =, [CT TR RX1];
+	[GSC X On Screen] + [Viewport center X integer];
+	[GSC Y On Screen] =, [CT TR RY1];
+	[GSC Y On Screen] + [Viewport center Y integer];
+
+	? [GSC X On Screen] < [Viewport left] -> GSC Not Visible;
+	? [GSC X On Screen] > [Viewport right] -> GSC Not Visible;
+	? [GSC Y On Screen] < [Viewport top] -> GSC Not Visible;
+	? [GSC Y On Screen] > [Viewport bottom] -> GSC Not Visible;
+	end;
+
+    "GSC Not Visible"
+	fail;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Check Surface Visibility"
+	E = [CSV Vertexs];
+	[CSV X1] = [E plus 3]; [CSV X1] -- [E plus 6];
+	[CSV Y1] = [E plus 4]; [CSV Y1] -- [E plus 7];
+	[CSV Z1] = [E plus 5]; [CSV Z1] -- [E plus 8];
+	[CSV X2] = [E plus 0]; [CSV X2] -- [E plus 6];
+	[CSV Y2] = [E plus 1]; [CSV Y2] -- [E plus 7];
+	[CSV Z2] = [E plus 2]; [CSV Z2] -- [E plus 8];
+
+	A = [CSV Z2]; A ** [CSV Y1];
+	B = [CSV Y2]; B ** [CSV Z1];
+	A -- B; [CSV XR] = A;
+
+	A = [CSV X2]; A ** [CSV Z1];
+	B = [CSV Z2]; B ** [CSV X1];
+	A -- B; [CSV YR] = A;
+
+	A = [CSV Y2]; A ** [CSV X1];
+	B = [CSV X2]; B ** [CSV Y1];
+	A -- B; [CSV ZR] = A;
+
+	A = [Camera X]; A -- [E plus 6]; A ** [CSV XR];
+	B = [Camera Y]; B -- [E plus 7]; B ** [CSV YR];
+	C = [Camera Z]; C -- [E plus 8]; C ** [CSV ZR];
+
+	A ++ B;
+	A ++ C;
+
+	?? A < 0f -> CSV Not Visible;
+	end;
+
+    "CSV Not Visible"
+	fail;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Calculate Normal Vector"
+	E = [CNV Vertexs];
+	[CNV X1] = [E plus 3]; [CNV X1] -- [E plus 6];
+	[CNV Y1] = [E plus 4]; [CNV Y1] -- [E plus 7];
+	[CNV Z1] = [E plus 5]; [CNV Z1] -- [E plus 8];
+	[CNV X2] = [E plus 0]; [CNV X2] -- [E plus 6];
+	[CNV Y2] = [E plus 1]; [CNV Y2] -- [E plus 7];
+	[CNV Z2] = [E plus 2]; [CNV Z2] -- [E plus 8];
+
+	A = [CNV Z2]; A ** [CNV Y1];
+	B = [CNV Y2]; B ** [CNV Z1];
+	A -- B; [CNV XR] = A;
+
+	A = [CNV X2]; A ** [CNV Z1];
+	B = [CNV Z2]; B ** [CNV X1];
+	A -- B; [CNV YR] = A;
+
+	A = [CNV Y2]; A ** [CNV X1];
+	B = [CNV X2]; B ** [CNV Y1];
+	A -- B; [CNV ZR] = A;
+
+	A ** A;
+	B ** B;
+	C ** C;
+
+	A ++ B;
+	A ++ C;
+	/~ A;
+	[CNV Modulus] = A;
+
+	[CT TR AUX0] = 1f;
+	[CT TR AUX0] // [CNV Modulus];
+	[CNV X] = [CNV XR]; [CNV X] ** [CT TR AUX0];
+	[CNV Y] = [CNV YR]; [CNV Y] ** [CT TR AUX0];
+	[CNV Z] = [CNV ZR]; [CNV Z] ** [CT TR AUX0];
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"Cast Triangle"
+
+	[CT SP Algn] = [CT SP Cols];
+
+"Cast Misaligned Triangle"
+
+      ( Preparing variables... )
+
+	A = [CT Vertexs];
+	[CT TR X1] = [A plus 0];
+	[CT TR Y1] = [A plus 1];
+	[CT TR Z1] = [A plus 2];
+	[CT TR X2] = [A plus 3];
+	[CT TR Y2] = [A plus 4];
+	[CT TR Z2] = [A plus 5];
+	[CT TR X3] = [A plus 6];
+	[CT TR Y3] = [A plus 7];
+	[CT TR Z3] = [A plus 8];
+
+	[CT Fast Floor] = NO;
+	[CT Ready to fill] = NO;
+
+	[CT Feature] | [Global Feature Mask];
+
+      ( Checking fast floor conditions. )
+
+	?? [Gamma angle] != 0f -> CT Not to be traced as fast floor;
+	?? [CT TR Y1] != [CT TR Y2] -> CT Not to be traced as fast floor;
+	?? [CT TR Y1] != [CT TR Y3] -> CT Not to be traced as fast floor;
+
+	[CT Fast Floor] = YES;
+	[CT Feature] | USE SPANNER;
+
+      ( Choosing filler service. )
+
+    "CT Not to be traced as fast floor"
+	A = [CT Feature]; A & 11111b;
+	[CT Filler subroutine pointer] = [A plus CT Filler routing table];
+
+      ( Translating and rotating vertexs. )
+
+	[CT TR VF1] = 0;
+	[CT TR VF2] = 0;
+	[CT TR VF3] = 0;
+	[CT TR VVCOUNT] = 0;
+
+"CT Project First Vertex"
+	[CT TR X] = [CT TR X1]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [CT TR Y1]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [CT TR Z1]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR RZ1] = [CT TR ZT]; [CT TR RZ1] ** [Cosine of alpha angle];
+	[CT TR RZ1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RX1] = [CT TR XT]; [CT TR RX1] ** [Cosine of gamma angle];
+	[CT TR RX1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RY1] = [CT TR YT]; [CT TR RY1] ** [Cosine of gamma angle];
+	[CT TR RY1] -- [CT TR AUX0];
+	?? [CT TR RZ1] < [ZClipping plane]
+		-> CT Project Second Vertex;
+	[CT TR VF1] = 1;
+	[CT TR VVCOUNT]+;
+
+"CT Project Second Vertex"
+	[CT TR X] = [CT TR X2]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [CT TR Y2]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [CT TR Z2]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR RZ2] = [CT TR ZT]; [CT TR RZ2] ** [Cosine of alpha angle];
+	[CT TR RZ2] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RX2] = [CT TR XT]; [CT TR RX2] ** [Cosine of gamma angle];
+	[CT TR RX2] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RY2] = [CT TR YT]; [CT TR RY2] ** [Cosine of gamma angle];
+	[CT TR RY2] -- [CT TR AUX0];
+	?? [CT TR RZ2] < [ZClipping plane]
+		-> CT Project Third Vertex;
+	[CT TR VF2] = 1;
+	[CT TR VVCOUNT]+;
+
+"CT Project Third Vertex"
+	[CT TR X] = [CT TR X3]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [CT TR Y3]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [CT TR Z3]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR RZ3] = [CT TR ZT]; [CT TR RZ3] ** [Cosine of alpha angle];
+	[CT TR RZ3] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RX3] = [CT TR XT]; [CT TR RX3] ** [Cosine of gamma angle];
+	[CT TR RX3] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT TR RY3] = [CT TR YT]; [CT TR RY3] ** [Cosine of gamma angle];
+	[CT TR RY3] -- [CT TR AUX0];
+	?? [CT TR RZ3] < [ZClipping plane]
+		-> CT Check If At Least One Vertex Is Visible;
+	[CT TR VF3] = 1;
+	[CT TR VVCOUNT]+;
+	-> CT Ok At Least One Vertex Is Visible;
+
+"CT Check If At Least One Vertex Is Visible"
+	? [CT TR VVCOUNT] > 0 -> CT Ok At Least One Vertex Is Visible;
+	leave;
+
+"CT Ok At Least One Vertex Is Visible"
+
+      ( Calculating normal vector of the triangle,
+	for basic hidden surface removal and for shading. )
+
+      ( Step 1: compute two vectors relative to the third vertex.
+	The two vectors are AUX1;AUX2;AUX3 and AUX4;AUX5;AUX6. )
+
+	[CT TR AUX1] = [CT TR X2]; [CT TR AUX1] -- [CT TR X3];
+	[CT TR AUX2] = [CT TR Y2]; [CT TR AUX2] -- [CT TR Y3];
+	[CT TR AUX3] = [CT TR Z2]; [CT TR AUX3] -- [CT TR Z3];
+	[CT TR AUX4] = [CT TR X1]; [CT TR AUX4] -- [CT TR X3];
+	[CT TR AUX5] = [CT TR Y1]; [CT TR AUX5] -- [CT TR Y3];
+	[CT TR AUX6] = [CT TR Z1]; [CT TR AUX6] -- [CT TR Z3];
+
+      ( Step 2: calculate their cross-product, result is AUX7;AUX8;AUX9.
+	The cross product of vectors AUX1;AUX2;AUX3 and AUX4;AUX5;AUX6
+	is called the "surface compound vector". Later, it will be
+	normalized so that its components will fit the range -1/+1,
+	and the final vector will be the "surface normal vector". )
+
+	[CT TR AUX7] = [CT TR AUX2]; [CT TR AUX7] ** [CT TR AUX6];
+	[CT TR AUX0] = [CT TR AUX5]; [CT TR AUX0] ** [CT TR AUX3];
+	[CT TR AUX7] -- [CT TR AUX0];
+
+	[CT TR AUX8] = [CT TR AUX3]; [CT TR AUX8] ** [CT TR AUX4];
+	[CT TR AUX0] = [CT TR AUX6]; [CT TR AUX0] ** [CT TR AUX1];
+	[CT TR AUX8] -- [CT TR AUX0];
+
+	[CT TR AUX9] = [CT TR AUX1]; [CT TR AUX9] ** [CT TR AUX5];
+	[CT TR AUX0] = [CT TR AUX4]; [CT TR AUX0] ** [CT TR AUX2];
+	[CT TR AUX9] -- [CT TR AUX0];
+
+      ( Before step 3: checking if surface is actually visible.
+	This check is performed on the sign of the dot product
+	between current camera coordinates and the third vertex.
+	We assume the surface is visible when the result of the
+	dot product is positive or null. If it's negative, the
+	surface is not considered visible because it means the
+	camera is watching the "rear" side of the triangle.
+	Remember every polygon has only ONE visible side,
+	unless the DOUBLE FACE flag has been specified. )
+
+	A = [Camera X];
+	A -- [CT TR X3];
+	A ** [CT TR AUX7];
+	B = [Camera Y];
+	B -- [CT TR Y3];
+	B ** [CT TR AUX8];
+	C = [Camera Z];
+	C -- [CT TR Z3];
+	C ** [CT TR AUX9];
+	A ++ B;
+	A ++ C;
+	[CT Current Side] = 1f;
+	?? A > 0f -> CT Surface Is Visible;
+	[CT Current Side] = minus 1f;
+	? [CT Feature] + DOUBLE FACE -> CT Surface Is Visible;
+	leave;
+
+      ( Step 3: normalize compound vector, giving the normal vector.
+	This step is NOT performed unless polygon needs shading, since
+	the normal vector is only used for calculating surface shading.
+	Since normalization of a vector needs dividing its components
+	for the vector's modulus, and since the vector modulus needs a
+	square root operation to be calculated, and since square root
+	is usually quite slow, you see why it's skipped when possible... )
+
+"CT Surface Is Visible"
+	? [CT Feature] - APPLY SHADING -> CT Skip Normal Vector Calculation;
+	? [CT Parents] = NULL -> CT Normal vector as is;
+
+      ( Before normalizing, when polygon has parent vertexs for mappings,
+	set X1..3;Y1..3;Z1..3 to the parent vertexs (they'll be used in
+	tables) and calculate normal vector starting from parent vertexs. )
+
+	A = [CT Parents];
+	[CT TR X1] = [A plus 0];
+	[CT TR Y1] = [A plus 1];
+	[CT TR Z1] = [A plus 2];
+	[CT TR X2] = [A plus 3];
+	[CT TR Y2] = [A plus 4];
+	[CT TR Z2] = [A plus 5];
+	[CT TR X3] = [A plus 6];
+	[CT TR Y3] = [A plus 7];
+	[CT TR Z3] = [A plus 8];
+
+	[CT TR AUX1] = [CT TR X2]; [CT TR AUX1] -- [CT TR X3];
+	[CT TR AUX2] = [CT TR Y2]; [CT TR AUX2] -- [CT TR Y3];
+	[CT TR AUX3] = [CT TR Z2]; [CT TR AUX3] -- [CT TR Z3];
+	[CT TR AUX4] = [CT TR X1]; [CT TR AUX4] -- [CT TR X3];
+	[CT TR AUX5] = [CT TR Y1]; [CT TR AUX5] -- [CT TR Y3];
+	[CT TR AUX6] = [CT TR Z1]; [CT TR AUX6] -- [CT TR Z3];
+
+	[CT TR AUX7] = [CT TR AUX2]; [CT TR AUX7] ** [CT TR AUX6];
+	[CT TR AUX0] = [CT TR AUX5]; [CT TR AUX0] ** [CT TR AUX3];
+	[CT TR AUX7] -- [CT TR AUX0];
+
+	[CT TR AUX8] = [CT TR AUX3]; [CT TR AUX8] ** [CT TR AUX4];
+	[CT TR AUX0] = [CT TR AUX6]; [CT TR AUX0] ** [CT TR AUX1];
+	[CT TR AUX8] -- [CT TR AUX0];
+
+	[CT TR AUX9] = [CT TR AUX1]; [CT TR AUX9] ** [CT TR AUX5];
+	[CT TR AUX0] = [CT TR AUX4]; [CT TR AUX0] ** [CT TR AUX2];
+	[CT TR AUX9] -- [CT TR AUX0];
+
+"CT Normal vector as is"
+	A = [CT TR AUX7]; A ** [CT TR AUX7];
+	B = [CT TR AUX8]; B ** [CT TR AUX8];
+	C = [CT TR AUX9]; C ** [CT TR AUX9];
+	A ++ B;
+	A ++ C;
+	/~ A;
+	[CT TR AUX0] = 1f; [CT TR AUX0] // A;
+	[CT TR AUX7] ** [CT TR AUX0];
+	[CT TR AUX8] ** [CT TR AUX0];
+	[CT TR AUX9] ** [CT TR AUX0];
+
+      ( Preserving reference vectors for texture mapping and other effects.
+	They must be preserved because they will be influenced by later
+	calculations, when performing Z-clipping, while texture's borders
+	must obviously NOT be clipped that way...
+	Reference vectors may also be different from the actual vertexs,
+	when the polygon is grouped with others. In this last case, the
+	[CT Parents] vertexs are re-calculated and used as reference.
+	It's not performed for plain color filling and pure transparency,
+	since in these cases there's no need for the UV space indexes. )
+
+"CT Skip Normal Vector Calculation"
+	? [CT Feature] -
+		APPLY SHADING plus APPLY TEXTURE plus DEPTH BUFFERING
+			-> CT Skip Reference Vectors;
+
+	? [CT Parents] != NULL -> CT Calculate parents vertexs;
+	[CT RE RX1] = [CT TR RX1];
+	[CT RE RY1] = [CT TR RY1];
+	[CT RE RZ1] = [CT TR RZ1];
+	[CT RE RX2] = [CT TR RX2];
+	[CT RE RY2] = [CT TR RY2];
+	[CT RE RZ2] = [CT TR RZ2];
+	[CT RE RX3] = [CT TR RX3];
+	[CT RE RY3] = [CT TR RY3];
+	[CT RE RZ3] = [CT TR RZ3];
+	-> CT Skip Reference Vectors;
+
+"CT Calculate parents vertexs"
+	E = [CT Parents];
+	[CT TR X] = [E plus 0]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [E plus 1]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [E plus 2]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT RE RZ1] = [CT TR ZT]; [CT RE RZ1] ** [Cosine of alpha angle];
+	[CT RE RZ1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RX1] = [CT TR XT]; [CT RE RX1] ** [Cosine of gamma angle];
+	[CT RE RX1] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RY1] = [CT TR YT]; [CT RE RY1] ** [Cosine of gamma angle];
+	[CT RE RY1] -- [CT TR AUX0];
+	[CT TR X] = [E plus 3]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [E plus 4]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [E plus 5]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT RE RZ2] = [CT TR ZT]; [CT RE RZ2] ** [Cosine of alpha angle];
+	[CT RE RZ2] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RX2] = [CT TR XT]; [CT RE RX2] ** [Cosine of gamma angle];
+	[CT RE RX2] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RY2] = [CT TR YT]; [CT RE RY2] ** [Cosine of gamma angle];
+	[CT RE RY2] -- [CT TR AUX0];
+	[CT TR X] = [E plus 6]; [CT TR X] -- [Camera X];
+	[CT TR Y] = [E plus 7]; [CT TR Y] -- [Camera Y];
+	[CT TR Z] = [E plus 8]; [CT TR Z] -- [Camera Z];
+	[CT TR AUX0] = [CT TR Z]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR XT] = [CT TR X]; [CT TR XT] ** [Cosine of beta angle];
+	[CT TR XT] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR X]; [CT TR AUX0] ** [Sine of beta angle];
+	[CT TR ZT] = [CT TR Z]; [CT TR ZT] ** [Cosine of beta angle];
+	[CT TR ZT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR Y]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT RE RZ3] = [CT TR ZT]; [CT RE RZ3] ** [Cosine of alpha angle];
+	[CT RE RZ3] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR ZT]; [CT TR AUX0] ** [Sine of alpha angle];
+	[CT TR YT] = [CT TR Y]; [CT TR YT] ** [Cosine of alpha angle];
+	[CT TR YT] -- [CT TR AUX0];
+	[CT TR AUX0] = [CT TR YT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RX3] = [CT TR XT]; [CT RE RX3] ** [Cosine of gamma angle];
+	[CT RE RX3] ++ [CT TR AUX0];
+	[CT TR AUX0] = [CT TR XT]; [CT TR AUX0] ** [Sine of gamma angle];
+	[CT RE RY3] = [CT TR YT]; [CT RE RY3] ** [Cosine of gamma angle];
+	[CT RE RY3] -- [CT TR AUX0];
+
+      ( Performing case-sensitive Z-clipping.
+	Don't ask how it works. It's an incredible piece of code
+	and would require I-dunno-how-many-megabytes to explain...
+	It reacts to many different situations, where 1 or 2 vertexs
+	are visible. Especially, when 2 vertexs are visible, the final
+	figure is no longer a triangle - it's got 4 vertexs - and thus,
+	it's splitted in two triangles for the rest of the code to work
+	properly... er, I have the C++ version if someone's interested.
+	If, instead, you don't wanna mess your head understanding this,
+	skip to "CT No need to clip" and just let this piece of code
+	do the work for you. I guarantee it's fast enough. )
+
+      ( If all vertexs, 3, are visible, no need for Z-clipping, at all. )
+
+"CT Skip Reference Vectors"
+	? [CT TR VVCOUNT] = 3 -> CT No need to clip;
+
+      ( If two vertexs are visible, go to "CT internal21" to split...
+	Otherwise, it means only 1 vertex is visible,
+	and we'll check which vertex... )
+
+	? [CT TR VVCOUNT] = 2 -> CT internal21;
+
+      ( If vertex 1 is visible, recalculate vertexs 2 and 3.
+	Otherwise, go to "CT internal22"... )
+
+	? [CT TR VF1] = 0 -> CT internal22;
+
+	A = [ZClipping plane]; A -- [CT TR RZ1];
+	B = [CT TR RZ2]; B -- [CT TR RZ1];
+	A // B;
+	C = [CT TR RX2]; C -- [CT TR RX1]; C ** A; C ++ [CT TR RX1];
+	D = [CT TR RY2]; D -- [CT TR RY1]; D ** A; D ++ [CT TR RY1];
+	[CT TR RX2] = C;
+	[CT TR RY2] = D;
+	[CT TR RZ2] = [ZClipping plane];
+
+	A = [ZClipping plane]; A -- [CT TR RZ1];
+	B = [CT TR RZ3]; B -- [CT TR RZ1];
+	A // B;
+	C = [CT TR RX3]; C -- [CT TR RX1]; C ** A; C ++ [CT TR RX1];
+	D = [CT TR RY3]; D -- [CT TR RY1]; D ** A; D ++ [CT TR RY1];
+	[CT TR RX3] = C;
+	[CT TR RY3] = D;
+	[CT TR RZ3] = [ZClipping plane];
+
+	-> CT No need to clip;
+
+"CT internal22"
+
+      ( If vertex 2 is visible, recalculate vertexs 1 and 3.
+	Otherwise, go to "CT internal23"... )
+
+	? [CT TR VF2] = 0 -> CT internal23;
+
+	A = [ZClipping plane]; A -- [CT TR RZ2];
+	B = [CT TR RZ1]; B -- [CT TR RZ2];
+	A // B;
+	C = [CT TR RX1]; C -- [CT TR RX2]; C ** A; C ++ [CT TR RX2];
+	D = [CT TR RY1]; D -- [CT TR RY2]; D ** A; D ++ [CT TR RY2];
+	[CT TR RX1] = C;
+	[CT TR RY1] = D;
+	[CT TR RZ1] = [ZClipping plane];
+
+	A = [ZClipping plane]; A -- [CT TR RZ2];
+	B = [CT TR RZ3]; B -- [CT TR RZ2];
+	A // B;
+	C = [CT TR RX3]; C -- [CT TR RX2]; C ** A; C ++ [CT TR RX2];
+	D = [CT TR RY3]; D -- [CT TR RY2]; D ** A; D ++ [CT TR RY2];
+	[CT TR RX3] = C;
+	[CT TR RY3] = D;
+	[CT TR RZ3] = [ZClipping plane];
+
+	-> CT No need to clip;
+
+"CT internal23"
+
+      ( If vertex 3 is visible, recalculate vertexs 1 and 2.
+	There's no real need to check [CT TR VF3] because previous
+	conditions were entered if only 1 vertex was visible.
+	At this point, that vertex was neither vertex 1, nor vertex 2.
+	So, it must obviously be vertex 3. )
+
+	A = [ZClipping plane]; A -- [CT TR RZ3];
+	B = [CT TR RZ1]; B -- [CT TR RZ3];
+	A // B;
+	C = [CT TR RX1]; C -- [CT TR RX3]; C ** A; C ++ [CT TR RX3];
+	D = [CT TR RY1]; D -- [CT TR RY3]; D ** A; D ++ [CT TR RY3];
+	[CT TR RX1] = C;
+	[CT TR RY1] = D;
+	[CT TR RZ1] = [ZClipping plane];
+
+	A = [ZClipping plane]; A -- [CT TR RZ3];
+	B = [CT TR RZ2]; B -- [CT TR RZ3];
+	A // B;
+	C = [CT TR RX2]; C -- [CT TR RX3]; C ** A; C ++ [CT TR RX3];
+	D = [CT TR RY2]; D -- [CT TR RY3]; D ** A; D ++ [CT TR RY3];
+	[CT TR RX2] = C;
+	[CT TR RY2] = D;
+	[CT TR RZ2] = [ZClipping plane];
+
+	-> CT No need to clip;
+
+"CT internal21"
+
+      ( When the flow gets here, there is only one vertex which is
+	not visible, while the other two are visible. So, checks are
+	performed to find out the invisible one. )
+
+      ( The paragraph below is executed if vertex 1 is NOT visible.
+	If, instead, it's visible, the flow jumps to "CT internal24". )
+
+	? [CT TR VF1] = 1 -> CT internal24;
+
+      ( Vertex 1 is not visible.
+	Now split the triangle. To split, it uses an "anchor" vertex,
+	whose X and Y coordinates are varying, while its Z is always
+	equal to "Distance of projection plane", so the anchor vertex's
+	Z coordinate is not even mentioned as a separate variable. )
+
+	A = [ZClipping plane]; A -- [CT TR RZ3];
+	B = [CT TR RZ1]; B -- [CT TR RZ3];
+	A // B;
+	C = [CT TR RX1]; C -- [CT TR RX3]; C ** A; C ++ [CT TR RX3];
+	D = [CT TR RY1]; D -- [CT TR RY3]; D ** A; D ++ [CT TR RY3];
+	[CT TR ANCHOR X] = C;
+	[CT TR ANCHOR Y] = D;
+
+	A = [ZClipping plane]; A -- [CT TR RZ2];
+	B = [CT TR RZ1]; B -- [CT TR RZ2];
+	A // B;
+	C = [CT TR RX1]; C -- [CT TR RX2]; C ** A; C ++ [CT TR RX2];
+	D = [CT TR RY1]; D -- [CT TR RY2]; D ** A; D ++ [CT TR RY2];
+	[CT TR RX1] = C;
+	[CT TR RY1] = D;
+	[CT TR RZ1] = [ZClipping plane];
+
+	A = [Distance from projection plane]; A // [CT TR RZ2];
+	B = [CT TR RX2]; B ** A; B ++ [Viewport center X]; [CT TR SX1A] = B;
+	C = [CT TR RY2]; C ** A; C ++ [Viewport center Y]; [CT TR SY1A] = C;
+
+	A = [Distance from projection plane]; A // [CT TR RZ3];
+	B = [CT TR RX3]; B ** A; B ++ [Viewport center X]; [CT TR SX2A] = B;
+	C = [CT TR RY3]; C ** A; C ++ [Viewport center Y]; [CT TR SY2A] = C;
+
+	A = [CT TR ANCHOR X]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX3A] = A;
+	A = [CT TR ANCHOR Y]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY3A] = A;
+
+	A = [CT TR RX1]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX1B] = A;
+	A = [CT TR RY1]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY1B] = A;
+
+	[CT TR SX2B] = [CT TR SX1A];
+	[CT TR SY2B] = [CT TR SY1A];
+	[CT TR SX3B] = [CT TR SX3A];
+	[CT TR SY3B] = [CT TR SY3A];
+
+	-> CT Zclipping done;
+
+"CT internal24"
+
+      ( The paragraph below is executed if vertex 2 is NOT visible.
+	If, instead, it's visible, the flow jumps to "CT internal25". )
+
+	? [CT TR VF2] = 1 -> CT internal25;
+
+	A = [ZClipping plane]; A -- [CT TR RZ1];
+	B = [CT TR RZ2]; B -- [CT TR RZ1];
+	A // B;
+	C = [CT TR RX2]; C -- [CT TR RX1]; C ** A; C ++ [CT TR RX1];
+	D = [CT TR RY2]; D -- [CT TR RY1]; D ** A; D ++ [CT TR RY1];
+	[CT TR ANCHOR X] = C;
+	[CT TR ANCHOR Y] = D;
+
+	A = [ZClipping plane]; A -- [CT TR RZ3];
+	B = [CT TR RZ2]; B -- [CT TR RZ3];
+	A // B;
+	C = [CT TR RX2]; C -- [CT TR RX3]; C ** A; C ++ [CT TR RX3];
+	D = [CT TR RY2]; D -- [CT TR RY3]; D ** A; D ++ [CT TR RY3];
+	[CT TR RX2] = C;
+	[CT TR RY2] = D;
+	[CT TR RZ2] = [ZClipping plane];
+
+	A = [CT TR RX2]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX1A] = A;
+	A = [CT TR RY2]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY1A] = A;
+
+	A = [Distance from projection plane]; A // [CT TR RZ3];
+	B = [CT TR RX3]; B ** A; B ++ [Viewport center X]; [CT TR SX2A] = B;
+	C = [CT TR RY3]; C ** A; C ++ [Viewport center Y]; [CT TR SY2A] = C;
+
+	A = [CT TR ANCHOR X]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX3A] = A;
+	A = [CT TR ANCHOR Y]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY3A] = A;
+
+	A = [Distance from projection plane]; A // [CT TR RZ1];
+	B = [CT TR RX1]; B ** A; B ++ [Viewport center X]; [CT TR SX1B] = B;
+	C = [CT TR RY1]; C ** A; C ++ [Viewport center Y]; [CT TR SY1B] = C;
+
+	[CT TR SX2B] = [CT TR SX2A];
+	[CT TR SY2B] = [CT TR SY2A];
+	[CT TR SX3B] = [CT TR SX3A];
+	[CT TR SY3B] = [CT TR SY3A];
+
+	-> CT Zclipping done;
+
+"CT internal25"
+
+      ( The paragraph below is executed if vertex 3 is NOT visible.
+	Check is not really performed, since to get here there's the
+	need for both vertexs 1 and 2 to be visible, and 2 vertexs
+	must be visible [not 1 or 3 or zero]. It's then clear that
+	if the flow gets here, the third vertex is the one not being
+	visible. )
+
+	A = [ZClipping plane]; A -- [CT TR RZ1];
+	B = [CT TR RZ3]; B -- [CT TR RZ1];
+	A // B;
+	C = [CT TR RX3]; C -- [CT TR RX1]; C ** A; C ++ [CT TR RX1];
+	D = [CT TR RY3]; D -- [CT TR RY1]; D ** A; D ++ [CT TR RY1];
+	[CT TR ANCHOR X] = C;
+	[CT TR ANCHOR Y] = D;
+
+	A = [ZClipping plane]; A -- [CT TR RZ2];
+	B = [CT TR RZ3]; B -- [CT TR RZ2];
+	A // B;
+	C = [CT TR RX3]; C -- [CT TR RX2]; C ** A; C ++ [CT TR RX2];
+	D = [CT TR RY3]; D -- [CT TR RY2]; D ** A; D ++ [CT TR RY2];
+	[CT TR RX3] = C;
+	[CT TR RY3] = D;
+	[CT TR RZ3] = [ZClipping plane];
+
+	A = [Distance from projection plane]; A // [CT TR RZ1];
+	B = [CT TR RX1]; B ** A; B ++ [Viewport center X]; [CT TR SX1A] = B;
+	C = [CT TR RY1]; C ** A; C ++ [Viewport center Y]; [CT TR SY1A] = C;
+
+	A = [Distance from projection plane]; A // [CT TR RZ2];
+	B = [CT TR RX2]; B ** A; B ++ [Viewport center X]; [CT TR SX2A] = B;
+	C = [CT TR RY2]; C ** A; C ++ [Viewport center Y]; [CT TR SY2A] = C;
+
+	A = [CT TR ANCHOR X]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX3A] = A;
+	A = [CT TR ANCHOR Y]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY3A] = A;
+
+	[CT TR SX1B] = [CT TR SX2A];
+	[CT TR SY1B] = [CT TR SY2A];
+
+	A = [CT TR RX3]; A ** [Anchor depth constant]; A ++ [Viewport center X]; [CT TR SX2B] = A;
+	A = [CT TR RY3]; A ** [Anchor depth constant]; A ++ [Viewport center Y]; [CT TR SY2B] = A;
+
+	[CT TR SX3B] = [CT TR SX3A];
+	[CT TR SY3B] = [CT TR SY3A];
+
+	-> CT Zclipping done;
+
+"CT Zclipping done"
+
+      ( Z-clipping has been performed.
+	If the flow gets here, the triangle had 2 vertexs visible
+	and one vertex was not visible. The figure has been splitted
+	in two triangles whose screen coordinates are:
+	    Triangle A:
+		CT TR SX1A; CT TR SY1A; 	- first vertex
+		CT TR SX2A; CT TR SY3A; 	- second vertex
+		CT TR SX3A; CT TR SY2A; 	- third vertex
+	    Triangle B:
+		CT TR SX1B; CT TR SY1B; 	- first vertex
+		CT TR SX2B; CT TR SY3B; 	- second vertex
+		CT TR SX3B; CT TR SY2B; 	- third vertex )
+
+      ( Converting coordinates of Triangle A to integer. )
+
+	[CT TR SX1A integer] =, [CT TR SX1A];
+	[CT TR SY1A integer] =, [CT TR SY1A];
+	[CT TR SX2A integer] =, [CT TR SX2A];
+	[CT TR SY2A integer] =, [CT TR SY2A];
+	[CT TR SX3A integer] =, [CT TR SX3A];
+	[CT TR SY3A integer] =, [CT TR SY3A];
+
+      ( Check triangle A against right bound of current viewport. )
+
+	? [CT TR SX1A integer] <= [Viewport right] -> CT internal26;
+	? [CT TR SX2A integer] <= [Viewport right] -> CT internal26;
+	? [CT TR SX3A integer] <= [Viewport right] -> CT internal26;
+	-> CT Try second triangle;
+
+      ( Check triangle A against left bound of current viewport. )
+
+"CT internal26"
+	? [CT TR SX1A integer] >= [Viewport left] -> CT internal27;
+	? [CT TR SX2A integer] >= [Viewport left] -> CT internal27;
+	? [CT TR SX3A integer] >= [Viewport left] -> CT internal27;
+	-> CT Try second triangle;
+
+      ( Check triangle A against bottom bound of current viewport. )
+
+"CT internal27"
+	? [CT TR SY1A integer] <= [Viewport bottom] -> CT internal28;
+	? [CT TR SY2A integer] <= [Viewport bottom] -> CT internal28;
+	? [CT TR SY3A integer] <= [Viewport bottom] -> CT internal28;
+	-> CT Try second triangle;
+
+      ( Check triangle A against top bound of current viewport. )
+
+"CT internal28"
+	? [CT TR SY1A integer] >= [Viewport top] -> CT internal29;
+	? [CT TR SY2A integer] >= [Viewport top] -> CT internal29;
+	? [CT TR SY3A integer] >= [Viewport top] -> CT internal29;
+	-> CT Try second triangle;
+
+      ( Triangle A has at least one vertex laying inside the viewport.
+	So fill triangle A. )
+
+"CT internal29"
+	=> CT Prepare to fill;
+	[CT TF X1] = [CT TR SX1A];
+	[CT TF Y1] = [CT TR SY1A];
+	[CT TF X2] = [CT TR SX2A];
+	[CT TF Y2] = [CT TR SY2A];
+	[CT TF X3] = [CT TR SX3A];
+	[CT TF Y3] = [CT TR SY3A];
+	=> CT Fill triangle;
+
+"CT Try second triangle"
+
+      ( Either triangle A has been traced, or none of its vertex were
+	visible from the viewport. In any cases, now try with triangle B.
+	Now: convert Triangle B's coordinates to integer.
+	Then check for visibility of triangle B.
+	And finally, eventually go tracing it. )
+
+	[CT TR SX1B integer] =, [CT TR SX1B];
+	[CT TR SY1B integer] =, [CT TR SY1B];
+	[CT TR SX2B integer] =, [CT TR SX2B];
+	[CT TR SY2B integer] =, [CT TR SY2B];
+	[CT TR SX3B integer] =, [CT TR SX3B];
+	[CT TR SY3B integer] =, [CT TR SY3B];
+
+      ( Check triangle B against right bound of current viewport. )
+
+	? [CT TR SX1B integer] <= [Viewport right] -> CT internal30;
+	? [CT TR SX2B integer] <= [Viewport right] -> CT internal30;
+	? [CT TR SX3B integer] <= [Viewport right] -> CT internal30;
+	leave;
+
+      ( Check triangle B against left bound of current viewport. )
+
+"CT internal30"
+	? [CT TR SX1B integer] >= [Viewport left] -> CT internal31;
+	? [CT TR SX2B integer] >= [Viewport left] -> CT internal31;
+	? [CT TR SX3B integer] >= [Viewport left] -> CT internal31;
+	leave;
+
+      ( Check triangle B against bottom bound of current viewport. )
+
+"CT internal31"
+	? [CT TR SY1B integer] <= [Viewport bottom] -> CT internal32;
+	? [CT TR SY2B integer] <= [Viewport bottom] -> CT internal32;
+	? [CT TR SY3B integer] <= [Viewport bottom] -> CT internal32;
+	leave;
+
+      ( Check triangle B against top bound of current viewport. )
+
+"CT internal32"
+	? [CT TR SY1B integer] >= [Viewport top] -> CT internal33;
+	? [CT TR SY2B integer] >= [Viewport top] -> CT internal33;
+	? [CT TR SY3B integer] >= [Viewport top] -> CT internal33;
+	leave;
+
+      ( Triangle B has at least one vertex laying inside the viewport.
+	So fill triangle B, and once filled, return to the caller,
+	since there's nothing left to do. )
+
+"CT internal33"
+	=> CT Prepare to fill;
+	[CT TF X1] = [CT TR SX1B];
+	[CT TF Y1] = [CT TR SY1B];
+	[CT TF X2] = [CT TR SX2B];
+	[CT TF Y2] = [CT TR SY2B];
+	[CT TF X3] = [CT TR SX3B];
+	[CT TF Y3] = [CT TR SY3B];
+	-> CT Fill triangle;
+
+      ( The following paragraph takes control when there's no need
+	for clipping one or more vertexs in respect to the screen's
+	plane [Z-clipping]. It just performs perspective conversions
+	and fills the triangle. Now, since the case when triangles
+	do not need Z-clipping is also the most frequent case, it's
+	been optimized in such a way that the perspective corrections
+	are abandoned as soon as the subroutine realizes the triangle
+	will not be visible. )
+
+"CT No need to clip"
+
+      ( Pre-calculating inverse of depth for each vertex. )
+
+	[CT TR AUX1] = [Distance from projection plane]; [CT TR AUX1] // [CT TR RZ1];
+	[CT TR AUX2] = [Distance from projection plane]; [CT TR AUX2] // [CT TR RZ2];
+	[CT TR AUX3] = [Distance from projection plane]; [CT TR AUX3] // [CT TR RZ3];
+
+      ( Calculating coordinates. )
+
+	[CT TR SX1A] = [CT TR AUX1]; [CT TR SX1A] ** [CT TR RX1];
+	[CT TR SX2A] = [CT TR AUX2]; [CT TR SX2A] ** [CT TR RX2];
+	[CT TR SX3A] = [CT TR AUX3]; [CT TR SX3A] ** [CT TR RX3];
+	[CT TR SY1A] = [CT TR AUX1]; [CT TR SY1A] ** [CT TR RY1];
+	[CT TR SY2A] = [CT TR AUX2]; [CT TR SY2A] ** [CT TR RY2];
+	[CT TR SY3A] = [CT TR AUX3]; [CT TR SY3A] ** [CT TR RY3];
+
+      ( Converting coordinates of Triangle A to integer. )
+
+	[CT TR SX1A integer] =, [CT TR SX1A];
+	[CT TR SY1A integer] =, [CT TR SY1A];
+	[CT TR SX2A integer] =, [CT TR SX2A];
+	[CT TR SY2A integer] =, [CT TR SY2A];
+	[CT TR SX3A integer] =, [CT TR SX3A];
+	[CT TR SY3A integer] =, [CT TR SY3A];
+
+      ( Checking X coordinates against right bound of viewport.
+	"relative" versions of the viewport's bounds are those not
+	including the viewport's center coordinates. That's needed
+	because *only* if the vertexs are visible we will be adding
+	the viewport's center coordinates. "relative" versions are
+	always in the range -viewport width to +viewport width and
+	-viewport height to +viewport height. )
+
+	? [CT TR SX1A integer] <= [Viewport right relative] -> CT internal34;
+	? [CT TR SX2A integer] <= [Viewport right relative] -> CT internal34;
+	? [CT TR SX3A integer] <= [Viewport right relative] -> CT internal34;
+	leave;
+
+      ( Checking X coordinates against left bound of viewport. )
+
+"CT internal34"
+
+	? [CT TR SX1A integer] >= [Viewport left relative] -> CT internal35;
+	? [CT TR SX2A integer] >= [Viewport left relative] -> CT internal35;
+	? [CT TR SX3A integer] >= [Viewport left relative] -> CT internal35;
+	leave;
+
+      ( Ok. At least horizontally, the triangle is in the visible range.
+	Now check Y coordinates against vertical bounds. )
+
+"CT internal35"
+
+      ( Checking Y coordinates against bottom bound of viewport. )
+
+	? [CT TR SY1A integer] <= [Viewport bottom relative] -> CT internal36;
+	? [CT TR SY2A integer] <= [Viewport bottom relative] -> CT internal36;
+	? [CT TR SY3A integer] <= [Viewport bottom relative] -> CT internal36;
+	leave;
+
+      ( Checking Y coordinates against top bound of viewport. )
+
+"CT internal36"
+
+	? [CT TR SY1A integer] >= [Viewport top relative] -> CT internal37;
+	? [CT TR SY2A integer] >= [Viewport top relative] -> CT internal37;
+	? [CT TR SY3A integer] >= [Viewport top relative] -> CT internal37;
+	leave;
+
+      ( Filling triangle A as the only triangle.
+	Don't forget to add center coordinates now. )
+
+"CT internal37"
+	=> CT Prepare to fill;
+	[CT TF X1] = [CT TR SX1A]; [CT TF X1] ++ [Viewport center X];
+	[CT TF Y1] = [CT TR SY1A]; [CT TF Y1] ++ [Viewport center Y];
+	[CT TF X2] = [CT TR SX2A]; [CT TF X2] ++ [Viewport center X];
+	[CT TF Y2] = [CT TR SY2A]; [CT TF Y2] ++ [Viewport center Y];
+	[CT TF X3] = [CT TR SX3A]; [CT TF X3] ++ [Viewport center X];
+	[CT TF Y3] = [CT TR SY3A]; [CT TF Y3] ++ [Viewport center Y];
+	=> CT Fill triangle;
+	leave;
+
+      ( This is the end of the main subroutine.
+	Another two subroutines are needed at this point
+	to prepare lookup tables and fill the triangle. )
+
+      ( The following subroutine prepares some lookup tables.
+	The [CT Ready to fill] flag is here because the subroutine
+	may be called twice, when the Z-clipping procedure splits the
+	triangle in two. But since the reference vectors would be the
+	same, it's not requested to calculate the tables twice. )
+
+"CT Prepare to fill"
+	? [CT Ready to fill] = NO -> CT Ok prepare;
+	leave;
+
+      ( Calculating vectors to UV space and all needed lookup tables.
+	Nothing is performed for plain color fill and pure transparency. )
+
+"CT Ok prepare"
+	? [CT Feature] -
+		APPLY SHADING plus APPLY TEXTURE plus DEPTH BUFFERING
+			-> CT Skip all lookup tables;
+
+      ( Applying mip-mapping to surface details.
+	Mip-mapping applies to ALL lookup tables,
+	and of course to the surface's texture map. )
+
+	[CT Midpoint X] =  [CT RE RX1];
+	[CT Midpoint X] ++ [CT RE RX2];
+	[CT Midpoint X] ++ [CT RE RX3];
+	[CT Midpoint X] ** 0.33333333f;
+
+	[CT Midpoint Y] =  [CT RE RY1];
+	[CT Midpoint Y] ++ [CT RE RY2];
+	[CT Midpoint Y] ++ [CT RE RY3];
+	[CT Midpoint Y] ** 0.33333333f;
+
+	[CT Midpoint Z] =  [CT RE RZ1];
+	[CT Midpoint Z] ++ [CT RE RZ2];
+	[CT Midpoint Z] ++ [CT RE RZ3];
+	[CT Midpoint Z] ** 0.33333333f;
+
+	A = [CT Midpoint X]; ||A||;
+	B = [CT Midpoint Y]; ||B||;
+	C = [CT Midpoint Z]; ||C||;
+
+	[CT Approximated Distance] =  A;
+	[CT Approximated Distance] ++ B;
+	[CT Approximated Distance] ++ C;
+	[CT Approximated Distance] ** 0.33333333f;
+
+	A = [Mipmapping Latency]; A ** [CT Scaling];
+	[CT Approximated Distance] -- A;
+
+	?? [CT Approximated Distance] >= 0f -> CT In Mipmapping;
+	[CT Approximated Distance] = 0f;
+
+    "CT In Mipmapping"
+	[CT Mipmapping Correction] = [Mipmapping Factor];
+	[CT Mipmapping Correction] ** [CT Scaling];
+
+	[CT Mipmapping Factor now] =  [CT Approximated Distance];
+	[CT Mipmapping Factor now] // [CT Mipmapping Correction];
+	[CT Mipmapping Factor now] ++ 1f;
+
+	[CT MM Cols] ,= [CT SP Cols];
+	[CT MM Cols] // [CT Mipmapping Factor now];
+	[CT MM Cols] =, [CT MM Cols];
+	? [CT MM Cols] > 0 -> CT MM Cols range ok;
+	[CT MM Cols] = 1;
+
+    "CT MM Cols range ok"
+	[CT MM Rows] ,= [CT SP Rows];
+	[CT MM Rows] // [CT Mipmapping Factor now];
+	[CT MM Rows] =, [CT MM Rows];
+	? [CT MM Rows] > 0 -> CT MM Rows range ok;
+	[CT MM Rows] = 1;
+
+      ( Calculating texture's alignment tables.
+	The following loops are avoided when no texturing is required. )
+
+    "CT MM Rows range ok"
+	? [CT Feature] - APPLY TEXTURE -> CT Skip Alignment Tables;
+
+	? [CT Feature] + FLIP TEXTURE HORIZONTALLY -> CT FTH;
+	A = 0;
+	B = 0f;
+	C = [CT Mipmapping Factor now];
+	E = [CT MM Cols];
+    "CT Make Horizontal Alignment Table"
+	D =, B;
+	? D < [CT SP Cols] -> CT HTAB index ok;
+	D = [CT SP Cols]; D-;
+    "CT HTAB index ok"
+	D + [CT Texture];
+	[A plus CT HTAB] = D;
+	B ++ C;
+	A+;
+    E ^ CT Make Horizontal Alignment Table;
+	-> CT NOFTH;
+    "CT FTH"
+	A = 0;
+	B ,= [CT SP Cols]; B -- [CT Mipmapping Factor now];
+	C = [CT Mipmapping Factor now];
+	E = [CT MM Cols];
+    "CT Make Flipped Horizontal Alignment Table"
+	D =, B;
+	? D >= ZERO -> CT FTH HTAB index ok;
+	D = ZERO;
+    "CT FTH HTAB index ok"
+	D + [CT Texture];
+	[A plus CT HTAB] = D;
+	B -- C;
+	A+;
+    E ^ CT Make Flipped Horizontal Alignment Table;
+    "CT NOFTH"
+	? [CT Feature] + FLIP TEXTURE VERTICALLY -> CT FTV;
+	A = 0;
+	B = 0f;
+	C = [CT Mipmapping Factor now];
+	E = [CT MM Rows];
+    "CT Make Vertical Alignment Table"
+	D =, B;
+	? D < [CT SP Rows] -> CT VTAB index ok;
+	D = [CT SP Rows]; D-;
+    "CT VTAB index ok"
+	D * [CT SP Algn];
+	[A plus CT VTAB] = D;
+	B ++ C;
+	A+;
+    E ^ CT Make Vertical Alignment Table;
+	-> CT NOFTV;
+    "CT FTV"
+	A = 0;
+	B ,= [CT SP Rows]; B -- [CT Mipmapping Factor now];
+	C = [CT Mipmapping Factor now];
+	E = [CT MM Rows];
+    "CT Make Flipped Vertical Alignment Table"
+	D =, B;
+	? D >= ZERO -> CT FTV VTAB index ok;
+	D = ZERO;
+    "CT FTV VTAB index ok"
+	D * [CT SP Algn];
+	[A plus CT VTAB] = D;
+	B -- C;
+	A+;
+    E ^ CT Make Flipped Vertical Alignment Table;
+    "CT NOFTV"
+
+      ( Now calculating surface's UV-space partitions.
+	The UV-space is so called because it's given by two vectors,
+	called U and V, which are calculated in such a way that they
+	will follow two sides of the triangle seen in 3D.
+	These two vectors are used for a lot of things, because they
+	map the bi-dimensional space of the texture to the other
+	bi-dimensional space of the REAL polygon, the one whose
+	vertexs were calculated by rotating, translating and finally
+	projecting the coordinates perspectively. Basically, you give
+	the two coordinates in the display, and thanks to U and V you
+	can calculate the corresponding coordinates on the "virtual"
+	plane aligned with the 3D surface. )
+
+"CT Skip Alignment Tables"
+	[CT FP Cols] ,= [CT MM Cols];
+	[CT FP Rows] ,= [CT MM Rows];
+	[CT Inv Cols] = 1f; [CT Inv Cols] // [CT FP Cols];
+	[CT Inv Rows] = 1f; [CT Inv Rows] // [CT FP Rows];
+	[CT Gou Cols] = [CT Inv Cols]; [CT Gou Cols] ** 60000f;
+	[CT Gou Rows] = [CT Inv Rows]; [CT Gou Rows] ** 60000f;
+
+      ( Apply anti-aliasing on reference vertexs. )
+
+	[CT RE RX1] -- [CT Midpoint X]; [CT RE RX1] ** [Antialiasing Factor]; [CT RE RX1] ++ [CT Midpoint X];
+	[CT RE RY1] -- [CT Midpoint Y]; [CT RE RY1] ** [Antialiasing Factor]; [CT RE RY1] ++ [CT Midpoint Y];
+	[CT RE RZ1] -- [CT Midpoint Z]; [CT RE RZ1] ** [Antialiasing Factor]; [CT RE RZ1] ++ [CT Midpoint Z];
+	[CT RE RX2] -- [CT Midpoint X]; [CT RE RX2] ** [Antialiasing Factor]; [CT RE RX2] ++ [CT Midpoint X];
+	[CT RE RY2] -- [CT Midpoint Y]; [CT RE RY2] ** [Antialiasing Factor]; [CT RE RY2] ++ [CT Midpoint Y];
+	[CT RE RZ2] -- [CT Midpoint Z]; [CT RE RZ2] ** [Antialiasing Factor]; [CT RE RZ2] ++ [CT Midpoint Z];
+	[CT RE RX3] -- [CT Midpoint X]; [CT RE RX3] ** [Antialiasing Factor]; [CT RE RX3] ++ [CT Midpoint X];
+	[CT RE RY3] -- [CT Midpoint Y]; [CT RE RY3] ** [Antialiasing Factor]; [CT RE RY3] ++ [CT Midpoint Y];
+	[CT RE RZ3] -- [CT Midpoint Z]; [CT RE RZ3] ** [Antialiasing Factor]; [CT RE RZ3] ++ [CT Midpoint Z];
+
+      ( Now compute UV-space cross-reference vectors M and N:
+	M - horizontal vector U - is calculated from vertex 1 to vertex 2;
+	N - vertical vector V - is calculated from vertex 1 to vertex 3;
+	Apparently M goes from vertex 2 to vertex 1: changing the verse
+	of one of the vectors here is needed for later calculations [see
+	rule of the right hand]. In reality, vector U effectively goes
+	from vertex 1 to vertex 2. Try it out and you will see... )
+
+	[CT TR MX] = [CT RE RX1]; [CT TR MX] -- [CT RE RX2];
+	[CT TR MY] = [CT RE RY1]; [CT TR MY] -- [CT RE RY2];
+	[CT TR MZ] = [CT RE RZ1]; [CT TR MZ] -- [CT RE RZ2];
+
+	[CT TR NX] = [CT RE RX3]; [CT TR NX] -- [CT RE RX1];
+	[CT TR NY] = [CT RE RY3]; [CT TR NY] -- [CT RE RY1];
+	[CT TR NZ] = [CT RE RZ3]; [CT TR NZ] -- [CT RE RZ1];
+
+      ( Compute cross-product of vectors M and N.
+	Vectors H and V will map the two final U and V vectors.
+	Vector O [OX;OY;OZ] will represent the origin of the UV space,
+	based at vertex 1. I'm just explaining this to help understanding
+	which way the texture will be mapped to the triangle's surface: its
+	upper-left corner will be vertex 1 on the triangle, its upper-right
+	corner will be vertex 2 on the triangle, and its lower-left corner
+	will be vertex 3 on the triangle. And also remember, the triangle's
+	visible surface will be the one from which the vertexs appear in
+	clockwise order.
+	Talking of the calculations below, it's not only a cross-product,
+	because there are some optimizations in it. For instance, it would
+	not be needed to divide the compounds by [Distance from projection
+	plane], DPP, but it's made here to avoid making it later, while
+	rendering. And even that division has been optimized: since DPP
+	is constant [at least for a single frame] I have already calculated
+	the inverse of DPP and now performing a multiplication rather than
+	a division [which is well known to be a slow operation]. )
+
+	A = [CT RE RZ1]; A ** [CT TR NY];
+	B = [CT RE RY1]; B ** [CT TR NZ];
+	A -- B; A ** [Inverse of DPP]; [CT HX] = A; [CT HX] ** [CT FP Cols];
+
+	A = [CT RE RZ1]; A ** [CT TR MY];
+	B = [CT RE RY1]; B ** [CT TR MZ];
+	A -- B; A ** [Inverse of DPP]; [CT HY] = A; [CT HY] ** [CT FP Rows];
+
+	A = [CT TR MZ]; A ** [CT TR NY];
+	B = [CT TR MY]; B ** [CT TR NZ];
+	A -- B; A ** [Inverse of DPP]; [CT HZ] = A;
+
+	A = [CT RE RX1]; A ** [CT TR NZ];
+	B = [CT RE RZ1]; B ** [CT TR NX];
+	A -- B; A ** [Inverse of DPP]; [CT VX] = A; [CT VX] ** [CT FP Cols];
+
+	A = [CT RE RX1]; A ** [CT TR MZ];
+	B = [CT RE RZ1]; B ** [CT TR MX];
+	A -- B; A ** [Inverse of DPP]; [CT VY] = A; [CT VY] ** [CT FP Rows];
+
+	A = [CT TR MX]; A ** [CT TR NZ];
+	B = [CT TR MZ]; B ** [CT TR NX];
+	A -- B; A ** [Inverse of DPP]; [CT VZ] = A;
+
+	A = [CT RE RY1]; A ** [CT TR NX];
+	B = [CT RE RX1]; B ** [CT TR NY];
+	A -- B; [CT OX] = A; [CT OX] ** [CT FP Cols];
+
+	A = [CT RE RY1]; A ** [CT TR MX];
+	B = [CT RE RX1]; B ** [CT TR MY];
+	A -- B; [CT OY] = A; [CT OY] ** [CT FP Rows];
+
+	A = [CT TR MY]; A ** [CT TR NX];
+	B = [CT TR MX]; B ** [CT TR NY];
+	A -- B; [CT OZ] = A;
+
+      ( Applying conversions to spanning mode. )
+
+	[CT Direction of spanning] = FORWARD SPANS;
+	? [CT Feature] - USE SPANNER -> CT Not spanning;
+
+	A = [CT HZ];
+	A ** [CT Current Side];
+	?? A > 0f -> CT Forward spans;
+
+    (CT Reverse spans)
+	[CT HX]++--; [CT HY]++--; [CT HZ]++--;
+	[CT Direction of spanning] = REVERSE SPANS;
+
+	A = [CT Feature]; A & 1111b;
+	[CT Filler subroutine pointer] = [A plus CT Reverse spanner routing table];
+
+    "CT Forward spans"
+	[CT HX per span] = [CT HX]; [CT HX per span] ** [CT FP Span size];
+	[CT HY per span] = [CT HY]; [CT HY per span] ** [CT FP Span size];
+	[CT HZ per span] = [CT HZ]; [CT HZ per span] ** [CT FP Span size];
+
+      ( The next paragraph will setup depth tables for the Z-buffering,
+	if Z-buffering is required from the [CT Feature] bitmask.
+	What Pitagora uses is REAL Z-buffering. I'm clearly stating this
+	because there are a number of coders who were mislead about the
+	Z-buffering technique by a common APPROXIMATION of the Z-buffering
+	procedure. That approximated procedure says: "interpolate the depth
+	of scanline's edges by calculating a delta such as:
+	    deltaZ = [Z of right edge - Z of left edge] / scanline length
+	and starting from Z of left edge add the delta each pixel you trace
+	and you'll find the Z of the said pixel".
+	THIS IS WRONG. You're applying Z calculation on the physical shape
+	of the polygon [from edge to edge] but the shape has ALREADY been
+	perspectively projected on the screen, so it's nothing more than a
+	2-dimensional shape. The depth of the real 3D surface doesn't vary
+	in an uniform way throught the scanline.
+	The application of such an approximated procedure will look right
+	when treating small polygons far away from the viewpoint, because
+	there wouldn't be high distortions due to perspective projection.
+	In other circumstances, when you're near a polygon or when the
+	polygons cover very large areas of the screen, the approximated
+	procedure will totally mess up with the real depth of each pixel.
+	Just try, if you know of some engines applying this approximation. )
+
+      ( But then, which is the REAL Z-buffering, the one procedure allowing
+	calculation of the correct depth of each pixel?? It's not difficult:
+	you have to compute a couple of tables, one for each of the two axis
+	of the texture plane, and store the depth of the pixels by making
+	out two of those "deltas". In our case, we take the depth of vertexs
+	1 to 2 and interpolate it throught [CT SP Cols] steps, making out the
+	"horizontal Z-lookup table". Then take the depth of vertexs 1 to 3,
+	and repeat interpolation, obtaining the "vertical Z-lookup table".
+	When rendering, take the texture's indexes U and V, and use U as the
+	index for the horizontal Z-lookup table and V as the index for the
+	vertical Z-lookup table. Sum the values of the two tables, add the
+	depth of the UV-space's origin - the depth of vertex 1 in this case -
+	and you'll find the EXACT depth of the current pixel.
+	of course you can optimize: you can avoid adding the origin's depth
+	by including this value in one of the tables [you choose which - me,
+	I have chosen the horizontal one]. This will give REAL, PIXEL-TO-
+	PIXEL depth buffering, no matter how you're looking at polygons. )
+
+      ( Disadvantages? Well, of course the resolution of depth buffering is
+	limited to the resolution of the texture, given by [CT SP Cols/Rows].
+	Also this procedure takes always the same time, no matter how many
+	pixels are covered on the screen by the shape of the polygon [and
+	thus, no matter how far is the polygon]. The first problem can be
+	solved by interpolating depth from one index to the next ones, but
+	it takes a lot of tricks and I think it's not worth the effort, cos
+	the scenery looks quite good anyways. The second problem has a very
+	simple solution you'd have to implement in any cases when looking
+	for a fast engine: MIP-MAPPING.
+	Mip-mapping is the concept of reducing the nubmer of surface
+	partitions for the UV space, in respect to the distance of the
+	polygon from the viewpoint. Mip-mapping is a default setting
+	for Pitagora's rendering: it can't be forcely turned off, but
+	if you really have to render at full detail level, maybe for a
+	very simple scenery with few polygons, you can set its control
+	variables [Mipmapping factor] and [Mipmapping latency] to very
+	high values, causing mip-mapping to have no effect.
+	By the way, Pitagora's mip-mapping does not need additional
+	"smaller" copies of the textures when applied to textured
+	polygons: we're using the most advanced technique, which is
+	scalable real-time mip-mapping. It's fully automated: just
+	setup the control variables for good, and it will work... )
+
+"CT Not spanning"
+	? [CT Feature] - DEPTH BUFFERING -> CT Skip Depth Tables;
+
+	[CT ZHS] = [CT RE RZ2]; [CT ZHS] -- [CT RE RZ1]; [CT ZHS] ** [CT Inv Cols];
+	[CT ZVS] = [CT RE RZ3]; [CT ZVS] -- [CT RE RZ1]; [CT ZVS] ** [CT Inv Rows];
+
+	A = 0;
+	B = [CT RE RZ1];
+	D = [CT MM Cols];
+    "CT Compute ZLookup Horizontal Table"
+	[A plus ZH Table] =, B;
+	B ++ [CT ZHS];
+	A+;
+    D ^ CT Compute ZLookup Horizontal Table;
+
+	A = 0;
+	B = 0f;
+	D = [CT MM Rows];
+    "CT Compute ZLookup Vertical Table"
+	[A plus ZV Table] =, B;
+	B ++ [CT ZVS];
+	A+;
+    D ^ CT Compute ZLookup Vertical Table;
+
+      ( Calculating shading lookup tables,
+	of course only if surface needs shading.
+	It's perspectively-corrected Gouraud shading,
+	performed as bi-linear interpolation of three normals.
+	It's indicated for small surfaces, at least for now...
+	radiosity shading may be implemented in near future
+	versions, even if the Gouraud will still be the only
+	one able to fully run in real-time. )
+
+"CT Skip Depth Tables"
+	? [CT Feature] - APPLY SHADING -> CT Skip shading;
+
+      ( Calculate diffuse light.
+	Target point is the triangle's first vertex:
+	diffuse light hits the surface considerably only when
+	the light source is very near to the target. However,
+	contrary to ambient light, diffuse light still can't
+	hit the surface when it's not facing the light source. )
+
+	[CT SH Target X] = [CT TR X1];
+	[CT SH Target Y] = [CT TR Y1];
+	[CT SH Target Z] = [CT TR Z1];
+	=> CT Theta Diffusion;
+
+      ( Make out direct reflection for first vertex.
+	This vertex is normally more relevant than the other two,
+	because it's considered as the reference vertex for the
+	lookup tables. Gouraud shading is usually performed on
+	4-vertexs polygons, but this is a triangle. In practice,
+	the first vertex is added to the tables twice. So, the
+	right thing to do is dividing its light components by 2.
+	This would spread the light more evenly on the surface. )
+
+	[CT SH Target X] = [CT TR X1];
+	[CT SH Target Y] = [CT TR Y1];
+	[CT SH Target Z] = [CT TR Z1];
+	=> CT Theta Reflection;
+	[CT Light R] ++ [CT Diffuse R];
+	[CT Light G] ++ [CT Diffuse G];
+	[CT Light B] ++ [CT Diffuse B];
+	=> CT Theta Calibration;
+
+	? [CT Feature] - UNIFORM SHADING -> CT Variable Shading;
+
+	E =, [CT Light B]; E > 1; A = E;
+	E =, [CT Light G]; E > 1; E < 8; A | E;
+	E =, [CT Light R]; E > 1; E < 16; A | E;
+
+	D = 0;
+    "CT Compute Horizontal Shading Lookup Table for Uniform Shading"
+	[D plus SH Table] = A;
+    D+; ? D < [CT MM Cols] -> CT Compute Horizontal Shading Lookup Table for Uniform Shading;
+	D = 0;
+    "CT Compute Vertical Shading Lookup Table for Uniform Shading"
+	[D plus SV Table] = A;
+    D+; ? D < [CT MM Rows] -> CT Compute Vertical Shading Lookup Table for Uniform Shading;
+
+	-> CT Uniform Shading;
+
+    "CT Variable Shading"
+	[CT Light R] ** 0.5f; [CT Gouraud R1] = [CT Light R];
+	[CT Light G] ** 0.5f; [CT Gouraud G1] = [CT Light G];
+	[CT Light B] ** 0.5f; [CT Gouraud B1] = [CT Light B];
+
+      ( Make out direct reflection for second vertex. )
+
+	[CT SH Target X] = [CT TR X2];
+	[CT SH Target Y] = [CT TR Y2];
+	[CT SH Target Z] = [CT TR Z2];
+	=> CT Theta Diffusion;
+	[CT SH Target X] = [CT TR X2];
+	[CT SH Target Y] = [CT TR Y2];
+	[CT SH Target Z] = [CT TR Z2];
+	=> CT Theta Reflection;
+	[CT Light R] ++ [CT Diffuse R];
+	[CT Light G] ++ [CT Diffuse G];
+	[CT Light B] ++ [CT Diffuse B];
+	=> CT Theta Calibration;
+	[CT Gouraud R2] = [CT Light R];
+	[CT Gouraud G2] = [CT Light G];
+	[CT Gouraud B2] = [CT Light B];
+
+      ( Make out direct reflection for third vertex. )
+
+	[CT SH Target X] = [CT TR X3];
+	[CT SH Target Y] = [CT TR Y3];
+	[CT SH Target Z] = [CT TR Z3];
+	=> CT Theta Diffusion;
+	[CT SH Target X] = [CT TR X3];
+	[CT SH Target Y] = [CT TR Y3];
+	[CT SH Target Z] = [CT TR Z3];
+	=> CT Theta Reflection;
+	[CT Light R] ++ [CT Diffuse R];
+	[CT Light G] ++ [CT Diffuse G];
+	[CT Light B] ++ [CT Diffuse B];
+	=> CT Theta Calibration;
+	[CT Gouraud R3] = [CT Light R];
+	[CT Gouraud G3] = [CT Light G];
+	[CT Gouraud B3] = [CT Light B];
+
+      ( Interpolate first to second [horizontal lookup table],
+	interpolate first to third [vertical lookup table],
+	fit vertical table to range. )
+
+	[CT Gouraud Max H Red] = [CT Gouraud R1];
+	?? [CT Gouraud Max H Red] > [CT Gouraud R2] -> CT Max H Red found;
+	[CT Gouraud Max H Red] = [CT Gouraud R2];
+    "CT Max H Red found"
+	[CT Gouraud Max H Green] = [CT Gouraud G1];
+	?? [CT Gouraud Max H Green] > [CT Gouraud G2] -> CT Max H Green found;
+	[CT Gouraud Max H Green] = [CT Gouraud G2];
+    "CT Max H Green found"
+	[CT Gouraud Max H Blue] = [CT Gouraud B1];
+	?? [CT Gouraud Max H Blue] > [CT Gouraud B2] -> CT Max H Blue found;
+	[CT Gouraud Max H Blue] = [CT Gouraud B2];
+    "CT Max H Blue found"
+	[CT Gouraud Max H Red] =, [CT Gouraud Max H Red];
+	[CT Gouraud Max H Red] < 16;
+	[CT Gouraud Max H Green] =, [CT Gouraud Max H Green];
+	[CT Gouraud Max H Green] < 8;
+	[CT Gouraud Max H Blue] =, [CT Gouraud Max H Blue];
+
+	A =, [CT Gouraud R2]; B =, [CT Gouraud R1]; A < 16; B < 16;
+	A - B; A / [CT MM Cols]; [CT Gouraud Delta H Red] = A;
+
+	A =, [CT Gouraud R3]; B =, [CT Gouraud R1]; A < 16; B < 16;
+	A - B; A / [CT MM Rows]; [CT Gouraud Delta V Red] = A;
+
+	A =, [CT Gouraud G2]; B =, [CT Gouraud G1]; A < 16; B < 16;
+	A - B; A / [CT MM Cols]; [CT Gouraud Delta H Green] = A;
+
+	A =, [CT Gouraud G3]; B =, [CT Gouraud G1]; A < 16; B < 16;
+	A - B; A / [CT MM Rows]; [CT Gouraud Delta V Green] = A;
+
+	A =, [CT Gouraud B2]; B =, [CT Gouraud B1]; A < 16; B < 16;
+	A - B; A / [CT MM Cols]; [CT Gouraud Delta H Blue] = A;
+
+	A =, [CT Gouraud B3]; B =, [CT Gouraud B1]; A < 16; B < 16;
+	A - B; A / [CT MM Rows]; [CT Gouraud Delta V Blue] = A;
+
+	[CT Gouraud Gamma H Red]   =, [CT Gouraud R1]; [CT Gouraud Gamma H Red] < 16;
+	[CT Gouraud Gamma V Red]   =, [CT Gouraud R1]; [CT Gouraud Gamma V Red] < 16;
+	[CT Gouraud Gamma H Green] =, [CT Gouraud G1]; [CT Gouraud Gamma H Green] < 16;
+	[CT Gouraud Gamma V Green] =, [CT Gouraud G1]; [CT Gouraud Gamma V Green] < 16;
+	[CT Gouraud Gamma H Blue]  =, [CT Gouraud B1]; [CT Gouraud Gamma H Blue] < 16;
+	[CT Gouraud Gamma V Blue]  =, [CT Gouraud B1]; [CT Gouraud Gamma V Blue] < 16;
+
+	D = 0;
+	A = [CT Gouraud Gamma H Blue];
+	B = [CT Gouraud Gamma H Green];
+	C = [CT Gouraud Gamma H Red];
+    "CT Compute Shading Horizontal Lookup Table"
+	E = A; E > 16;		 [D plus SH Table] = E;
+	E = B; E > 8; E & FF00h; [D plus SH Table] | E;
+	E = C; E & FF0000h;	 [D plus SH Table] | E;
+	A + [CT Gouraud Delta H Blue];
+	B + [CT Gouraud Delta H Green];
+	C + [CT Gouraud Delta H Red];
+    D+; ? D < [CT MM Cols] -> CT Compute Shading Horizontal Lookup Table;
+
+	D = 0;
+    "CT Compute Shading Vertical Lookup Table"
+	B = [CT Gouraud Gamma V Blue]; B > 16;
+	[CT Gouraud Gamma V Blue] + [CT Gouraud Delta V Blue];
+	C = [CT Gouraud Max H Blue]; C + B; ? C < 100h -> CT SH Blue in range;
+	B = FFh; B - [CT Gouraud Max H Blue];
+    "CT SH Blue in range"
+	[D plus SV Table] = B;
+	B = [CT Gouraud Gamma V Green]; B > 8; B & FF00h;
+	[CT Gouraud Gamma V Green] + [CT Gouraud Delta V Green];
+	C = [CT Gouraud Max H Green]; C + B; ? C < 10000h -> CT SH Green in range;
+	B = FF00h; B - [CT Gouraud Max H Green];
+    "CT SH Green in range"
+	[D plus SV Table] | B;
+	B = [CT Gouraud Gamma V Red]; B & FF0000h;
+	[CT Gouraud Gamma V Red] + [CT Gouraud Delta V Red];
+	C = [CT Gouraud Max H Red]; C + B; ? C < 1000000h -> CT SH Red in range;
+	B = FF0000h; B - [CT Gouraud Max H Red];
+    "CT SH Red in range"
+	[D plus SV Table] | B;
+    D+; ? D < [CT MM Rows] -> CT Compute Shading Vertical Lookup Table;
+
+      ( Adjusting shading lookup tables for faster merging with the
+	texture map, blending effects, or the primary surface color... )
+
+    "CT Uniform Shading"
+	? [CT Feature] - APPLY TEXTURE -> CT Not For Texturing;
+
+	C = 1;		(texturing only)
+	D = FEFEFEh;
+	-> CT Check If Also Blending Active;
+
+    "CT Not For Texturing"
+	[CT HalfBright] = [CT Texture];
+	[CT HalfBright] & FEFEFEh;
+	[CT HalfBright] > 1;
+
+	C = 1;		(primary only)
+	D = FEFEFEh;
+
+    "CT Check If Also Blending Active"
+	? [CT Feature] - ALPHA BLEND -> CT Adjust SLTs;
+
+	[CT HalfBright] & FEFEFEh;
+	[CT HalfBright] > 1;
+
+	C = 2;		((texturing or primary)+shading+blending)
+	D = FCFCFCh;
+
+    "CT Adjust SLTs"
+	A = 0;
+    "CT Adjust Shading Horizontal Lookup Table"
+	B = [A plus SH Table];
+	B & D; B > C;
+	[A plus SH Table] = B;
+    A+; ? A < [CT MM Cols] -> CT Adjust Shading Horizontal Lookup Table;
+
+	A = 0;
+    "CT Adjust Shading Vertical Lookup Table"
+	B = [A plus SV Table];
+	B & D; B > C;
+	[A plus SV Table] = B;
+    A+; ? A < [CT MM Rows] -> CT Adjust Shading Vertical Lookup Table;
+
+      ( Done. Shading lookup tables are ready.
+	Now skipping these other internal subroutines... )
+
+	-> CT Skip shading;
+
+      ( This is an internal subroutine making out something known as
+	the "theta" value of the shading procedure. This value is the
+	dot product of two vectors: one vector goes from the lightsource
+	to the target point, the other is the triangle's normal vector.
+	The normalized dot product of those two vectors [normalized means
+	that the three compounds of the vector are in range -1 to +1]
+	is pratically the "tilt" between the surface's normal vector and
+	the direction from which the light is coming. The result - theta -
+	is also ranged from -1 to +1. Negatives are ignored: they mean
+	the light source is not facing the visible side of the surface,
+	while positives are directly proportional to the amount of light
+	received by the target vertex. Of course, something more must be
+	considered: the power of the lightsource may not be "infinite",
+	and so there's the need of some further calculations to fit the
+	intensity of the light to the power of the lightsource, depending
+	directly on the distance between the lightsource and the target. )
+
+"CT Theta Reflection"
+
+      ( Zero all intensities to begin calculating accumulation of
+	light from all light sources [there may be more than one]. )
+
+	[CT Light R] = 0f;
+	[CT Light G] = 0f;
+	[CT Light B] = 0f;
+
+      ( Get number of light sources, A, from the table.
+	Get pointer to first light source's parameters, B. )
+
+	B = [CT Shaders];
+	A = [B];
+	B+;
+
+      ( Compute straight vector from light source [B+0];[B+1];[B+2]
+	to target [CT SH Target X];[CT SH Target Y];[CT SH Target Z] )
+
+    "CT Reflection Next Light Source"
+	[CT SH VX] = [B plus 0]; [CT SH VX] -- [CT SH Target X];
+	[CT SH VY] = [B plus 1]; [CT SH VY] -- [CT SH Target Y];
+	[CT SH VZ] = [B plus 2]; [CT SH VZ] -- [CT SH Target Z];
+
+	[CT SH VX Square] = [CT SH VX]; [CT SH VX Square] ** [CT SH VX];
+	[CT SH VY Square] = [CT SH VY]; [CT SH VY Square] ** [CT SH VY];
+	[CT SH VZ Square] = [CT SH VZ]; [CT SH VZ Square] ** [CT SH VZ];
+
+	E =  [CT SH VX Square];
+	E ++ [CT SH VY Square];
+	E ++ [CT SH VZ Square];
+	/~ E; D = 1.0f; D // E;
+
+	[CT SH VX] ** D;
+	[CT SH VY] ** D;
+	[CT SH VZ] ** D;
+
+      ( Compute dot product between [CT SH VX];[CT SH VY];[CT SH VZ]
+	and surface's normal [CT TR AUX7];[CT TR AUX8];[CT TR AUX9] )
+
+	[CT SH VX] ** [CT TR AUX7];
+	[CT SH VY] ** [CT TR AUX8];
+	[CT SH VZ] ** [CT TR AUX9];
+
+	[CT Theta Result] =  [CT SH VX];
+	[CT Theta Result] ++ [CT SH VY];
+	[CT Theta Result] ++ [CT SH VZ];
+
+	?? [CT Theta Result] < 0f
+		-> CT Reflected Theta Negative And Surface Not Facing Light Source;
+
+      ( If surface attributes say metal shading,
+	calculate theta square and use that instead of theta. )
+
+	? [CT Feature] - METAL SHADING -> CT Reflection No Metal Shading;
+	[CT Theta Result] ** [CT Theta Result];
+
+    "CT Reflection No Metal Shading"
+	[CT Theta Result] ** [B plus 6];	( [B+6] = light src. power )
+	[CT Theta Result] ** [B plus 7];	( [B+7] = reflection coeff. )
+	[CT Theta Result] ** D; 		( D = inverse of distance )
+	[CT TR AUX1] = [CT Theta Result];
+	[CT TR AUX1] ** [B plus 3];		( [B+3] = red filter )
+	[CT TR AUX2] = [CT Theta Result];
+	[CT TR AUX2] ** [B plus 4];		( [B+4] = green filter )
+	[CT TR AUX3] = [CT Theta Result];
+	[CT TR AUX3] ** [B plus 5];		( [B+5] = blue filter )
+
+      ( Add light received from currently examined light source
+	to the total light hitting the surface... )
+
+	[CT Light R] ++ [CT TR AUX1];
+	[CT Light G] ++ [CT TR AUX2];
+	[CT Light B] ++ [CT TR AUX3];
+
+      ( See if there are other light sources to consider,
+	and advance pointer to the next light source in the table... )
+
+    "CT Reflected Theta Negative And Surface Not Facing Light Source"
+	B + 9;
+	A ^ CT Reflection Next Light Source;
+	leave;
+
+      ( Calculates diffuse light hitting [CT Target X;Y;Z]. )
+
+"CT Theta Diffusion"
+
+      ( Zero all intensities to begin calculating accumulation of
+	light from all light sources [there may be more than one]. )
+
+	[CT Diffuse R] = 0f;
+	[CT Diffuse G] = 0f;
+	[CT Diffuse B] = 0f;
+
+      ( Get number of light sources, A, from the table.
+	Get pointer to light sources' table, B. )
+
+	B = [CT Shaders];
+	A = [B];
+	B+;
+
+      ( Compute straight vector from light source [B+0];[B+1];[B+2]
+	to target [CT SH Target X];[CT SH Target Y];[CT SH Target Z] )
+
+    "CT Diffusion Next Light Source"
+	[CT SH VX] = [B plus 0]; [CT SH VX] -- [CT SH Target X];
+	[CT SH VY] = [B plus 1]; [CT SH VY] -- [CT SH Target Y];
+	[CT SH VZ] = [B plus 2]; [CT SH VZ] -- [CT SH Target Z];
+
+	[CT SH VX Square] = [CT SH VX]; [CT SH VX Square] ** [CT SH VX];
+	[CT SH VY Square] = [CT SH VY]; [CT SH VY Square] ** [CT SH VY];
+	[CT SH VZ Square] = [CT SH VZ]; [CT SH VZ Square] ** [CT SH VZ];
+
+      ( Compute dot product between [CT SH VX];[CT SH VY];[CT SH VZ]
+	and surface's normal [CT TR AUX7];[CT TR AUX8];[CT TR AUX9].
+	The first vector hasn't been normalized, but it doesn't matter
+	when considering diffuse light. )
+
+	[CT SH VX] ** [CT TR AUX7];
+	[CT SH VY] ** [CT TR AUX8];
+	[CT SH VZ] ** [CT TR AUX9];
+
+	[CT Theta Result] =  [CT SH VX];
+	[CT Theta Result] ++ [CT SH VY];
+	[CT Theta Result] ++ [CT SH VZ];
+
+	?? [CT Theta Result] < 0f
+		-> CT Diffuse Theta Negative And Surface Not Facing Light Source;
+
+	E =  [CT SH VX Square];
+	E ++ [CT SH VY Square];
+	E ++ [CT SH VZ Square];
+	/~ E; E // [B plus 6];
+
+	[CT Theta Result] = 1f;
+	[CT Theta Result] -- E;
+
+      ( In reality, the test below means there's no diffuse light when the
+	distance from the light source is greater than the source's power. )
+
+	?? [CT Theta Result] < 0f
+		-> CT Diffuse Theta Negative And Surface Not Facing Light Source;
+
+	? [CT Feature] - METAL SHADING -> CT Diffusion No Metal Shading;
+	[CT Theta Result] ** [CT Theta Result];
+
+    "CT Diffusion No Metal Shading"
+	[CT Theta Result] ** [B plus 8];	( [B+8] = diffusion coeff. )
+	[CT TR AUX1] = [CT Theta Result];
+	[CT TR AUX1] ** [B plus 3];		( [B+3] = red filter )
+	[CT TR AUX2] = [CT Theta Result];
+	[CT TR AUX2] ** [B plus 4];		( [B+4] = green filter )
+	[CT TR AUX3] = [CT Theta Result];
+	[CT TR AUX3] ** [B plus 5];		( [B+5] = blue filter )
+
+      ( Add light received from currently examined light source
+	to the total light hitting the surface... )
+
+	[CT Diffuse R] ++ [CT TR AUX1];
+	[CT Diffuse G] ++ [CT TR AUX2];
+	[CT Diffuse B] ++ [CT TR AUX3];
+
+      ( See if there are other light sources to consider,
+	and advance pointer to the next light source in the table... )
+
+    "CT Diffuse Theta Negative And Surface Not Facing Light Source"
+	B + 9;
+	A ^ CT Diffusion Next Light Source;
+	leave;
+
+      ( Calibrate: multiply intensities by 256 [8 bits per component]
+	and eventually check for overflows, when range is 0 to 255... )
+
+"CT Theta Calibration"
+	[CT Light R] ** 256f;
+	[CT Light G] ** 256f;
+	[CT Light B] ** 256f;
+	?? [CT Light R] <= 255f -> CT Red Shading In Range;
+	[CT Light R] = 255f;
+    "CT Red Shading In Range"
+	?? [CT Light G] <= 255f -> CT Green Shading In Range;
+	[CT Light G] = 255f;
+    "CT Green Shading In Range"
+	?? [CT Light B] <= 255f -> CT Blue Shading In Range;
+	[CT Light B] = 255f;
+    "CT Blue Shading In Range"
+	leave;
+
+      ( Once the renderer is done with shading, there are no other
+	tables to calculate [at least, actually]. So this is the end
+	of the "CT Prepare to fill" subroutine, and the next step will
+	be a call to "CT Fill triangle". Just returning to upper level. )
+
+"CT Skip shading"
+"CT Skip all lookup tables"
+	[CT Ready to fill] = YES;
+	leave;
+
+      ( The one below is an *intelligent* filling procedure.
+	It's like for the Z-clipping. For fastest performance,
+	it doesn't build some kind of list with the edges of
+	the polygon. Because the polygon is always a triangle.
+	So it "simply" examines how vertexs are displaced on the
+	screen, and finds the edges WHILE it fills the shape.
+	Avoiding the long and boring loops to find the edges
+	is an incredible optimization! Ok thanks stop clapping
+	I already know I'm the world's greatest programmer.
+	For the internal workings of this subroutine see the C++
+	version. However, there are basically three ways it calls
+	the vertexs: Top-zero, Bottom-one and Bottom-two, which
+	are called T0, B1 and B2 for short.
+	Top-zero marks the top-most vertex, whose Y coordinate is
+	the lowest. Bottom-two is the bottom-most vertex, having
+	greatest Y. Bottom-one is a crucial point where the deltas
+	to find the edges are to change. Simply, the routine takes
+	a couple of deltas: one, from top-zero to bottom-two, is
+	constant; the other, from top-zero to bottom-one, is to be
+	changed once the first loop ends, and is replaced by the
+	delta from bottom-one to bottom-two...)
+
+"CT Fill triangle"
+
+      ( The filling routine at this point gets entirely 2-D,
+	and the screen coordinates are converted to integer.
+	It's a matter of physical pixels, from now on... )
+
+	[CT TF X1 integer] =, [CT TF X1];
+	[CT TF Y1 integer] =, [CT TF Y1];
+	[CT TF X2 integer] =, [CT TF X2];
+	[CT TF Y2 integer] =, [CT TF Y2];
+	[CT TF X3 integer] =, [CT TF X3];
+	[CT TF Y3 integer] =, [CT TF Y3];
+
+	? [CT TF Y1 integer] != [CT TF Y2 integer] -> CT Find T0B1B2;
+	? [CT TF Y1 integer] != [CT TF Y3 integer] -> CT Find T0B1B2;
+
+      ( This first section is for a very special case,
+	when all the three vertexs are aligned on the same
+	scanline [same Y coordinate]... boring, but needed.
+	Pratically, just finds B1X as the lowest X coordinate,
+	B2X as the highest X coordinate, and fills that single line. )
+
+	[CT TF B1X] = [CT TF X1 integer];
+	? [CT TF X2 integer] >= [CT TF B1X] -> CT Internal01;
+	[CT TF B1X] = [CT TF X2 integer];
+    "CT Internal01"
+	? [CT TF X3 integer] >= [CT TF B1X] -> CT Internal02;
+	[CT TF B1X] = [CT TF X3 integer];
+    "CT Internal02"
+
+	[CT TF B2X] = [CT TF X1 integer];
+	? [CT TF X2 integer] < [CT TF B2X] -> CT Internal03;
+	[CT TF B2X] = [CT TF X2 integer];
+    "CT Internal03"
+	? [CT TF X3 integer] < [CT TF B2X] -> CT Internal04;
+	[CT TF B2X] = [CT TF X3 integer];
+    "CT Internal04"
+
+	[CT LScancode] = [CT TF Y1 integer];
+	[CT Linestart] = [CT TF B1X];
+	[CT Linefinish] = [CT TF B2X];
+
+	-> CT Fill Scanline;
+
+      ( This is the real procedure. )
+
+    "CT Find T0B1B2"
+
+	? [CT TF Y1 integer] > [CT TF Y2 integer] -> CT Internal05;
+	? [CT TF Y1 integer] > [CT TF Y3 integer] -> CT Internal05;
+
+	[CT TF T0X] = [CT TF X1 integer];
+	[CT TF T0Y] = [CT TF Y1 integer];
+
+	? [CT TF Y2 integer] > [CT TF Y3 integer] -> CT Internal06;
+
+	[CT TF B1X] = [CT TF X2 integer];
+	[CT TF B1Y] = [CT TF Y2 integer];
+
+	[CT TF B2X] = [CT TF X3 integer];
+	[CT TF B2Y] = [CT TF Y3 integer];
+
+	-> CT Now fill;
+
+    "CT Internal06"
+
+	[CT TF B1X] = [CT TF X3 integer];
+	[CT TF B1Y] = [CT TF Y3 integer];
+
+	[CT TF B2X] = [CT TF X2 integer];
+	[CT TF B2Y] = [CT TF Y2 integer];
+
+	-> CT Now fill;
+
+    "CT Internal05"
+
+	? [CT TF Y2 integer] > [CT TF Y1 integer] -> CT Internal07;
+	? [CT TF Y2 integer] > [CT TF Y3 integer] -> CT Internal07;
+
+	[CT TF T0X] = [CT TF X2 integer];
+	[CT TF T0Y] = [CT TF Y2 integer];
+
+	? [CT TF Y1 integer] > [CT TF Y3 integer] -> CT Internal08;
+
+	[CT TF B1X] = [CT TF X1 integer];
+	[CT TF B1Y] = [CT TF Y1 integer];
+
+	[CT TF B2X] = [CT TF X3 integer];
+	[CT TF B2Y] = [CT TF Y3 integer];
+
+	-> CT Now fill;
+
+    "CT Internal08"
+
+	[CT TF B1X] = [CT TF X3 integer];
+	[CT TF B1Y] = [CT TF Y3 integer];
+
+	[CT TF B2X] = [CT TF X1 integer];
+	[CT TF B2Y] = [CT TF Y1 integer];
+
+	-> CT Now fill;
+
+    "CT Internal07"
+
+	[CT TF T0X] = [CT TF X3 integer];
+	[CT TF T0Y] = [CT TF Y3 integer];
+
+	? [CT TF Y1] > [CT TF Y2] -> CT Internal09;
+
+	[CT TF B1X] = [CT TF X1 integer];
+	[CT TF B1Y] = [CT TF Y1 integer];
+
+	[CT TF B2X] = [CT TF X2 integer];
+	[CT TF B2Y] = [CT TF Y2 integer];
+
+	-> CT Now fill;
+
+    "CT Internal09"
+
+	[CT TF B1X] = [CT TF X2 integer];
+	[CT TF B1Y] = [CT TF Y2 integer];
+
+	[CT TF B2X] = [CT TF X1 integer];
+	[CT TF B2Y] = [CT TF Y1 integer];
+
+      ( Phew... until now, we only found which vertexs are T0, B1 and B2.
+	T0 is the top-most, B2 is the bottom-most, and B1 is at mid-way.
+	The mechanism looks like a long fragment of code, but it's fast,
+	because it has no loops at all; just a lot of comparisons.
+	Now it can effectively start filling.
+	And here, a couple of loops are needed.
+	One loop traces from T0 to B1, unless they have same Y coordinate.
+	The other loop, always performed, traces from B1 to B2. )
+
+      ( Also the code below applies vertical 2D clipping, especially
+	for when vertex T0 gets out throught the upper side of the
+	viewport, because in that case the deltas [called "Drifts" here]
+	must be updated to account for the "missing" section of the
+	triangle's shape. Horizontal, X clipping, instead, is performed
+	by "CT Fill Scanline", the subroutine called to fill each line. )
+
+    "CT Now fill"
+
+    ( Calculate starting/ending points of first scanline, and begin loops... )
+
+	[CT TF SX] ,= [CT TF T0X];
+	[CT TF EX] ,= [CT TF T0X];
+	[CT LScancode] = [CT TF T0Y];
+
+	A ,= [CT TF B2X]; B ,= [CT TF T0X]; A -- B;
+	C ,= [CT TF B2Y]; D ,= [CT TF T0Y]; C -- D;
+	A // C;
+	[CT TF T0B2 Drift] = A;
+
+	A ,= [CT TF B2X]; B ,= [CT TF B1X]; A -- B;
+	C ,= [CT TF B2Y]; D ,= [CT TF B1Y]; C -- D;
+	A // C;
+	[CT TF B1B2 Drift] = A;
+
+	? [CT TF T0Y] != [CT TF B1Y] -> CT Internal10;
+
+	[CT TF SX] ,= [CT TF B1X];
+
+	? [CT TF T0Y] >= [Viewport top] -> CT Internal11;
+
+	[CT LScancode] = [Viewport top];
+	A = [Viewport top]; A - [CT TF T0Y]; [CT TF Out] ,= A;
+	A = [CT TF Out]; A ** [CT TF B1B2 Drift]; [CT TF SX] ++ A;
+	A = [CT TF Out]; A ** [CT TF T0B2 Drift]; [CT TF EX] ++ A;
+
+    "CT Internal11"
+
+	? [CT TF B2Y] <= [Viewport bottom] -> CT Internal12;
+
+	[CT TF B2Y] = [Viewport bottom];
+
+	-> CT Internal12;
+
+    "CT Internal10"
+
+	A ,= [CT TF B1X]; B ,= [CT TF T0X]; A -- B;
+	C ,= [CT TF B1Y]; D ,= [CT TF T0Y]; C -- D;
+	A // C;
+	[CT TF T0B1 Drift] = A;
+
+	? [CT TF T0Y] >= [Viewport top] -> CT Internal13;
+
+	[CT LScancode] = [Viewport top];
+
+	? [CT TF B1Y] >= [Viewport top] -> CT Internal14;
+
+	A = [Viewport top]; A - [CT TF B1Y];
+	A ,= A; A ** [CT TF B1B2 Drift];
+	[CT TF SX] ,= [CT TF B1X];
+	[CT TF SX] ++ A;
+
+	A = [Viewport top]; A - [CT TF T0Y];
+	A ,= A; A ** [CT TF T0B2 Drift];
+	[CT TF EX] ++ A;
+
+	-> CT Internal13;
+
+    "CT Internal14"
+
+	A = [Viewport top]; A - [CT TF T0Y]; [CT TF Out] ,= A;
+
+	A = [CT TF T0B1 Drift]; A ** [CT TF Out]; [CT TF SX] ++ A;
+	A = [CT TF T0B2 Drift]; A ** [CT TF Out]; [CT TF EX] ++ A;
+
+    "CT Internal13"
+
+	? [CT TF B1Y] <= [Viewport bottom] -> CT Internal15;
+	[CT TF B1Y] = [Viewport bottom];
+
+    "CT Internal15"
+
+	? [CT TF B2Y] <= [Viewport bottom] -> CT Internal16;
+	[CT TF B2Y] = [Viewport bottom];
+
+      ( First loop: trace from T0 to B1. )
+
+    "CT Internal16"
+
+	[CT Linestart] =, [CT TF SX];
+	[CT Linefinish] =, [CT TF EX];
+
+    "CT Internal17"
+
+	? [CT LScancode] >= [CT TF B1Y] -> CT Internal12;
+
+	=> CT Fill Scanline;
+
+	[CT TF SX] ++ [CT TF T0B1 Drift]; [CT Linestart] =, [CT TF SX];
+	[CT TF EX] ++ [CT TF T0B2 Drift]; [CT Linefinish] =, [CT TF EX];
+	[CT LScancode]+;
+
+	-> CT Internal17;
+
+      ( Second loop: trace from B1 to B2. )
+
+    "CT Internal12"
+
+	[CT Linestart] =, [CT TF SX];
+	[CT Linefinish] =, [CT TF EX];
+
+    "CT Internal19"
+
+	? [CT LScancode] >= [CT TF B2Y] -> CT Internal18;
+
+	=> CT Fill Scanline;
+
+	[CT TF SX] ++ [CT TF B1B2 Drift]; [CT Linestart] =, [CT TF SX];
+	[CT TF EX] ++ [CT TF T0B2 Drift]; [CT Linefinish] =, [CT TF EX];
+	[CT LScancode]+;
+
+	-> CT Internal19;
+
+    "CT Internal18"
+
+      ( Fill last scanline, no need to update linestart/linefinish.
+	After that, the whole "cast triangle" subroutine returns. )
+
+	-> CT Fill Scanline;
+
+      ( This is the subroutine filling a single scan line.
+	It gets informations about what to do throught variables:
+		[CT LScancode]		the Y coord of the line
+		[CT Linestart]		one of the edges, X coord
+		[CT Linefinish] 	the other edge, X coord
+	In reality, the edges are not always arranged so that
+	the scan line starts from [CT Linestart] and ends at the
+	other edge. They may be swapped, and eventually clipped
+	'cuz they may get out of the viewport's edges. )
+
+"CT Fill Scanline"
+
+	? [CT Linestart] <= [CT Linefinish] -> CT Edges order is right;
+	A = [CT Linestart]; [CT Linestart] = [CT Linefinish]; [CT Linefinish] = A;
+
+    "CT Edges order is right"
+	[CT Linefinish]+; ( Surface overscan: duplicate last pixel. )
+
+	? [CT Linestart] <= [Viewport right] -> CT H Clip Low;
+	leave;
+
+    "CT H Clip Low"
+
+	? [CT Linefinish] >= [Viewport left] -> CT H Clip High;
+	leave;
+
+    "CT H Clip High"
+
+	? [CT Linestart] >= [Viewport left] -> CT H Clip Left;
+	[CT Linestart] = [Viewport left];
+
+    "CT H Clip Left"
+
+	? [CT Linefinish] <= [Viewport right] -> CT Scan lines filler;
+	[CT Linefinish] = [Viewport right];
+
+      ( Checks are over. Now filling.
+	This first check takes care of filling whole scan lines
+	whenever there's no need for the UV-space and texture mappings.
+	Actually, it's used for plain color filling and pure alpha blend. )
+
+    "CT Scan lines filler"
+	? [CT Feature] +
+		APPLY SHADING plus APPLY TEXTURE plus DEPTH BUFFERING
+			-> CT UVspace needed;
+
+	A = [CT LScancode]; A * [Display Width]; A + [CT Linestart];
+	[CT Remaining pixels] = [CT Linefinish];
+	[CT Remaining pixels] - [CT Linestart];
+	[CT Remaining pixels] +;
+	-> [CT Filler subroutine pointer];
+
+      ( At this point, there's the need to explain how to get the UV
+	indexs from the two vectors, H and V, which were previously
+	computed [see the code after the "CT Ok prepare" label].
+	We assume V and H have been already divided by the DPP,
+	and at this point, basically, the equates are:
+
+	Current X = VX * Y + HX * X + OX;
+	Current Y = VY * Y + HY * X + OY;
+	Current Z = VZ * Y + HZ * X + OZ;
+
+	where:
+
+	HX;HY;HZ	Compounds of the H vector - horizontal variations;
+	VX;VY;VZ	Compounds of the V vector - vertical variations;
+	OX;OY;OZ	Compounds of the O vector - origin...
+
+	and where:
+
+	X		Display X coordinate of pixel to trace;
+	Y		Display Y coordinate of pixel to trace.
+
+	With a little remark: X and Y have been calculated in relation
+	to the center of current viewport. Now, on entry to this subroutine,
+	[CT Linestart] holds the X coordinate of the beginning of the line,
+	[CT Linefinish] holds the X coordinate of the end of the line, and
+	these coordinates are relative to the pixel at 0;0 on the screen.
+	Same is for current Y - which is constant throught the line, and is
+	given by [CT LScancode] - also relative to coordinate 0.
+	So you have to trace, say the first pixel, at
+
+		[CT Linestart];[CT LScancode]
+
+	as if you were to plot a normal pixel,
+	BUT you have to use:
+
+		X = [CT Linestart] - [Viewport center X integer]
+		Y = [CT LScancode] - [Viewport center Y integer]
+
+	as the two X;Y coordinates mentioned above.
+	Ok, now you have Current X; Current Y; Current Z.
+	The process to convert the three coordinates to the UV-space
+	indexes [giving the corresponding coordinates on the texture]
+	is the same used to do perspective transforms:
+
+		U = [ Current X * [CT FP Cols] ] / Current Z
+		V = [ Current Y * [CT FP Rows] ] / Current Z
+
+	And U;V are the coordinates on the texture, the final indexes...
+	Once we made them integer, we can use them as pointers
+	to the lookup tables - we already calculated - to find
+	the depth of the pixel, the color of the texture over it,
+	and the amount of light received. Currently, here's how
+	to use all the tables made by the previous routines...
+
+		Texture pixel pointer = [CT VTAB plus V] + U
+		Depth of this pixel = [ZH Table plus U] + [ZV Table plus V]
+		Amount of light = [SH Table plus U] + [SV Table plus V]
+
+	This concludes explanations for what concerns the theory
+	around UV-space vectors. In PRACTICE, see how fillers work... )
+
+    "CT UVspace needed"
+
+      ( Now calculating startup UVspace indexes and
+	other scan line filling parameters... )
+
+	? [CT Direction of spanning] = FORWARD SPANS -> CT Spanning forward;
+
+	[UVspace X] = [Viewport center X integer]; [UVspace X] - [CT Linefinish];
+	[UVspace Y] = [CT LScancode]; [UVspace Y] - [Viewport center Y integer];
+	[UVspace X] ,= [UVspace X];
+	[UVspace Y] ,= [UVspace Y];
+
+	A = [CT LScancode]; A * [Display Width]; A + [CT Linefinish];
+	[CT FB Pointer] = A;
+
+	-> CT Spanning in reverse;
+
+    "CT Spanning forward"
+
+	[UVspace X] = [CT Linestart]; [UVspace X] - [Viewport center X integer];
+	[UVspace Y] = [CT LScancode]; [UVspace Y] - [Viewport center Y integer];
+	[UVspace X] ,= [UVspace X];
+	[UVspace Y] ,= [UVspace Y];
+
+	A = [CT LScancode]; A * [Display Width]; A + [CT Linestart];
+	[CT FB Pointer] = A;
+
+    "CT Spanning in reverse"
+	B = [UVspace X]; B ** [CT HX];
+	C = [UVspace Y]; C ** [CT VX];
+	B ++ C; B ++ [CT OX]; [Current X] = B;
+	B = [UVspace X]; B ** [CT HY];
+	C = [UVspace Y]; C ** [CT VY];
+	B ++ C; B ++ [CT OY]; [Current Y] = B;
+	B = [UVspace X]; B ** [CT HZ];
+	C = [UVspace Y]; C ** [CT VZ];
+	B ++ C; B ++ [CT OZ]; [Current Z] = B;
+
+	[CT Remaining pixels] = [CT Linefinish];
+	[CT Remaining pixels] - [CT Linestart];
+	[CT Remaining pixels] +;
+
+      ( And finally, here's the proper code to fill the scanline.
+	Naturally, it goes to a different filler depending on the
+	features for current polygon, the four least significant
+	bits of the [CT Feature] mask. What kind of loop is used
+	also depends on the "USE SPANNER" flag and on the fact that
+	the polygon may be a floor or ceiling seen at zero gamma angle:
+	in this case the Z coordinate is constant and the spanners are
+	used anyways; just that the whole scan line takes 1 only span. )
+
+	? [CT Fast Floor] = YES -> CT Fast Floor Spanning;
+	? [CT Feature] + USE SPANNER -> CT Standard Spanning;
+	-> [CT Filler subroutine pointer];
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+		    ( Inter-span code: highly optimized )
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+    "CT Fast Floor Spanning"
+	[CT K Depth] = 65536f;
+	[CT K Depth] // [Current Z];
+	[Current Z] ++ [CT HZ per span];
+	B = [CT K Depth];
+	[CT U Index] = B;
+	[CT V Index] = B;
+	[CT U Index] ** [Current X];
+	[CT V Index] ** [Current Y];
+	[Current X] ++ [CT HX per span];
+	[Current Y] ++ [CT HY per span];
+	[CT K Depth] = 65536f;
+	[CT K Depth] // [Current Z];
+	B = [CT K Depth];
+	[CT U Index next] = B;
+	[CT V Index next] = B;
+	[CT U Index next] ** [Current X];
+	[CT V Index next] ** [Current Y];
+	[CT U Index] =, [CT U Index]; [CT U Index next] =, [CT U Index next];
+	[CT V Index] =, [CT V Index]; [CT V Index next] =, [CT V Index next];
+	C = [CT Span sizelog];
+	D = [CT U Index next];
+	E = [CT V Index next];
+	D - [CT U Index];
+	E - [CT V Index];
+	D >> C;
+	B = [CT Remaining pixels];
+	E >> C;
+	[CT Remaining pixels this span] = B;
+	[CT U Index delta] = D;
+	[CT V Index delta] = E;
+	-> [CT Filler subroutine pointer];
+
+    "CT Standard Spanning"
+	[CT K Depth] = 65536f;
+	[CT K Depth] // [Current Z];
+	B = [CT K Depth];
+	C = [CT Remaining pixels];
+	[CT U Index] = B;
+	[CT Remaining pixels this span] = C;
+	[CT V Index] = B;
+	[CT U Index] ** [Current X];
+	[CT V Index] ** [Current Y];
+	? [CT Remaining pixels this span] >= [CT Span size] -> CT Processing full span;
+	[CT TR AUX0] ,= [CT Remaining pixels this span];
+	[CT TR AUX1] = [CT HX]; [CT TR AUX1] ** [CT TR AUX0];
+	[CT TR AUX2] = [CT HY]; [CT TR AUX2] ** [CT TR AUX0];
+	[CT TR AUX3] = [CT HZ]; [CT TR AUX3] ** [CT TR AUX0];
+	[Current Z] ++ [CT TR AUX3];
+	[CT K Depth] = 65536f;
+	[CT K Depth] // [Current Z];
+	B = [CT K Depth];
+	[Current X] ++ [CT TR AUX1];
+	[Current Y] ++ [CT TR AUX2];
+	[CT U Index next] = B;
+	[CT V Index next] = B;
+	[CT U Index next] ** [Current X];
+	[CT V Index next] ** [Current Y];
+	[CT TR AUX1] = 1f;
+	[CT TR AUX1] // [CT TR AUX0];
+	B = [CT U Index next];
+	C = [CT V Index next];
+	[CT TR AUX2] = B;
+	[CT TR AUX3] = C;
+	[CT TR AUX2] -- [CT U Index]; [CT TR AUX2] ** [CT TR AUX1];
+	[CT U Index delta] =, [CT TR AUX2];
+	[CT TR AUX3] -- [CT V Index]; [CT TR AUX3] ** [CT TR AUX1];
+	[CT V Index delta] =, [CT TR AUX3];
+	[CT U Index] =, [CT U Index];
+	[CT V Index] =, [CT V Index];
+	-> [CT Filler subroutine pointer];
+
+    "CT Processing full span"
+	[Current Z] ++ [CT HZ per span];
+	[CT K Depth] = 65536f;
+	[CT K Depth] // [Current Z];
+	B = [CT K Depth];
+	[Current X] ++ [CT HX per span];
+	[Current Y] ++ [CT HY per span];
+	[CT U Index next] = B;
+	[CT V Index next] = B;
+	[CT U Index next] ** [Current X];
+	[CT V Index next] ** [Current Y];
+	[CT U Index] =, [CT U Index]; [CT U Index next] =, [CT U Index next];
+	[CT V Index] =, [CT V Index]; [CT V Index next] =, [CT V Index next];
+	C = [CT Span sizelog];
+	D = [CT U Index next];
+	E = [CT V Index next];
+	D - [CT U Index];
+	E - [CT V Index];
+	D >> C;
+	B = [CT Span size];
+	E >> C;
+	[CT Remaining pixels this span] = B;
+	[CT U Index delta] = D;
+	[CT V Index delta] = E;
+	=> [CT Filler subroutine pointer];
+	[CT Remaining pixels] - [CT Span size];
+	? [CT Remaining pixels] > 0 -> CT Standard Spanning;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+		     ( Multipart or full-quality fillers )
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( IMPORTANT - PLEASE READ!
+	************************
+	All fillers and spanners have been accurately optimized for
+	superscalar processing, to take advantage of two or even more
+	pipelines of execution. DO NOT CHANGE FILLERS: they are very
+	difficult to read and understand, and even more difficult to
+	change mantaining their actual speed. Any changes made without
+	knowledge of optimization rules and of the internal behavior of
+	the intructions set will ALWAYS cause the fillers to slow down. )
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( Plain color filler.
+	It's the fastest one, of course.
+	It's used when [CT Feature] is NULL.
+	Like "service CTFILL blended", it does not even need the UV-space
+	indexes. No texture and no lookup tables at all. Just fills the
+	whole scan line with the color contained in [CT Texture]. )
+
+"service CTFILL plain color"
+	A + [Viewport frame buffer];
+	C = [CT Remaining pixels];
+
+	    "CTFILL plain color"
+		[A] = [CT Texture];
+		A+;
+	    C ^ CTFILL plain color;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( This is the first filler using the UV-space indexes. )
+
+"service CTFILL textured"
+	A + [Viewport frame buffer];
+	E = [CT Remaining pixels];
+
+	    "CTFILL textured"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL T This pixel is not visible;
+		D = [B plus CT HTAB];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL T This pixel is not visible;
+		D + [C plus CT VTAB];
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		[A] = [D];
+		A+;
+	    E ^ CTFILL textured;
+	    leave;
+
+	    "CTFILL T This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    E ^ CTFILL textured;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( A question about z-buffering: you may get confused by the presence
+	of the floating-point variable [Current Z]. That's NOT the depth
+	of the pixel in the 3D space. That's the depth of the pixel along
+	the polygon's plane. It's very different, and you can't use that
+	for testing wether the pixel is visible or not. That's why there's
+	the need for compiling the Z tables. In facts, as you will know if
+	you read the comments about the UV-space, [Current Z] is only part
+	of the calculations for finding the UV-space indexes. )
+
+"service CTFILL zbuffered"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+	E = [CT Texture];
+
+	    "CTFILL zbuffered"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL Z This pixel is not visible;
+		B = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL Z This pixel is not visible;
+		B + [C plus ZV Table];
+		? [D] '<= B -> CTFILL Z This pixel is not visible;
+		[A] = E;
+		[D] = B;
+	    "CTFILL Z This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured and zbuffered"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL textured and zbuffered"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TZ This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TZ This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL TZ This pixel is not visible;
+		C = [C plus CT VTAB];
+		[D] = E;
+		C + [B plus CT HTAB];
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		[A] = [C];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL textured and zbuffered;
+	    leave;
+
+	    "CTFILL TZ This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL textured and zbuffered;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( When using large polygons with the alpha blending effect,
+	mixing the colors of the background with the polygon's texture,
+	there is a little glitch coming from the fact that the polygon,
+	when its plane is z-clipped, may get splitted in two.
+	This causes a thin line to be eventually shown, dividing the
+	two resulting triangles. It is visible only with alpha blending
+	because this process is affected by the background, and the pixels
+	near the borders of the triangles are sometimes processed twice.
+	Surface layering solves this problem. )
+
+"service CTFILL blended"
+	A + [Viewport frame buffer];
+	B = [CT Remaining pixels];
+	C = [CT Texture];
+	C & FEFEFEh;
+	C > 1;
+
+	    "CTFILL blended"
+		D = [A];
+		A+;
+		? D + [CT LayerID] -> CTFILL B Layer;
+		D & FEFEFEh;
+		D > 1;
+		D + C;
+		D | [CT LayerID];
+		[A minus 1] = D;
+	    "CTFILL B Layer"
+	    B ^ CTFILL blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured and blended"
+	A + [Viewport frame buffer];
+	E = [CT Remaining pixels];
+
+	    "CTFILL textured and blended"
+		? [A] + [CT LayerID] -> CTFILL TB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TB This pixel is not visible;
+		D = [B plus CT HTAB];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TB This pixel is not visible;
+		D + [C plus CT VTAB];
+		[Current X] ++ [CT HX];
+		B = [D];
+		C = [A];
+		B & FEFEFEh;
+		C & FEFEFEh;
+		B > 1;
+		[Current Y] ++ [CT HY];
+		C > 1;
+		[Current Z] ++ [CT HZ];
+		B + C;
+		B | [CT LayerID];
+		[A] = B;
+		A+;
+	    E ^ CTFILL textured and blended;
+	    leave;
+
+	    "CTFILL TB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    E ^ CTFILL textured and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+      ( Note: alpha-blended polygons are semi-transparent.
+	They don't cover the background, and thus, they don't
+	update the Z-buffer. The Z-buffer is checked and wraps
+	such polygons, but subsequent polygons will be allowed
+	to get behind alpha-blended polygons. So, when building
+	a complex scenery, remember to trace any alpha-blended
+	polygons AFTER all the other non-blended polygons. Ok? )
+
+"service CTFILL zbuffered and blended"
+	D = A; D + [Viewport depth buffer];
+	A + [Viewport frame buffer];
+	E = [CT Texture];
+	E & FEFEFEh;
+	E > 1;
+
+	    "CTFILL zbuffered and blended"
+		? [A] + [CT LayerID] -> CTFILL ZB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL ZB This pixel is not visible;
+		C = [C plus ZV Table];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL ZB This pixel is not visible;
+		C + [B plus ZH Table];
+		? [D] '<= C -> CTFILL ZB This pixel is not visible;
+		C = [A];
+		A+;
+		C & FEFEFEh;
+		[Current X] ++ [CT HX];
+		C > 1;
+		[Current Y] ++ [CT HY];
+		C + E;
+		[Current Z] ++ [CT HZ];
+		C | [CT LayerID];
+		[A minus 1] = C;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered and blended;
+	    leave;
+
+	    "CTFILL ZB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured zbuffered and blended"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL textured zbuffered and blended"
+		? [A] + [CT LayerID] -> CTFILL TZB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TZB This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TZB This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL TZB This pixel is not visible;
+		C = [C plus CT VTAB];
+		[Current X] ++ [CT HX];
+		C + [B plus CT HTAB];
+		[Current Y] ++ [CT HY];
+		B = [A];
+		C = [C];
+		B & F0FEFEFEh;
+		C & F0FEFEFEh;
+		B > 1;
+		A+;
+		C > 1;
+		D+;
+		B + C;
+		[Current Z] ++ [CT HZ];
+		B | [CT LayerID];
+		[A minus 1] = B;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered and blended;
+	    leave;
+
+	    "CTFILL TZB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL shaded"
+	A + [Viewport frame buffer];
+	E = [CT Remaining pixels];
+
+	    "CTFILL shaded"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL S This pixel is not visible;
+		D = [B plus SH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL S This pixel is not visible;
+		D + [C plus SV Table];
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		D + [CT HalfBright];
+		[A] = D;
+		A+;
+	    E ^ CTFILL shaded;
+	    leave;
+
+	    "CTFILL S This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    E ^ CTFILL shaded;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured and shaded"
+	A + [Viewport frame buffer];
+	E = [CT Remaining pixels];
+
+	    "CTFILL textured and shaded"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TS This pixel is not visible;
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TS This pixel is not visible;
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		[Current X] ++ [CT HX];
+		C = [C];
+		A+;
+		C & FEFEFEh;
+		[Current Y] ++ [CT HY];
+		C > 1;
+		[Current Z] ++ [CT HZ];
+		C + D;
+		[A minus 1] = C;
+	    E ^ CTFILL textured and shaded;
+	    leave;
+
+	    "CTFILL TS This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    E ^ CTFILL textured and shaded;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL zbuffered and shaded"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL zbuffered and shaded"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL ZS This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL ZS This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL ZS This pixel is not visible;
+		C = [C plus SV Table];
+		[D] = E;
+		C + [B plus SH Table];
+		D+;
+		C + [CT HalfBright];
+		[A] = C;
+		A+;
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+	    [CT Remaining pixels] ^ CTFILL zbuffered and shaded;
+	    leave;
+
+	    "CTFILL ZS This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered and shaded;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured zbuffered and shaded"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL textured zbuffered and shaded"
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TZS This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TZS This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL TZS This pixel is not visible;
+		[D] = E;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		A+;
+		C = [C];
+		D+;
+		C & FEFEFEh;
+		[Current X] ++ [CT HX];
+		C > 1;
+		[Current Y] ++ [CT HY];
+		C + E;
+		[Current Z] ++ [CT HZ];
+		[A minus 1] = C;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered and shaded;
+	    leave;
+
+	    "CTFILL TZS This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered and shaded;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL shaded and blended"
+	A + [Viewport frame buffer];
+	E = [CT Remaining pixels];
+
+	    "CTFILL shaded and blended"
+		? [A] + [CT LayerID] -> CTFILL SB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL SB This pixel is not visible;
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL SB This pixel is not visible;
+		D = [C plus SV Table];
+		C = [A];
+		D + [B plus SH Table];
+		C & FEFEFEh;
+		D + [CT HalfBright];
+		[Current X] ++ [CT HX];
+		C > 1;
+		[Current Y] ++ [CT HY];
+		C + D;
+		[Current Z] ++ [CT HZ];
+		C | [CT LayerID];
+		[A] = C;
+		A+;
+	    E ^ CTFILL shaded and blended;
+	    leave;
+
+	    "CTFILL SB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    E ^ CTFILL shaded and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured shaded and blended"
+	A + [Viewport frame buffer];
+
+	    "CTFILL textured shaded and blended"
+		? [A] + [CT LayerID] -> CTFILL TSB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TSB This pixel is not visible;
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TSB This pixel is not visible;
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		A+;
+		C = [C];
+		E = [A minus 1];
+		C & FCFCFCh;
+		E & FEFEFEh;
+		C > 2;
+		E > 1;
+		C + D;
+		[Current X] ++ [CT HX];
+		E + C;
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		E | [CT LayerID];
+		[A minus 1] = E;
+	    [CT Remaining pixels] ^ CTFILL textured shaded and blended;
+	    leave;
+
+	    "CTFILL TSB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+	    [CT Remaining pixels] ^ CTFILL textured shaded and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL zbuffered shaded and blended"
+		? [A] + [CT LayerID] -> CTFILL ZSB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL ZSB This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL ZSB This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL ZSB This pixel is not visible;
+		C = [C plus SV Table];
+		D+;
+		C + [B plus SH Table];
+		B = [A];
+		C + [CT HalfBright];
+		C & FEFEFEh;
+		B & FEFEFEh;
+		C > 1;
+		B > 1;
+		C + B;
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		C | [CT LayerID];
+		[A] = C;
+		A+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered shaded and blended;
+	    leave;
+
+	    "CTFILL ZSB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL zbuffered shaded and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTFILL textured zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + A;
+	A + [Viewport frame buffer];
+
+	    "CTFILL textured zbuffered shaded and blended"
+		? [A] + [CT LayerID] -> CTFILL TZSB This pixel is not visible;
+		[CT K Depth] = 1f;
+		[CT K Depth] // [Current Z];
+		[CT U Index] = [CT K Depth]; [CT U Index] ** [Current X]; B =, [CT U Index];
+		? B '>= [CT MM Cols] -> CTFILL TZSB This pixel is not visible;
+		E = [B plus ZH Table];
+		[CT V Index] = [CT K Depth]; [CT V Index] ** [Current Y]; C =, [CT V Index];
+		? C '>= [CT MM Rows] -> CTFILL TZSB This pixel is not visible;
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTFILL TZSB This pixel is not visible;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		D+;
+		C = [C];
+		B = [A];
+		C & FCFCFCh;
+		B & FEFEFEh;
+		C > 2;
+		A+;
+		B > 1;
+		C + E;
+		[Current X] ++ [CT HX];
+		B + C;
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		B | [CT LayerID];
+		[A minus 1] = B;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered shaded and blended;
+	    leave;
+
+	    "CTFILL TZSB This pixel is not visible"
+		[Current X] ++ [CT HX];
+		[Current Y] ++ [CT HY];
+		[Current Z] ++ [CT HZ];
+		A+;
+		D+;
+	    [CT Remaining pixels] ^ CTFILL textured zbuffered shaded and blended;
+
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+			     ( Forward Spanners )
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTSPAN textured"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN T U Index In Range;
+		? B < 0 -> CTSPAN T U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN T U Index In Range;
+	    "CTSPAN T U Index Negative"
+		B = 0;
+	    "CTSPAN T U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN T V Index In Range;
+		? C < 0 -> CTSPAN T V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN T V Index In Range;
+	    "CTSPAN T V Index Negative"
+		C = 0;
+	    "CTSPAN T V Index In Range"
+		D = [B plus CT HTAB];
+		D + [C plus CT VTAB];
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		[A minus 1] = [D];
+	    E ^ CTSPAN textured;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN zbuffered"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN zbuffered"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? B '< [CT MM Cols] -> CTSPAN Z U Index In Range;
+		? B < 0 -> CTSPAN Z U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN Z U Index In Range;
+	    "CTSPAN Z U Index Negative"
+		B = 0;
+	    "CTSPAN Z U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN Z V Index In Range;
+		? C < 0 -> CTSPAN Z V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN Z V Index In Range;
+	    "CTSPAN Z V Index Negative"
+		C = 0;
+	    "CTSPAN Z V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN Z This pixel is not visible;
+		[A minus 1] = [CT Texture];
+		[D minus 1] = E;
+	    "CTSPAN Z This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured and zbuffered"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN textured and zbuffered"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? B '< [CT MM Cols] -> CTSPAN TZ U Index In Range;
+		? B < 0 -> CTSPAN TZ U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TZ U Index In Range;
+	    "CTSPAN TZ U Index Negative"
+		B = 0;
+	    "CTSPAN TZ U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TZ V Index In Range;
+		? C < 0 -> CTSPAN TZ V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TZ V Index In Range;
+	    "CTSPAN TZ V Index Negative"
+		C = 0;
+	    "CTSPAN TZ V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN TZ This pixel is not visible;
+		C = [C plus CT VTAB];
+		[D minus 1] = E;
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		[A minus 1] = [C];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured and zbuffered;
+	    -> CTSPAN TZ Optimization complete;
+
+	    "CTSPAN TZ This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured and zbuffered;
+
+    "CTSPAN TZ Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTSPAN textured and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		? [A minus 1] + [CT LayerID] -> CTSPAN TB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTSPAN TB U Index In Range;
+		? B < 0 -> CTSPAN TB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TB U Index In Range;
+	    "CTSPAN TB U Index Negative"
+		B = 0;
+	    "CTSPAN TB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TB V Index In Range;
+		? C < 0 -> CTSPAN TB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TB V Index In Range;
+	    "CTSPAN TB V Index Negative"
+		C = 0;
+	    "CTSPAN TB V Index In Range"
+		D = [B plus CT HTAB];
+		D + [C plus CT VTAB];
+		C = [A minus 1];
+		D = [D];
+		C & FEFEFEh;
+		D & FEFEFEh;
+		C > 1;
+		D > 1;
+		B = [CT U Index delta];
+		D + C;
+		C = [CT V Index delta];
+		D | [CT LayerID];
+		[A minus 1] = D;
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    E ^ CTSPAN textured and blended;
+	    -> CTSPAN TB Optimization complete;
+
+	    "CTSPAN TB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    E ^ CTSPAN textured and blended;
+
+    "CTSPAN TB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN zbuffered and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Texture];
+	E & FEFEFEh;
+	E > 1;
+
+	    "CTSPAN zbuffered and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? [A minus 1] + [CT LayerID] -> CTSPAN ZB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTSPAN ZB U Index In Range;
+		? B < 0 -> CTSPAN ZB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN ZB U Index In Range;
+	    "CTSPAN ZB U Index Negative"
+		B = 0;
+	    "CTSPAN ZB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN ZB V Index In Range;
+		? C < 0 -> CTSPAN ZB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN ZB V Index In Range;
+	    "CTSPAN ZB V Index Negative"
+		C = 0;
+	    "CTSPAN ZB V Index In Range"
+		B = [B plus ZH Table];
+		B + [C plus ZV Table];
+		? [D minus 1] '<= B -> CTSPAN ZB This pixel is not visible;
+		C = [A minus 1];
+		C & FEFEFEh;
+		C > 1;
+		C + E;
+		B = [CT U Index delta];
+		C | [CT LayerID];
+		[A minus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered and blended;
+	    -> CTSPAN ZB Optimization complete;
+
+	    "CTSPAN ZB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered and blended;
+
+    "CTSPAN ZB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured zbuffered and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN textured zbuffered and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? [A minus 1] + [CT LayerID] -> CTSPAN TZB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTSPAN TZB U Index In Range;
+		? B < 0 -> CTSPAN TZB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TZB U Index In Range;
+	    "CTSPAN TZB U Index Negative"
+		B = 0;
+	    "CTSPAN TZB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TZB V Index In Range;
+		? C < 0 -> CTSPAN TZB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TZB V Index In Range;
+	    "CTSPAN TZB V Index Negative"
+		C = 0;
+	    "CTSPAN TZB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN TZB This pixel is not visible;
+		C = [C plus CT VTAB];
+		C + [B plus CT HTAB];
+		B = [A minus 1];
+		C = [C];
+		B & FEFEFEh;
+		C & FEFEFEh;
+		B > 1;
+		C > 1;
+		B + C;
+		C = [CT V Index delta];
+		B | [CT LayerID];
+		[A minus 1] = B;
+		B = [CT U Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered and blended;
+	    -> CTSPAN TZB Optimization complete;
+
+	    "CTSPAN TZB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered and blended;
+
+    "CTSPAN TZB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN shaded"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+	D = [CT U Index];
+
+	    "CTSPAN shaded"
+		B = D;
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN S U Index In Range;
+		? B < 0 -> CTSPAN S U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN S U Index In Range;
+	    "CTSPAN S U Index Negative"
+		B = 0;
+	    "CTSPAN S U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN S V Index In Range;
+		? C < 0 -> CTSPAN S V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN S V Index In Range;
+	    "CTSPAN S V Index Negative"
+		C = 0;
+	    "CTSPAN S V Index In Range"
+		B = [B plus SH Table];
+		B + [C plus SV Table];
+		B + [CT HalfBright];
+		C = [CT V Index delta];
+		[A minus 1] = B;
+		B = [CT U Index delta];
+		[CT V Index] + C;
+		D + B;
+	    E ^ CTSPAN shaded;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured and shaded"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTSPAN textured and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN TS U Index In Range;
+		? B < 0 -> CTSPAN TS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TS U Index In Range;
+	    "CTSPAN TS U Index Negative"
+		B = 0;
+	    "CTSPAN TS U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TS V Index In Range;
+		? C < 0 -> CTSPAN TS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TS V Index In Range;
+	    "CTSPAN TS V Index Negative"
+		C = 0;
+	    "CTSPAN TS V Index In Range"
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		C = [C];
+		A +;
+		C & FEFEFEh;
+		[CT U Index] + B;
+		C > 1;
+		B = [CT V Index delta];
+		C + D;
+		[CT V Index] + B;
+		[A minus 1] = C;
+	    E ^ CTSPAN textured and shaded;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN zbuffered and shaded"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN zbuffered and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? B '< [CT MM Cols] -> CTSPAN ZS U Index In Range;
+		? B < 0 -> CTSPAN ZS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN ZS U Index In Range;
+	    "CTSPAN ZS U Index Negative"
+		B = 0;
+	    "CTSPAN ZS U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN ZS V Index In Range;
+		? C < 0 -> CTSPAN ZS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN ZS V Index In Range;
+	    "CTSPAN ZS V Index Negative"
+		C = 0;
+	    "CTSPAN ZS V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN ZS This pixel is not visible;
+		C = [C plus SV Table];
+		[D minus 1] = E;
+		C + [B plus SH Table];
+		C + [CT HalfBright];
+		B = [CT U Index delta];
+		[A minus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered and shaded;
+	    -> CTSPAN ZS Optimization complete;
+
+	    "CTSPAN ZS This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered and shaded;
+
+    "CTSPAN ZS Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured zbuffered and shaded"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN textured zbuffered and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? B '< [CT MM Cols] -> CTSPAN TZS U Index In Range;
+		? B < 0 -> CTSPAN TZS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TZS U Index In Range;
+	    "CTSPAN TZS U Index Negative"
+		B = 0;
+	    "CTSPAN TZS U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TZS V Index In Range;
+		? C < 0 -> CTSPAN TZS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TZS V Index In Range;
+	    "CTSPAN TZS V Index Negative"
+		C = 0;
+	    "CTSPAN TZS V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN TZS This pixel is not visible;
+		[D minus 1] = E;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		C = [C];
+		[CT U Index] + B;
+		C & FEFEFEh;
+		B = [CT V Index delta];
+		C > 1;
+		[CT V Index] + B;
+		C + E;
+		[A minus 1] = C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered and shaded;
+	    -> CTSPAN TZS Optimization complete;
+
+	    "CTSPAN TZS This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered and shaded;
+
+    "CTSPAN TZS Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN shaded and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTSPAN shaded and blended"
+		? [A] + [CT LayerID] -> CTSPAN SB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN SB U Index In Range;
+		? B < 0 -> CTSPAN SB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN SB U Index In Range;
+	    "CTSPAN SB U Index Negative"
+		B = 0;
+	    "CTSPAN SB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN SB V Index In Range;
+		? C < 0 -> CTSPAN SB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN SB V Index In Range;
+	    "CTSPAN SB V Index Negative"
+		C = 0;
+	    "CTSPAN SB V Index In Range"
+		D = [C plus SV Table];
+		C = [A];
+		D + [B plus SH Table];
+		B = [CT U Index delta];
+		D + [CT HalfBright];
+		C & FEFEFEh;
+		A +;
+		C > 1;
+		[CT U Index] + B;
+		C + D;
+		B = [CT V Index delta];
+		C | [CT LayerID];
+		[A minus 1] = C;
+		[CT V Index] + B;
+	    E ^ CTSPAN shaded and blended;
+	    -> CTSPAN SB Optimization complete;
+
+	    "CTSPAN SB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A +;
+	    E ^ CTSPAN shaded and blended;
+
+    "CTSPAN SB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured shaded and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN textured shaded and blended"
+		? [A] + [CT LayerID] -> CTSPAN TSB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN TSB U Index In Range;
+		? B < 0 -> CTSPAN TSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TSB U Index In Range;
+	    "CTSPAN TSB U Index Negative"
+		B = 0;
+	    "CTSPAN TSB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TSB V Index In Range;
+		? C < 0 -> CTSPAN TSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TSB V Index In Range;
+	    "CTSPAN TSB V Index Negative"
+		C = 0;
+	    "CTSPAN TSB V Index In Range"
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		E = [A];
+		C = [C];
+		E & FEFEFEh;
+		C & FCFCFCh;
+		E > 1;
+		A +;
+		C > 2;
+		E + D;
+		B = [CT U Index delta];
+		E + C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		E | [CT LayerID];
+		[A minus 1] = E;
+	    [CT Remaining pixels this span] ^ CTSPAN textured shaded and blended;
+	    -> CTSPAN TSB Optimization complete;
+
+	    "CTSPAN TSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A +;
+	    [CT Remaining pixels this span] ^ CTSPAN textured shaded and blended;
+
+    "CTSPAN TSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN zbuffered shaded and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A +;
+		C >> 16;
+		D +;
+		? [A minus 1] + [CT LayerID] -> CTSPAN ZSB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTSPAN ZSB U Index In Range;
+		? B < 0 -> CTSPAN ZSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN ZSB U Index In Range;
+	    "CTSPAN ZSB U Index Negative"
+		B = 0;
+	    "CTSPAN ZSB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN ZSB V Index In Range;
+		? C < 0 -> CTSPAN ZSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN ZSB V Index In Range;
+	    "CTSPAN ZSB V Index Negative"
+		C = 0;
+	    "CTSPAN ZSB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D minus 1] '<= E -> CTSPAN ZSB This pixel is not visible;
+		E = [B plus SH Table];
+		B = [A minus 1];
+		E + [C plus SV Table];
+		B & FEFEFEh;
+		E + [CT HalfBright];
+		C = [CT V Index delta];
+		B > 1;
+		[CT V Index] + C;
+		B + E;
+		C = [CT U Index delta];
+		B | [CT LayerID];
+		[A minus 1] = B;
+		[CT U Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered shaded and blended;
+	    -> CTSPAN ZSB Optimization complete;
+
+	    "CTSPAN ZSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN zbuffered shaded and blended;
+
+    "CTSPAN ZSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTSPAN textured zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTSPAN textured zbuffered shaded and blended"
+		? [A] + [CT LayerID] -> CTSPAN TZSB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTSPAN TZSB U Index In Range;
+		? B < 0 -> CTSPAN TZSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTSPAN TZSB U Index In Range;
+	    "CTSPAN TZSB U Index Negative"
+		B = 0;
+	    "CTSPAN TZSB U Index In Range"
+		? C '< [CT MM Rows] -> CTSPAN TZSB V Index In Range;
+		? C < 0 -> CTSPAN TZSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTSPAN TZSB V Index In Range;
+	    "CTSPAN TZSB V Index Negative"
+		C = 0;
+	    "CTSPAN TZSB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTSPAN TZSB This pixel is not visible;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [A];
+		C = [C];
+		B & FEFEFEh;
+		C & FCFCFCh;
+		B > 1;
+		A +;
+		C > 2;
+		B + E;
+		D +;
+		C + B;
+		B = [CT U Index delta];
+		C | [CT LayerID];
+		[A minus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered shaded and blended;
+	    -> CTSPAN TZSB Optimization complete;
+
+	    "CTSPAN TZSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A +;
+		D +;
+	    [CT Remaining pixels this span] ^ CTSPAN textured zbuffered shaded and blended;
+
+    "CTSPAN TZSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+			     ( Reverse Spanners )
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTREVSPAN textured"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN T U Index In Range;
+		? B < 0 -> CTREVSPAN T U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN T U Index In Range;
+	    "CTREVSPAN T U Index Negative"
+		B = 0;
+	    "CTREVSPAN T U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN T V Index In Range;
+		? C < 0 -> CTREVSPAN T V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN T V Index In Range;
+	    "CTREVSPAN T V Index Negative"
+		C = 0;
+	    "CTREVSPAN T V Index In Range"
+		D = [B plus CT HTAB];
+		D + [C plus CT VTAB];
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		[A plus 1] = [D];
+	    E ^ CTREVSPAN textured;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN zbuffered"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN zbuffered"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? B '< [CT MM Cols] -> CTREVSPAN Z U Index In Range;
+		? B < 0 -> CTREVSPAN Z U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN Z U Index In Range;
+	    "CTREVSPAN Z U Index Negative"
+		B = 0;
+	    "CTREVSPAN Z U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN Z V Index In Range;
+		? C < 0 -> CTREVSPAN Z V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN Z V Index In Range;
+	    "CTREVSPAN Z V Index Negative"
+		C = 0;
+	    "CTREVSPAN Z V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN Z This pixel is not visible;
+		[A plus 1] = [CT Texture];
+		[D plus 1] = E;
+	    "CTREVSPAN Z This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured and zbuffered"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN textured and zbuffered"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? B '< [CT MM Cols] -> CTREVSPAN TZ U Index In Range;
+		? B < 0 -> CTREVSPAN TZ U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TZ U Index In Range;
+	    "CTREVSPAN TZ U Index Negative"
+		B = 0;
+	    "CTREVSPAN TZ U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TZ V Index In Range;
+		? C < 0 -> CTREVSPAN TZ V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TZ V Index In Range;
+	    "CTREVSPAN TZ V Index Negative"
+		C = 0;
+	    "CTREVSPAN TZ V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN TZ This pixel is not visible;
+		C = [C plus CT VTAB];
+		[D plus 1] = E;
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		[A plus 1] = [C];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured and zbuffered;
+	    -> CTREVSPAN TZ Optimization complete;
+
+	    "CTREVSPAN TZ This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured and zbuffered;
+
+    "CTREVSPAN TZ Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTREVSPAN textured and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		? [A plus 1] + [CT LayerID] -> CTREVSPAN TB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTREVSPAN TB U Index In Range;
+		? B < 0 -> CTREVSPAN TB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TB U Index In Range;
+	    "CTREVSPAN TB U Index Negative"
+		B = 0;
+	    "CTREVSPAN TB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TB V Index In Range;
+		? C < 0 -> CTREVSPAN TB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TB V Index In Range;
+	    "CTREVSPAN TB V Index Negative"
+		C = 0;
+	    "CTREVSPAN TB V Index In Range"
+		D = [B plus CT HTAB];
+		D + [C plus CT VTAB];
+		C = [A plus 1];
+		D = [D];
+		C & FEFEFEh;
+		D & FEFEFEh;
+		C > 1;
+		D > 1;
+		B = [CT U Index delta];
+		D + C;
+		C = [CT V Index delta];
+		D | [CT LayerID];
+		[A plus 1] = D;
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    E ^ CTREVSPAN textured and blended;
+	    -> CTREVSPAN TB Optimization complete;
+
+	    "CTREVSPAN TB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    E ^ CTREVSPAN textured and blended;
+
+    "CTREVSPAN TB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN zbuffered and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Texture];
+	E & FEFEFEh;
+	E > 1;
+
+	    "CTREVSPAN zbuffered and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? [A plus 1] + [CT LayerID] -> CTREVSPAN ZB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTREVSPAN ZB U Index In Range;
+		? B < 0 -> CTREVSPAN ZB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN ZB U Index In Range;
+	    "CTREVSPAN ZB U Index Negative"
+		B = 0;
+	    "CTREVSPAN ZB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN ZB V Index In Range;
+		? C < 0 -> CTREVSPAN ZB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN ZB V Index In Range;
+	    "CTREVSPAN ZB V Index Negative"
+		C = 0;
+	    "CTREVSPAN ZB V Index In Range"
+		B = [B plus ZH Table];
+		B + [C plus ZV Table];
+		? [D plus 1] '<= B -> CTREVSPAN ZB This pixel is not visible;
+		C = [A plus 1];
+		C & FEFEFEh;
+		C > 1;
+		C + E;
+		B = [CT U Index delta];
+		C | [CT LayerID];
+		[A plus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered and blended;
+	    -> CTREVSPAN ZB Optimization complete;
+
+	    "CTREVSPAN ZB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered and blended;
+
+    "CTREVSPAN ZB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured zbuffered and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN textured zbuffered and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? [A plus 1] + [CT LayerID] -> CTREVSPAN TZB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTREVSPAN TZB U Index In Range;
+		? B < 0 -> CTREVSPAN TZB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TZB U Index In Range;
+	    "CTREVSPAN TZB U Index Negative"
+		B = 0;
+	    "CTREVSPAN TZB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TZB V Index In Range;
+		? C < 0 -> CTREVSPAN TZB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TZB V Index In Range;
+	    "CTREVSPAN TZB V Index Negative"
+		C = 0;
+	    "CTREVSPAN TZB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN TZB This pixel is not visible;
+		C = [C plus CT VTAB];
+		C + [B plus CT HTAB];
+		B = [A plus 1];
+		C = [C];
+		B & FEFEFEh;
+		C & FEFEFEh;
+		B > 1;
+		C > 1;
+		B + C;
+		C = [CT V Index delta];
+		B | [CT LayerID];
+		[A plus 1] = B;
+		B = [CT U Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered and blended;
+	    -> CTREVSPAN TZB Optimization complete;
+
+	    "CTREVSPAN TZB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered and blended;
+
+    "CTREVSPAN TZB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN shaded"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+	D = [CT U Index];
+
+	    "CTREVSPAN shaded"
+		B = D;
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN S U Index In Range;
+		? B < 0 -> CTREVSPAN S U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN S U Index In Range;
+	    "CTREVSPAN S U Index Negative"
+		B = 0;
+	    "CTREVSPAN S U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN S V Index In Range;
+		? C < 0 -> CTREVSPAN S V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN S V Index In Range;
+	    "CTREVSPAN S V Index Negative"
+		C = 0;
+	    "CTREVSPAN S V Index In Range"
+		B = [B plus SH Table];
+		B + [C plus SV Table];
+		C = [CT V Index delta];
+		B + [CT HalfBright];
+		[A plus 1] = B;
+		B = [CT U Index delta];
+		[CT V Index] + C;
+		D + B;
+	    E ^ CTREVSPAN shaded;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured and shaded"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTREVSPAN textured and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN TS U Index In Range;
+		? B < 0 -> CTREVSPAN TS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TS U Index In Range;
+	    "CTREVSPAN TS U Index Negative"
+		B = 0;
+	    "CTREVSPAN TS U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TS V Index In Range;
+		? C < 0 -> CTREVSPAN TS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TS V Index In Range;
+	    "CTREVSPAN TS V Index Negative"
+		C = 0;
+	    "CTREVSPAN TS V Index In Range"
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		C = [C];
+		A -;
+		C & FEFEFEh;
+		[CT U Index] + B;
+		C > 1;
+		B = [CT V Index delta];
+		C + D;
+		[CT V Index] + B;
+		[A plus 1] = C;
+	    E ^ CTREVSPAN textured and shaded;
+
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN zbuffered and shaded"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN zbuffered and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? B '< [CT MM Cols] -> CTREVSPAN ZS U Index In Range;
+		? B < 0 -> CTREVSPAN ZS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN ZS U Index In Range;
+	    "CTREVSPAN ZS U Index Negative"
+		B = 0;
+	    "CTREVSPAN ZS U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN ZS V Index In Range;
+		? C < 0 -> CTREVSPAN ZS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN ZS V Index In Range;
+	    "CTREVSPAN ZS V Index Negative"
+		C = 0;
+	    "CTREVSPAN ZS V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN ZS This pixel is not visible;
+		C = [C plus SV Table];
+		[D plus 1] = E;
+		C + [B plus SH Table];
+		B = [CT U Index delta];
+		C + [CT HalfBright];
+		[A plus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered and shaded;
+	    -> CTREVSPAN ZS Optimization complete;
+
+	    "CTREVSPAN ZS This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered and shaded;
+
+    "CTREVSPAN ZS Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured zbuffered and shaded"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN textured zbuffered and shaded"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? B '< [CT MM Cols] -> CTREVSPAN TZS U Index In Range;
+		? B < 0 -> CTREVSPAN TZS U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TZS U Index In Range;
+	    "CTREVSPAN TZS U Index Negative"
+		B = 0;
+	    "CTREVSPAN TZS U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TZS V Index In Range;
+		? C < 0 -> CTREVSPAN TZS V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TZS V Index In Range;
+	    "CTREVSPAN TZS V Index Negative"
+		C = 0;
+	    "CTREVSPAN TZS V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN TZS This pixel is not visible;
+		[D plus 1] = E;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [CT U Index delta];
+		C = [C];
+		[CT U Index] + B;
+		C & FEFEFEh;
+		B = [CT V Index delta];
+		C > 1;
+		[CT V Index] + B;
+		C + E;
+		[A plus 1] = C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered and shaded;
+	    -> CTREVSPAN TZS Optimization complete;
+
+	    "CTREVSPAN TZS This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered and shaded;
+
+    "CTREVSPAN TZS Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN shaded and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+	E = [CT Remaining pixels this span];
+
+	    "CTREVSPAN shaded and blended"
+		? [A] + [CT LayerID] -> CTREVSPAN SB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN SB U Index In Range;
+		? B < 0 -> CTREVSPAN SB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN SB U Index In Range;
+	    "CTREVSPAN SB U Index Negative"
+		B = 0;
+	    "CTREVSPAN SB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN SB V Index In Range;
+		? C < 0 -> CTREVSPAN SB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN SB V Index In Range;
+	    "CTREVSPAN SB V Index Negative"
+		C = 0;
+	    "CTREVSPAN SB V Index In Range"
+		D = [C plus SV Table];
+		C = [A];
+		D + [B plus SH Table];
+		B = [CT U Index delta];
+		D + [CT HalfBright];
+		C & FEFEFEh;
+		A -;
+		C > 1;
+		[CT U Index] + B;
+		C + D;
+		B = [CT V Index delta];
+		C | [CT LayerID];
+		[A plus 1] = C;
+		[CT V Index] + B;
+	    E ^ CTREVSPAN shaded and blended;
+	    -> CTREVSPAN SB Optimization complete;
+
+	    "CTREVSPAN SB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A -;
+	    E ^ CTREVSPAN shaded and blended;
+
+    "CTREVSPAN SB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured shaded and blended"
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN textured shaded and blended"
+		? [A] + [CT LayerID] -> CTREVSPAN TSB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN TSB U Index In Range;
+		? B < 0 -> CTREVSPAN TSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TSB U Index In Range;
+	    "CTREVSPAN TSB U Index Negative"
+		B = 0;
+	    "CTREVSPAN TSB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TSB V Index In Range;
+		? C < 0 -> CTREVSPAN TSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TSB V Index In Range;
+	    "CTREVSPAN TSB V Index Negative"
+		C = 0;
+	    "CTREVSPAN TSB V Index In Range"
+		D = [C plus SV Table];
+		C = [C plus CT VTAB];
+		D + [B plus SH Table];
+		C + [B plus CT HTAB];
+		E = [A];
+		C = [C];
+		E & FEFEFEh;
+		C & FCFCFCh;
+		E > 1;
+		A -;
+		C > 2;
+		E + D;
+		B = [CT U Index delta];
+		E + C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		E | [CT LayerID];
+		[A plus 1] = E;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured shaded and blended;
+	    -> CTREVSPAN TSB Optimization complete;
+
+	    "CTREVSPAN TSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A -;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured shaded and blended;
+
+    "CTREVSPAN TSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN zbuffered shaded and blended"
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		A -;
+		C >> 16;
+		D -;
+		? [A plus 1] + [CT LayerID] -> CTREVSPAN ZSB This pixel is not visible;
+		? B '< [CT MM Cols] -> CTREVSPAN ZSB U Index In Range;
+		? B < 0 -> CTREVSPAN ZSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN ZSB U Index In Range;
+	    "CTREVSPAN ZSB U Index Negative"
+		B = 0;
+	    "CTREVSPAN ZSB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN ZSB V Index In Range;
+		? C < 0 -> CTREVSPAN ZSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN ZSB V Index In Range;
+	    "CTREVSPAN ZSB V Index Negative"
+		C = 0;
+	    "CTREVSPAN ZSB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D plus 1] '<= E -> CTREVSPAN ZSB This pixel is not visible;
+		E = [B plus SH Table];
+		B = [A plus 1];
+		E + [C plus SV Table];
+		B & FEFEFEh;
+		E + [CT HalfBright];
+		C = [CT V Index delta];
+		B > 1;
+		[CT V Index] + C;
+		B + E;
+		C = [CT U Index delta];
+		B | [CT LayerID];
+		[A plus 1] = B;
+		[CT U Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered shaded and blended;
+	    -> CTREVSPAN ZSB Optimization complete;
+
+	    "CTREVSPAN ZSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN zbuffered shaded and blended;
+
+    "CTREVSPAN ZSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
+
+"service CTREVSPAN textured zbuffered shaded and blended"
+	D = [Viewport depth buffer]; D + [CT FB Pointer];
+	A = [Viewport frame buffer]; A + [CT FB Pointer];
+
+	    "CTREVSPAN textured zbuffered shaded and blended"
+		? [A] + [CT LayerID] -> CTREVSPAN TZSB This pixel is not visible;
+		B = [CT U Index];
+		C = [CT V Index];
+		B >> 16;
+		C >> 16;
+		? B '< [CT MM Cols] -> CTREVSPAN TZSB U Index In Range;
+		? B < 0 -> CTREVSPAN TZSB U Index Negative;
+		B = [CT MM Cols]; B -;
+		-> CTREVSPAN TZSB U Index In Range;
+	    "CTREVSPAN TZSB U Index Negative"
+		B = 0;
+	    "CTREVSPAN TZSB U Index In Range"
+		? C '< [CT MM Rows] -> CTREVSPAN TZSB V Index In Range;
+		? C < 0 -> CTREVSPAN TZSB V Index Negative;
+		C = [CT MM Rows]; C -;
+		-> CTREVSPAN TZSB V Index In Range;
+	    "CTREVSPAN TZSB V Index Negative"
+		C = 0;
+	    "CTREVSPAN TZSB V Index In Range"
+		E = [B plus ZH Table];
+		E + [C plus ZV Table];
+		? [D] '<= E -> CTREVSPAN TZSB This pixel is not visible;
+		E = [C plus SV Table];
+		C = [C plus CT VTAB];
+		E + [B plus SH Table];
+		C + [B plus CT HTAB];
+		B = [A];
+		C = [C];
+		B & FEFEFEh;
+		C & FCFCFCh;
+		B > 1;
+		A -;
+		C > 2;
+		B + E;
+		D -;
+		C + B;
+		B = [CT U Index delta];
+		C | [CT LayerID];
+		[A plus 1] = C;
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered shaded and blended;
+	    -> CTREVSPAN TZSB Optimization complete;
+
+	    "CTREVSPAN TZSB This pixel is not visible"
+		B = [CT U Index delta];
+		C = [CT V Index delta];
+		[CT U Index] + B;
+		[CT V Index] + C;
+		A -;
+		D -;
+	    [CT Remaining pixels this span] ^ CTREVSPAN textured zbuffered shaded and blended;
+
+    "CTREVSPAN TZSB Optimization complete"
+	A - [Viewport frame buffer];
+	[CT FB Pointer] = A;
+	leave;
+
+( / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / )
