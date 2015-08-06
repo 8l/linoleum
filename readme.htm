@@ -1,13 +1,5 @@
-<html>
-<head>
-<title>Loading...</title>
-<meta http-equiv="refresh"
-<meta http-equiv="Refresh" content="3; URL=docs/index.htm">
-</head>
-<table width = "100%" height = "100%" cellpadding = 0 cellspacing = 0 border = 0>
-<tr><td align = "center" valign = "middle">
-<font face = "arial, helvetica" size = 3 color = "#404040"><b>
-	Loading <a href="docs\index.htm">index.htm</a> from DOCS folder...
-</b></font>
-</td></tr></table>
-</html>
+L.in.oleum is an unstructured, untyped, procedural programming language. And more specifically, it's a form of cross-platform assembly language. It is oriented to the developement of general-purpose applications, especially when 100% portability, execution speed and module compactness is requested. This language has an almost 1:1 source-to-CPU instruction ratio, allows direct access to five general-purpose registers (performing basic operations from a theoretical 2 up to a pratical of even 10 times faster than memory-held variables), and if used well, is averagely twice as fast as C in pure computational power. Those who are familiar with Java, could imagine L.in.oleum to be based on similar concepts of hardware abstraction, but from a low-level standpoint. Other important highlights concern the inner coherence, clarity and simplicity of its syntax. The (admittedly cryptic) acronym stands for Low-level INterfaced OverLanguage for Extremely Universal Machine-coding, but nevermind it and just friendly call it Lino, like many do...
+
+L.in.oleum applications are theoretically fully portable (they could be executed on different operating systems) because they "exist" inside an ideal operating environment, which is an abstraction of the underlying operating system: you can imagine it to be an emulator which, however, emulates an ideal machine that did never concretely exist, in all effects something that could be called a L.in.oleum Virtual Machine. What makes this possible is a special Run-Time Module: it's a particular program (written for the application's target operating system), to which the generated L.in.oleum machine language (also created to be executed by the target microprocessor) is physically linked, along with static data and support files. In the end, the compiler produces a single, stand-alone executable file (out of an application's source code), which is usually small, compact, fast and, working similarly to a self-extracting archive, needs no installation.
+
+In practice, the portability depends on a couple factors: the compiler needs two working packets to compile an application so that it will run on a given platform. These packets - one of which is called the SYS pack and contains 8 variants of the run-time module, the other being called the CPU pack and containing exactly 6616 instruction patterns - must be specifically assembled for the target operating system (SYS) and microprocessor (CPU). At this moment, the most popular combination (Win32, Intel 80386 and later/compatible processors) is supported by the compiler's author packets (although currently with the notable exception of less-commonly used interfaces, known as modular extensions), and an advanced attempt is being made by Peterpaul Klein Haneveld of Delft University, to create a fully functional SYS pack for the Linux family. In short, as in Java you need a JVM (Java Virtual Machine) to execute its applications on a certain platform, in L.in.oleum you need those two packets for the compiler to use. Because, differently from Java, the same L.in.oleum executable file is unable to work on more than one kind of platform: L.in.oleum source code needs not to be changed, but its binary version will have to be compiled in more than one exemplary, for it to execute properly on different platforms.
